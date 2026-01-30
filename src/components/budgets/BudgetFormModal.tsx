@@ -41,7 +41,10 @@ export default function BudgetFormModal({
       const category = categories.find((c) => c.name === selectedCategory);
       if (!category) throw new Error("Category not found");
 
+      const budgetId = `budget-${session.user.id}-${category.id || category.name}-${monthString}`;
+
       await db.budgets.add({
+        id: budgetId,
         userId: session.user.id,
         categoryId: category.id?.toString() || category.name,
         amount: parseFloat(amount),
@@ -110,7 +113,10 @@ export default function BudgetFormModal({
 
       await Promise.all(
         lastMonthBudgets.map(async (budget) => {
+          const budgetId = `budget-${session.user.id}-${budget.categoryId}-${monthString}`;
+          
           const newBudget = {
+            id: budgetId,
             userId: session.user.id!,
             categoryId: budget.categoryId,
             amount: budget.amount,
