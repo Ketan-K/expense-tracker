@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 import { Category, DEFAULT_CATEGORIES } from "@/lib/types";
 import { NextResponse } from "next/server";
+import { validateCategory, sanitizeString } from "@/lib/validation";
 
 export async function GET() {
   try {
@@ -50,11 +51,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, icon, color } = body;
 
-    if (!name || !icon || !color) {
+    // Validate and sanitize input
+    const validation = validateCategory(body);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Validation failed", details: validation.errors },
         { status: 400 }
       );
     }
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
     // Check if category with this name already exists for this user
     const existingCategory = await db.collection<Category>("categories").findOne({
       userId: session.user.id,
-      name: { $regex: new RegExp(`^${name}$`, 'i') } // Case-insensitive match
+      name: { $regex: new RegExp(`^${sanitizeString(validation.sanitized!.name)}$`, 'i') } // Case-insensitive match
     });
 
     if (existingCategory) {
@@ -77,9 +79,7 @@ export async function POST(request: Request) {
 
     const category: Category = {
       userId: session.user.id,
-      name,
-      icon,
-      color,
+      ...validation.sanitized!,
       isDefault: false,
       createdAt: new Date(),
     };

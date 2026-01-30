@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { Expense, Category, Budget } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
+import { validateExpense, validateCategory, validateBudget } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
@@ -32,13 +33,20 @@ export async function POST(request: Request) {
 
         if (collection === "expenses") {
           if (action === "CREATE") {
+            // Validate expense data
+            const validation = validateExpense(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
             const expense: Expense = {
               userId: session.user.id,
-              date: new Date(data.date),
-              amount: parseFloat(data.amount),
-              category: data.category,
-              description: data.description || "",
-              paymentMethod: data.paymentMethod || "",
+              ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
             };
@@ -50,15 +58,21 @@ export async function POST(request: Request) {
               success: true,
             });
           } else if (action === "UPDATE" && data._id) {
-            const updateData: Partial<Expense> = {
+            // Validate expense data
+            const validation = validateExpense(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const updateData = {
+              ...validation.sanitized!,
               updatedAt: new Date(),
             };
-
-            if (data.date) updateData.date = new Date(data.date);
-            if (data.amount !== undefined) updateData.amount = parseFloat(data.amount);
-            if (data.category) updateData.category = data.category;
-            if (data.description !== undefined) updateData.description = data.description;
-            if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
 
             await db.collection<Expense>("expenses").updateOne(
               { _id: new ObjectId(data._id), userId: session.user.id },
@@ -84,11 +98,20 @@ export async function POST(request: Request) {
           }
         } else if (collection === "categories") {
           if (action === "CREATE") {
+            // Validate category data
+            const validation = validateCategory(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
             const category: Category = {
               userId: session.user.id,
-              name: data.name,
-              icon: data.icon,
-              color: data.color,
+              ...validation.sanitized!,
               isDefault: false,
               createdAt: new Date(),
             };
@@ -102,17 +125,26 @@ export async function POST(request: Request) {
           }
         } else if (collection === "budgets") {
           if (action === "CREATE" || action === "UPDATE") {
+            // Validate budget data
+            const validation = validateBudget(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
             const budget: Budget = {
               userId: session.user.id,
-              categoryId: data.categoryId,
-              month: data.month,
-              amount: parseFloat(data.amount),
+              ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
             };
 
             const result = await db.collection<Budget>("budgets").findOneAndUpdate(
-              { userId: session.user.id, categoryId: data.categoryId, month: data.month },
+              { userId: session.user.id, categoryId: validation.sanitized!.categoryId, month: validation.sanitized!.month },
               { $set: budget },
               { upsert: true, returnDocument: "after" }
             );

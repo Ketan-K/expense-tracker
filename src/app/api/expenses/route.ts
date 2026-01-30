@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 import { Expense } from "@/lib/types";
 import { NextResponse } from "next/server";
+import { validateExpense, validateQueryParams, sanitizeString } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
@@ -15,6 +16,15 @@ export async function GET(request: Request) {
     const endDate = searchParams.get("endDate");
     const category = searchParams.get("category");
 
+    // Validate query parameters
+    const validation = validateQueryParams({ startDate, endDate, category });
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: validation.errors },
+        { status: 400 }
+      );
+    }
+
     const client = await clientPromise;
     const db = client.db();
 
@@ -27,7 +37,7 @@ export async function GET(request: Request) {
     }
 
     if (category) {
-      query.category = category;
+      query.category = sanitizeString(category);
     }
 
     const expenses = await db
@@ -54,11 +64,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { date, amount, category, description, paymentMethod } = body;
 
-    if (!date || !amount || !category) {
+    // Validate and sanitize input
+    const validation = validateExpense(body);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Validation failed", details: validation.errors },
         { status: 400 }
       );
     }
@@ -68,11 +79,7 @@ export async function POST(request: Request) {
 
     const expense: Expense = {
       userId: session.user.id,
-      date: new Date(date),
-      amount: parseFloat(amount),
-      category,
-      description: description || "",
-      paymentMethod: paymentMethod || "",
+      ...validation.sanitized!,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

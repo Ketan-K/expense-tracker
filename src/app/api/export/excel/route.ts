@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { Expense, Category } from "@/lib/types";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { validateQueryParams } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
@@ -14,6 +15,15 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+
+    // Validate query parameters
+    const validation = validateQueryParams({ startDate, endDate, category: null });
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: validation.errors },
+        { status: 400 }
+      );
+    }
 
     const client = await clientPromise;
     const db = client.db();

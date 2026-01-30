@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
 import { Budget } from "@/lib/types";
 import { NextResponse } from "next/server";
+import { validateBudget, sanitizeString } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
@@ -13,12 +14,20 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
 
+    // Validate month format if provided
+    if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return NextResponse.json(
+        { error: "Invalid month format (must be YYYY-MM)" },
+        { status: 400 }
+      );
+    }
+
     const client = await clientPromise;
     const db = client.db();
 
     const query: any = { userId: session.user.id };
     if (month) {
-      query.month = month;
+      query.month = sanitizeString(month);
     }
 
     const budgets = await db
@@ -45,17 +54,20 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { categoryId, month, amount } = body;
 
-    if (!categoryId || !month || !amount) {
+    // Validate and sanitize input
+    const validation = validateBudget(body);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Validation failed", details: validation.errors },
         { status: 400 }
       );
     }
 
     const client = await clientPromise;
     const db = client.db();
+
+    const { categoryId, month, amount } = validation.sanitized!;
 
     // Check if budget already exists for this category and month
     const existing = await db.collection<Budget>("budgets").findOne({
@@ -68,7 +80,7 @@ export async function POST(request: Request) {
       // Update existing budget
       const result = await db.collection<Budget>("budgets").findOneAndUpdate(
         { userId: session.user.id, categoryId, month },
-        { $set: { amount: parseFloat(amount), updatedAt: new Date() } },
+        { $set: { amount, updatedAt: new Date() } },
         { returnDocument: "after" }
       );
 
@@ -79,7 +91,7 @@ export async function POST(request: Request) {
       userId: session.user.id,
       categoryId,
       month,
-      amount: parseFloat(amount),
+      amount,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

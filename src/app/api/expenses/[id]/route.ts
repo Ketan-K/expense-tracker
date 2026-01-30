@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { Expense } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
+import { validateExpense, sanitizeObjectId } from "@/lib/validation";
 
 export async function GET(
   request: Request,
@@ -15,6 +16,12 @@ export async function GET(
     }
 
     const { id } = await params;
+
+    // Validate ObjectId
+    if (!sanitizeObjectId(id)) {
+      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+    }
+
     const client = await clientPromise;
     const db = client.db();
 
@@ -48,21 +55,30 @@ export async function PUT(
     }
 
     const { id } = await params;
+
+    // Validate ObjectId
+    if (!sanitizeObjectId(id)) {
+      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+    }
+
     const body = await request.json();
-    const { date, amount, category, description, paymentMethod } = body;
+
+    // Validate and sanitize input
+    const validation = validateExpense(body);
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validation.errors },
+        { status: 400 }
+      );
+    }
 
     const client = await clientPromise;
     const db = client.db();
 
-    const updateData: Partial<Expense> = {
+    const updateData = {
+      ...validation.sanitized!,
       updatedAt: new Date(),
     };
-
-    if (date) updateData.date = new Date(date);
-    if (amount !== undefined) updateData.amount = parseFloat(amount);
-    if (category) updateData.category = category;
-    if (description !== undefined) updateData.description = description;
-    if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
 
     const result = await db.collection<Expense>("expenses").findOneAndUpdate(
       { _id: new ObjectId(id), userId: session.user.id },
@@ -95,6 +111,12 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
+    // Validate ObjectId
+    if (!sanitizeObjectId(id)) {
+      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+    }
+
     const client = await clientPromise;
     const db = client.db();
 
