@@ -3,6 +3,8 @@ import clientPromise from "@/lib/mongodb";
 import { Expense } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateQueryParams } from "@/lib/validation";
+import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
+import { rateLimiters } from "@/lib/ratelimit";
 
 export async function GET(request: Request) {
   try {
@@ -10,6 +12,10 @@ export async function GET(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Apply rate limiting (export has stricter limits)
+    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.export);
+    if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");

@@ -4,6 +4,8 @@ import { Expense } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { validateExpense, sanitizeObjectId } from "@/lib/validation";
+import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
+import { rateLimiters } from "@/lib/ratelimit";
 
 export async function GET(
   request: Request,
@@ -14,6 +16,10 @@ export async function GET(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Apply rate limiting
+    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
+    if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
 
@@ -53,6 +59,10 @@ export async function PUT(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Apply rate limiting
+    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
+    if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
 
@@ -109,6 +119,10 @@ export async function DELETE(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Apply rate limiting
+    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
+    if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
 

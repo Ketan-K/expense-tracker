@@ -4,6 +4,8 @@ import { Expense, Category, Budget } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { validateExpense, validateCategory, validateBudget } from "@/lib/validation";
+import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
+import { rateLimiters } from "@/lib/ratelimit";
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +13,10 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Apply rate limiting (sync has stricter limits)
+    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.sync);
+    if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
     const { operations } = body;
