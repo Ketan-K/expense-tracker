@@ -7,6 +7,8 @@ import { db, LocalCategory } from "@/lib/db";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useConfirm } from "@/hooks/useConfirm";
 
 interface BudgetFormModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export default function BudgetFormModal({
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const { confirm, isOpen: isConfirmOpen, options, handleConfirm, handleCancel } = useConfirm();
 
   const monthString = format(currentMonth, "yyyy-MM");
   const lastMonthString = format(subMonths(currentMonth, 1), "yyyy-MM");
@@ -103,7 +106,15 @@ export default function BudgetFormModal({
         .toArray();
 
       if (existingBudgets.length > 0) {
-        if (!confirm("This will replace existing budgets. Continue?")) {
+        const confirmed = await confirm({
+          title: "Replace Existing Budgets",
+          message: "This will replace existing budgets for this month. Continue?",
+          confirmText: "Replace",
+          cancelText: "Cancel",
+          variant: "warning",
+        });
+
+        if (!confirmed) {
           return;
         }
         await Promise.all(
@@ -151,7 +162,18 @@ export default function BudgetFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <>
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
+      />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-b border-indigo-200 dark:border-indigo-800 px-5 sm:px-6 py-5 flex items-center justify-between flex-shrink-0">
           <div>
@@ -299,5 +321,6 @@ export default function BudgetFormModal({
         </form>
       </div>
     </div>
+    </>
   );
 }

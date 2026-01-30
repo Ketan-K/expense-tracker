@@ -2,6 +2,8 @@
 
 import { useSession, signOut } from "next-auth/react";
 import DashboardLayout from "@/components/DashboardLayout";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useConfirm } from "@/hooks/useConfirm";
 import { User, Mail, LogOut, Database } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
@@ -11,6 +13,7 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const [dbStats, setDbStats] = useState({ expenses: 0, categories: 0 });
+  const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
 
   useEffect(() => {
     setMounted(true);
@@ -32,7 +35,15 @@ export default function ProfilePage() {
   };
 
   const clearLocalData = async () => {
-    if (confirm("Are you sure? This will clear all local data. Data on server will remain safe.")) {
+    const confirmed = await confirm({
+      title: "Clear Local Data",
+      message: "Are you sure? This will clear all local data. Data on server will remain safe.",
+      confirmText: "Clear Data",
+      cancelText: "Cancel",
+      variant: "danger",
+    });
+
+    if (confirmed) {
       try {
         await db.expenses.clear();
         await db.categories.clear();
@@ -52,6 +63,16 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
+      <ConfirmDialog
+        isOpen={isOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
+      />
       <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
         <div className="hidden sm:block">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
