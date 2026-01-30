@@ -6,6 +6,11 @@ import * as XLSX from "xlsx";
 import { validateQueryParams } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function GET(request: Request) {
   try {
@@ -100,12 +105,13 @@ export async function GET(request: Request) {
     // Generate Excel file
     const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
-    return new NextResponse(buffer, {
+    const response = new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="expenses_${new Date().toISOString().split("T")[0]}.xlsx"`,
       },
     });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error exporting Excel:", error);
     return NextResponse.json(

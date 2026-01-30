@@ -6,6 +6,11 @@ import { NextResponse } from "next/server";
 import { validateExpense, validateCategory, validateBudget } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function POST(request: Request) {
   try {
@@ -172,7 +177,8 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ results });
+    const response = NextResponse.json({ results });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error syncing data:", error);
     return NextResponse.json(

@@ -5,6 +5,11 @@ import { NextResponse } from "next/server";
 import { validateExpense, validateQueryParams, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function GET(request: Request) {
   try {
@@ -52,7 +57,8 @@ export async function GET(request: Request) {
       .sort({ date: -1 })
       .toArray();
 
-    return NextResponse.json(expenses);
+    const response = NextResponse.json(expenses);
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching expenses:", error);
     return NextResponse.json(
@@ -96,10 +102,11 @@ export async function POST(request: Request) {
 
     const result = await db.collection<Expense>("expenses").insertOne(expense);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ...expense,
       _id: result.insertedId,
     });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating expense:", error);
     return NextResponse.json(

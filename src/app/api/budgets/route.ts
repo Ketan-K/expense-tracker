@@ -5,6 +5,11 @@ import { NextResponse } from "next/server";
 import { validateBudget, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function GET(request: Request) {
   try {
@@ -42,7 +47,8 @@ export async function GET(request: Request) {
       .sort({ month: -1 })
       .toArray();
 
-    return NextResponse.json(budgets);
+    const response = NextResponse.json(budgets);
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching budgets:", error);
     return NextResponse.json(
@@ -94,7 +100,8 @@ export async function POST(request: Request) {
         { returnDocument: "after" }
       );
 
-      return NextResponse.json(result);
+      const response = NextResponse.json(result);
+      return addCorsHeaders(response, request.headers.get("origin"));
     }
 
     const budget: Budget = {
@@ -108,10 +115,11 @@ export async function POST(request: Request) {
 
     const result = await db.collection<Budget>("budgets").insertOne(budget);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ...budget,
       _id: result.insertedId,
     });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating budget:", error);
     return NextResponse.json(

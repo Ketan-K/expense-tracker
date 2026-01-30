@@ -5,6 +5,11 @@ import { NextResponse } from "next/server";
 import { validateQueryParams } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function GET(request: Request) {
   try {
@@ -62,12 +67,13 @@ export async function GET(request: Request) {
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
 
-    return new NextResponse(csv, {
+    const response = new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
         "Content-Disposition": `attachment; filename="expenses_${new Date().toISOString().split("T")[0]}.csv"`,
       },
     });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error exporting CSV:", error);
     return NextResponse.json(

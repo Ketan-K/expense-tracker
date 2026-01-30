@@ -5,6 +5,11 @@ import { NextResponse } from "next/server";
 import { validateCategory, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function GET(request: Request) {
   try {
@@ -36,10 +41,12 @@ export async function GET(request: Request) {
 
       await db.collection<Category>("categories").insertMany(defaultCategories);
 
-      return NextResponse.json(defaultCategories);
+      const response = NextResponse.json(defaultCategories);
+      return addCorsHeaders(response, request.headers.get("origin"));
     }
 
-    return NextResponse.json(categories);
+    const response = NextResponse.json(categories);
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching categories:", error);
     return NextResponse.json(
@@ -96,10 +103,11 @@ export async function POST(request: Request) {
 
     const result = await db.collection<Category>("categories").insertOne(category);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ...category,
       _id: result.insertedId,
     });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating category:", error);
     return NextResponse.json(

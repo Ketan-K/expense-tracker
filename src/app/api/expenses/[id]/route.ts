@@ -6,6 +6,11 @@ import { NextResponse } from "next/server";
 import { validateExpense, sanitizeObjectId } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
+import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+
+export async function OPTIONS(request: Request) {
+  return handleOptionsRequest(request);
+}
 
 export async function GET(
   request: Request,
@@ -40,7 +45,8 @@ export async function GET(
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    return NextResponse.json(expense);
+    const response = NextResponse.json(expense);
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching expense:", error);
     return NextResponse.json(
@@ -100,7 +106,8 @@ export async function PUT(
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    return NextResponse.json(result);
+    const response = NextResponse.json(result);
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating expense:", error);
     return NextResponse.json(
@@ -143,7 +150,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error deleting expense:", error);
     return NextResponse.json(
