@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/Providers";
 
@@ -47,13 +46,10 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
       >
         <Providers>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
-            <Toaster position="top-center" richColors />
-          </ThemeProvider>
+          {children}
+          <Toaster position="top-center" richColors />
         </Providers>
       </body>
     </html>

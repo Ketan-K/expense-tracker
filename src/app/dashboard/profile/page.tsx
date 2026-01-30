@@ -2,15 +2,13 @@
 
 import { useSession, signOut } from "next-auth/react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { User, Mail, LogOut, Moon, Sun, Database } from "lucide-react";
-import { useTheme } from "next-themes";
+import { User, Mail, LogOut, Database } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
 import { toast } from "sonner";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [dbStats, setDbStats] = useState({ expenses: 0, categories: 0 });
 
@@ -87,47 +85,6 @@ export default function ProfilePage() {
                 {session?.user?.email}
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Theme Toggle */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Appearance
-          </h3>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-              onClick={() => setTheme("light")}
-              className={`flex-1 py-3 sm:py-4 px-4 rounded-xl sm:rounded-2xl font-medium transition-all flex items-center justify-center gap-2 text-sm sm:text-base active:scale-95 cursor-pointer ${
-                theme === "light"
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
-              Light
-            </button>
-            <button
-              onClick={() => setTheme("dark")}
-              className={`flex-1 py-3 sm:py-4 px-4 rounded-xl sm:rounded-2xl font-medium transition-all flex items-center justify-center gap-2 text-sm sm:text-base active:scale-95 cursor-pointer ${
-                theme === "dark"
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
-              Dark
-            </button>
-            <button
-              onClick={() => setTheme("system")}
-              className={`flex-1 py-3 sm:py-4 px-4 rounded-xl sm:rounded-2xl font-medium transition-all flex items-center justify-center gap-2 text-sm sm:text-base active:scale-95 cursor-pointer ${
-                theme === "system"
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              System
-            </button>
           </div>
         </div>
 
