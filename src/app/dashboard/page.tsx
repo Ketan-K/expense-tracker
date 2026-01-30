@@ -1,259 +1,372 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { db } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import DashboardLayout from "@/components/DashboardLayout";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight
-} from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import ReportsClient from "@/components/reports/ReportsClient";
+import MonthSelector from "@/components/reports/MonthSelector";
+import BudgetCard from "@/components/budgets/BudgetCard";
+import BudgetFormModal from "@/components/budgets/BudgetFormModal";
+import FilterBar, { FilterState } from "@/components/filters/FilterBar";
+import ExportButtons from "@/components/reports/ExportButtons";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { useState, useMemo } from "react";
+import { Plus, Target } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [monthlyTotal, setMonthlyTotal] = useState(0);
-  const [categoryBreakdown, setCategoryBreakdown] = useState<Record<string, number>>({});
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    categories: [],
+    amountRange: null,
+    paymentMethods: [],
+    sortBy: "date-desc",
+  });
+  
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
+  const monthString = format(selectedMonth, "yyyy-MM");
 
+  // Fetch expenses from IndexedDB
   const expenses = useLiveQuery(
     async () => {
       if (!session?.user?.id) return [];
-      
-      const startDate = startOfMonth(new Date());
-      const endDate = endOfMonth(new Date());
       
       return await db.expenses
         .where("userId")
         .equals(session.user.id)
         .and((expense) => {
           const expenseDate = new Date(expense.date);
-          return expenseDate >= startDate && expenseDate <= endDate;
+          return expenseDate >= monthStart && expenseDate <= monthEnd;
         })
-        .reverse()
-        .sortBy("date");
+        .toArray();
     },
-    [session?.user?.id]
+    [session?.user?.id, monthStart.getTime(), monthEnd.getTime()]
   );
 
   const categories = useLiveQuery(
     async () => {
       if (!session?.user?.id) return [];
-      return await db.categories.where("userId").equals(session.user.id).toArray();
+      const allCategories = await db.categories.where("userId").equals(session.user.id).toArray();
+      
+      // Deduplicate by name - keep the first occurrence
+      const seen = new Map();
+      const uniqueCategories = allCategories.filter((cat) => {
+        if (seen.has(cat.name)) return false;
+        seen.set(cat.name, true);
+        return true;
+      });
+      
+      return uniqueCategories;
     },
     [session?.user?.id]
   );
 
-  useEffect(() => {
-    if (expenses) {
-      const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-      setMonthlyTotal(total);
+  // Fetch budgets for current month
+  const budgets = useLiveQuery(
+    async () => {
+      if (!session?.user?.id) return [];
+      return await db.budgets
+        .where("userId")
+        .equals(session.user.id)
+        .and((budget) => budget.month === monthString)
+        .toArray();
+    },
+    [session?.user?.id, monthString]
+  );
 
-      const breakdown = expenses.reduce((acc, expense) => {
-        acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-        return acc;
-      }, {} as Record<string, number>);
-      setCategoryBreakdown(breakdown);
+  // Process data for charts with filters applied
+  const { categoryData, dailyData, transactions, totalSpent, dailyAverage, filteredExpenses } = useMemo(() => {
+    if (!expenses || !categories) {
+      return {
+        categoryData: [],
+        dailyData: [],
+        transactions: [],
+        totalSpent: 0,
+        dailyAverage: 0,
+        filteredExpenses: [],
+      };
     }
-  }, [expenses]);
 
-  const recentExpenses = expenses?.slice(0, 5) || [];
-  const topCategories = Object.entries(categoryBreakdown)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
+    // Apply filters
+    let filtered = expenses;
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(
+        (e) => e.description?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Category filter
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter((e) => filters.categories.includes(e.category));
+    }
+
+    // Amount range filter
+    if (filters.amountRange) {
+      filtered = filtered.filter(
+        (e) =>
+          e.amount >= filters.amountRange!.min &&
+          e.amount <= filters.amountRange!.max
+      );
+    }
+
+    // Payment method filter
+    if (filters.paymentMethods.length > 0) {
+      filtered = filtered.filter((e) =>
+        filters.paymentMethods.includes(e.paymentMethod || "")
+      );
+    }
+
+    const categoryMap = new Map<string, { icon: string; color: string }>(
+      categories.map((cat) => [cat.name, { icon: cat.icon, color: cat.color }])
+    );
+
+    const categoryTotals = filtered.reduce((acc: Record<string, number>, expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({
+      name,
+      value,
+      color: categoryMap.get(name)?.color || "#6366f1",
+      icon: categoryMap.get(name)?.icon || "HelpCircle",
+    }));
+
+    // Calculate daily trend
+    const dailyTrend = filtered.reduce((acc: Record<string, number>, expense) => {
+      const day = format(new Date(expense.date), "MMM dd");
+      acc[day] = (acc[day] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const dailyData = Object.entries(dailyTrend)
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => {
+        const dateA = new Date(a.date + ", " + selectedMonth.getFullYear());
+        const dateB = new Date(b.date + ", " + selectedMonth.getFullYear());
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    // Prepare transactions list
+    let transactionsList = filtered
+      .map((expense) => ({
+        id: expense.id?.toString() || "",
+        amount: expense.amount,
+        category: expense.category,
+        categoryColor: categoryMap.get(expense.category)?.color || "#6366f1",
+        categoryIcon: categoryMap.get(expense.category)?.icon || "HelpCircle",
+        description: expense.description || "",
+        date: typeof expense.date === 'string' ? expense.date : expense.date.toISOString(),
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Apply sorting
+    if (filters.sortBy !== 'date-desc') {
+      switch (filters.sortBy) {
+        case 'date-asc':
+          transactionsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          break;
+        case 'amount-desc':
+          transactionsList.sort((a, b) => b.amount - a.amount);
+          break;
+        case 'amount-asc':
+          transactionsList.sort((a, b) => a.amount - b.amount);
+          break;
+        case 'category':
+          transactionsList.sort((a, b) => a.category.localeCompare(b.category));
+          break;
+      }
+    }
+
+    // Calculate stats
+    const totalSpent = filtered.reduce((sum, expense) => sum + expense.amount, 0);
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd }).length;
+    const dailyAverage = totalSpent / daysInMonth;
+
+    return { 
+      categoryData, 
+      dailyData, 
+      transactions: transactionsList, 
+      totalSpent, 
+      dailyAverage,
+      filteredExpenses: filtered 
+    };
+  }, [expenses, categories, monthStart, monthEnd, selectedMonth, filters]);
+
+  // Calculate budget data with spent amounts
+  const budgetData = useMemo(() => {
+    if (!budgets || !categories || !expenses) return [];
+
+    const categoryById = new Map(
+      categories.map((cat) => [cat.id, { name: cat.name, icon: cat.icon, color: cat.color }])
+    );
+
+    const categorySpending = expenses.reduce((acc: Record<string, number>, expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return budgets.map((budget) => {
+      const category = categoryById.get(budget.categoryId);
+      const categoryName = category?.name || "Unknown";
+      
+      return {
+        ...budget,
+        categoryName,
+        spent: categorySpending[categoryName] || 0,
+        icon: category?.icon || "HelpCircle",
+        color: category?.color || "#6366f1",
+      };
+    });
+  }, [budgets, categories, expenses]);
+
+  // Show budget warnings
+  useMemo(() => {
+    budgetData.forEach((budget) => {
+      const percentage = (budget.spent / budget.amount) * 100;
+      if (percentage >= 100 && budget.spent !== 0) {
+        toast.error(`Budget exceeded for ${budget.categoryName}!`, {
+          id: `budget-${budget.categoryName}`,
+        });
+      } else if (percentage >= 90 && percentage < 100) {
+        toast.warning(`${budget.categoryName} budget at ${percentage.toFixed(0)}%`, {
+          id: `budget-${budget.categoryName}`,
+        });
+      }
+    });
+  }, [budgetData]);
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 sm:space-y-8">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Dashboard
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-            {format(new Date(), "MMMM yyyy")}
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Total Spent */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
-                  Total Spent
-                </p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-1 sm:mt-2">
-                  ₹{monthlyTotal.toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg">
-                <Wallet className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8 gap-4 sm:gap-6">
+          <div className="flex-1">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+              Dashboard
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+              Track your expenses and manage your budget
+            </p>
           </div>
-
-          {/* Transactions */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
-                  Transactions
-                </p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-1 sm:mt-2">
-                  {expenses?.length || 0}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg">
-                <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-            </div>
-          </div>
-
-          {/* Categories */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:scale-105 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
-                  Categories
-                </p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-1 sm:mt-2">
-                  {Object.keys(categoryBreakdown).length}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg">
-                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-            </div>
+          <div className="flex items-center">
+            <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
           </div>
         </div>
 
-        {/* Top Categories */}
-        {topCategories.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">
-              Top Spending Categories
-            </h2>
-            <div className="space-y-5 sm:space-y-6">
-              {topCategories.map(([category, amount]) => {
-                const percentage = (amount / monthlyTotal) * 100;
-                const categoryInfo = categories?.find((c) => c.name === category);
-                
-                return (
-                  <div key={category}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: categoryInfo?.color || "#6b7280" }}
-                        />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {category}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                          ₹{amount.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {percentage.toFixed(1)}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${percentage}%`,
-                          backgroundColor: categoryInfo?.color || "#6b7280",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Budgets Section */}
+        {budgetData.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Monthly Budgets
+              </h2>
+              <button
+                onClick={() => setShowBudgetModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Budget
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {budgetData.map((budget) => (
+                <BudgetCard
+                  key={budget.id}
+                  categoryName={budget.categoryName}
+                  categoryIcon={budget.icon}
+                  categoryColor={budget.color}
+                  budgetAmount={budget.amount}
+                  spentAmount={budget.spent}
+                />
+              ))}
             </div>
           </div>
         )}
 
-        {/* Recent Transactions */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-              Recent Transactions
-            </h2>
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
-            >
-              View all
-            </button>
-          </div>
-          
-          {recentExpenses.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                <Wallet className="w-8 h-8 text-gray-400" />
+        {/* Set Budget Button - Show when no budgets */}
+        {budgetData.length === 0 && (
+          <div className="mb-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border-2 border-indigo-200 dark:border-indigo-800 shadow-lg hover:shadow-xl transition-all">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Target className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                </div>
               </div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">
-                No expenses yet. Start tracking!
-              </p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Start Managing Your Budget
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Set spending limits for each category and get real-time alerts when you're approaching your budget. Stay in control of your finances!
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Track spending
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                    Get alerts
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    Save money
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBudgetModal(true)}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl sm:rounded-2xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-98 text-base"
+              >
+                <Plus className="w-5 h-5" />
+                Set Your First Budget
+              </button>
             </div>
-          ) : (
-            <div className="space-y-2 sm:space-y-3">
-              {recentExpenses.map((expense) => {
-                const categoryInfo = categories?.find(
-                  (c) => c.name === expense.category
-                );
+          </div>
+        )}
 
-                return (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-all duration-200 hover:shadow-md active:scale-98 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
-                        style={{
-                          backgroundColor: `${categoryInfo?.color || "#6b7280"}20`,
-                        }}
-                      >
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: categoryInfo?.color || "#6b7280" }}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                          {expense.category}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {format(new Date(expense.date), "MMM dd, yyyy")}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right ml-2 flex-shrink-0">
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                        ₹{expense.amount.toFixed(2)}
-                      </p>
-                      {expense.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[100px] sm:max-w-[150px] truncate">
-                          {expense.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        {/* Filter Bar */}
+        <div className="mb-6">
+          <FilterBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableCategories={categories?.map((c) => c.name) || []}
+          />
         </div>
+
+        <ReportsClient
+          categoryData={categoryData}
+          dailyData={dailyData}
+          transactions={transactions}
+          totalSpent={totalSpent}
+          dailyAverage={dailyAverage}
+          selectedMonth={selectedMonth}
+        />
       </div>
+
+      {/* Budget Form Modal */}
+      <BudgetFormModal
+        isOpen={showBudgetModal}
+        onClose={() => setShowBudgetModal(false)}
+        categories={categories || []}
+        currentMonth={selectedMonth}
+        onBudgetAdded={() => {
+          // Budgets will auto-refresh via useLiveQuery
+        }}
+      />
     </DashboardLayout>
   );
 }

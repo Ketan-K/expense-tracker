@@ -1,0 +1,106 @@
+"use client";
+
+import { getIconComponent } from "@/lib/types";
+import { calculateBudgetStatus } from "@/lib/budgetUtils";
+import { AlertCircle, TrendingUp } from "lucide-react";
+
+interface BudgetCardProps {
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  budgetAmount: number;
+  spentAmount: number;
+}
+
+export default function BudgetCard({
+  categoryName,
+  categoryIcon,
+  categoryColor,
+  budgetAmount,
+  spentAmount,
+}: BudgetCardProps) {
+  const Icon = getIconComponent(categoryIcon);
+  const { percentage, status, color, bgColor } = calculateBudgetStatus(
+    spentAmount,
+    budgetAmount
+  );
+
+  const remaining = budgetAmount - spentAmount;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: categoryColor }}
+          >
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {categoryName}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              ₹{spentAmount.toFixed(2)} of ₹{budgetAmount.toFixed(2)}
+            </p>
+          </div>
+        </div>
+        {status === 'exceeded' || status === 'danger' ? (
+          <AlertCircle className={`w-5 h-5 ${color}`} />
+        ) : null}
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-3">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+          <div
+            className={`h-2.5 ${bgColor} transition-all duration-500`}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="flex items-center justify-between text-sm">
+        <div>
+          <span className={`font-semibold ${color}`}>
+            {percentage.toFixed(1)}%
+          </span>
+          <span className="text-gray-500 dark:text-gray-400 ml-1">used</span>
+        </div>
+        <div className="text-right">
+          <span className={`font-semibold ${remaining >= 0 ? 'text-gray-900 dark:text-white' : color}`}>
+            ₹{Math.abs(remaining).toFixed(2)}
+          </span>
+          <span className="text-gray-500 dark:text-gray-400 ml-1">
+            {remaining >= 0 ? 'left' : 'over'}
+          </span>
+        </div>
+      </div>
+
+      {/* Warning Messages */}
+      {status === 'exceeded' && (
+        <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+            Budget exceeded by ₹{Math.abs(remaining).toFixed(2)}!
+          </p>
+        </div>
+      )}
+      {status === 'danger' && percentage < 100 && (
+        <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+            {(100 - percentage).toFixed(1)}% remaining - slow down spending
+          </p>
+        </div>
+      )}
+      {status === 'warning' && (
+        <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+          <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+            Approaching limit - {(100 - percentage).toFixed(1)}% remaining
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

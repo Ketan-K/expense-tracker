@@ -62,6 +62,19 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db();
 
+    // Check if category with this name already exists for this user
+    const existingCategory = await db.collection<Category>("categories").findOne({
+      userId: session.user.id,
+      name: { $regex: new RegExp(`^${name}$`, 'i') } // Case-insensitive match
+    });
+
+    if (existingCategory) {
+      return NextResponse.json(
+        { error: "A category with this name already exists" },
+        { status: 409 }
+      );
+    }
+
     const category: Category = {
       userId: session.user.id,
       name,

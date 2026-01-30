@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Plus, BarChart3, User, Wallet } from "lucide-react";
+import { Home, Plus, User, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,8 +13,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
-    { href: "/dashboard/add", icon: Plus, label: "Add" },
-    { href: "/dashboard/reports", icon: BarChart3, label: "Reports" },
+    { href: "/dashboard/add", icon: Plus, label: "Add", isMain: true },
     { href: "/dashboard/profile", icon: User, label: "Profile" },
   ];
 
@@ -41,25 +40,47 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Bottom Navigation (Mobile) */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 z-50">
-        <div className="grid grid-cols-4 gap-1 px-2 py-3 safe-area-inset-bottom">
+        <div className="flex items-center justify-center gap-4 px-4 py-3 safe-area-inset-bottom">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
+            const isMainAction = item.isMain;
+
+            if (isMainAction) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="relative -mt-8"
+                >
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 active:scale-95 transition-transform">
+                    <Icon className="w-8 h-8 text-white" strokeWidth={2.5} />
+                  </div>
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                  )}
+                </Link>
+              );
+            }
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 ${
-                  isActive
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+                className="flex-1 max-w-[120px]"
               >
-                <Icon className={`w-6 h-6 ${isActive ? "" : "opacity-70"}`} />
-                <span className={`text-xs mt-1 font-medium ${isActive ? "" : "opacity-70"}`}>
-                  {item.label}
-                </span>
+                <div
+                  className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl transition-all duration-200 active:scale-95 ${
+                    isActive
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-gray-600 dark:text-gray-400"
+                  }`}
+                >
+                  <Icon className={`w-6 h-6 ${isActive ? "" : "opacity-70"}`} />
+                  <span className={`text-xs mt-1 font-medium ${isActive ? "" : "opacity-70"}`}>
+                    {item.label}
+                  </span>
+                </div>
               </Link>
             );
           })}

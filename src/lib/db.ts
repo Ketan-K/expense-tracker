@@ -54,7 +54,7 @@ export class ExpenseTrackerDB extends Dexie {
     
     this.version(1).stores({
       expenses: "id, userId, date, category, synced, lastModified",
-      categories: "id, userId, name, synced",
+      categories: "id, [userId+name], userId, name, synced",
       budgets: "id, userId, categoryId, month, synced",
       syncQueue: "++id, status, timestamp, collection",
     });

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Sample Data - Expense Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: white;
+    }
+    h1 { margin-bottom: 20px; }
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 20px;
+      margin: 20px 0;
+      backdrop-filter: blur(10px);
+    }
+    button {
+      background: white;
+      color: #6366f1;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      margin: 10px 5px;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: scale(1.05);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .success {
+      background: #10b981;
+      color: white;
+    }
+    .error {
+      background: #ef4444;
+      color: white;
+    }
+    pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .instructions {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Sample Data Generator</h1>
+  
+  <div class="instructions">
+    <h2>Instructions:</h2>
+    <ol>
+      <li>Make sure you're logged in to the Expense Tracker app</li>
+      <li>Click "Generate Sample Data" to create 50 sample expenses for January 2026</li>
+      <li>The data will be added to your IndexedDB</li>
+      <li>Refresh the dashboard to see the results</li>
+      <li>Use "Clear Sample Data" to remove all data if needed</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>Sample Data Generator</h3>
+    <p>This will create realistic sample expenses for testing:</p>
+    <ul>
+      <li>50 random expenses throughout January 2026</li>
+      <li>Various categories (Grocery, Snacks, Fruits, Transport, etc.)</li>
+      <li>Random amounts between ₹50 and ₹5000</li>
+      <li>Different payment methods (cash, card, UPI)</li>
+      <li>Some expenses with descriptions</li>
+    </ul>
+    
+    <button onclick="generateSampleData()" id="generateBtn">Generate Sample Data</button>
+    <button onclick="clearAllData()" id="clearBtn" class="error">Clear All Data</button>
+    
+    <div id="status" style="margin-top: 20px;"></div>
+    <pre id="output" style="display: none;"></pre>
+  </div>
+
+  <script>
+    const SAMPLE_DATA = {
+      categories: [
+        "Grocery", "Snacks", "Fruits", "Savings", "Investments",
+        "Transport", "Car Petrol", "Car Toll", "Entertainment",
+        "Bills", "Health"
+      ],
+      descriptions: {
+        "Grocery": ["Weekly groceries", "Vegetables and fruits", "Monthly stock", ""],
+        "Snacks": ["Evening snacks", "Office snacks", "Movie snacks", ""],
+        "Fruits": ["Fresh fruits", "Seasonal fruits", "Apple and bananas", ""],
+        "Transport": ["Metro fare", "Auto ride", "Bus ticket", ""],
+        "Car Petrol": ["Fuel refill", "Petrol pump", ""],
+        "Car Toll": ["Highway toll", "Bridge toll", ""],
+        "Entertainment": ["Movie tickets", "Concert", "Gaming", ""],
+        "Bills": ["Electricity bill", "Internet bill", "Mobile recharge", ""],
+        "Health": ["Medicines", "Doctor visit", "Gym membership", ""],
+      },
+      paymentMethods: ["cash", "card", "upi"]
+    };
+
+    function getRandomDate() {
+      const day = Math.floor(Math.random() * 30) + 1;
+      return new Date(2026, 0, day); // January 2026
+    }
+
+    function getRandomAmount(category) {
+      const ranges = {
+        "Grocery": [500, 2500],
+        "Snacks": [50, 500],
+        "Fruits": [100, 800],
+        "Savings": [1000, 5000],
+        "Investments": [2000, 10000],
+        "Transport": [30, 300],
+        "Car Petrol": [1000, 3000],
+        "Car Toll": [50, 200],
+        "Entertainment": [200, 1500],
+        "Bills": [500, 3000],
+        "Health": [200, 2000],
+      };
+      const [min, max] = ranges[category] || [50, 1000];
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function getRandomElement(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    async function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('ExpenseTrackerDB');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function getUserId() {
+      try {
+        // Try to get from session storage or make an API call
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const session = await response.json();
+          return session?.user?.id;
+        }
+      } catch (error) {
+        console.error('Could not get user ID:', error);
+      }
+      
+      // Fallback: generate a temporary ID or use a default
+      return prompt("Enter your user ID (check browser DevTools > Application > IndexedDB > categories):");
+    }
+
+    async function generateSampleData() {
+      const btn = document.getElementById('generateBtn');
+      const status = document.getElementById('status');
+      const output = document.getElementById('output');
+      
+      btn.disabled = true;
+      status.innerHTML = '<p>Generating sample data...</p>';
+      output.style.display = 'none';
+
+      try {
+        const userId = await getUserId();
+        if (!userId) {
+          throw new Error('User ID is required');
+        }
+
+        const db = await openDatabase();
+        const transaction = db.transaction(['expenses'], 'readwrite');
+        const store = transaction.objectStore('expenses');
+        
+        const expenses = [];
+        
+        // Generate 50 random expenses
+        for (let i = 0; i < 50; i++) {
+          const category = getRandomElement(SAMPLE_DATA.categories);
+          const descriptions = SAMPLE_DATA.descriptions[category] || [""];
+          
+          const expense = {
+            id: `sample-${Date.now()}-${i}`,
+            userId: userId,
+            date: getRandomDate(),
+            amount: getRandomAmount(category),
+            category: category,
+            description: getRandomElement(descriptions),
+            paymentMethod: getRandomElement(SAMPLE_DATA.paymentMethods),
+            synced: false,
+            lastModified: new Date(),
+          };
+          
+          store.add(expense);
+          expenses.push(expense);
+        }
+
+        await new Promise((resolve, reject) => {
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error);
+        });
+
+        db.close();
+
+        status.innerHTML = `
+          <p class="success" style="padding: 15px; border-radius: 8px; margin-top: 10px;">
+            ✅ Successfully generated ${expenses.length} sample expenses!
+          </p>
+          <p style="margin-top: 10px;">
+            Total Amount: ₹${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}<br>
+            Date Range: January 1-30, 2026
+          </p>
+        `;
+        
+        output.style.display = 'block';
+        output.textContent = JSON.stringify(expenses.slice(0, 5), null, 2) + '\n\n... and 45 more';
+        
+        setTimeout(() => {
+          if (confirm('Sample data created! Would you like to refresh the page to see the results?')) {
+            window.location.href = '/dashboard';
+          }
+        }, 1000);
+
+      } catch (error) {
+        console.error('Error:', error);
+        status.innerHTML = `
+          <p class="error" style="padding: 15px; border-radius: 8px;">
+            ❌ Error: ${error.message}
+          </p>
+        `;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function clearAllData() {
+      if (!confirm('Are you sure you want to delete ALL expenses? This cannot be undone!')) {
+        return;
+      }
+
+      const btn = document.getElementById('clearBtn');
+      const status = document.getElementById('status');
+      
+      btn.disabled = true;
+      status.innerHTML = '<p>Clearing all data...</p>';
+
+      try {
+        const db = await openDatabase();
+        const transaction = db.transaction(['expenses'], 'readwrite');
+        const store = transaction.objectStore('expenses');
+        
+        store.clear();
+
+        await new Promise((resolve, reject) => {
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error);
+        });
+
+        db.close();
+
+        status.innerHTML = `
+          <p class="success" style="padding: 15px; border-radius: 8px; margin-top: 10px;">
+            ✅ All expenses cleared!
+          </p>
+        `;
+
+        setTimeout(() => {
+          if (confirm('Data cleared! Refresh the page?')) {
+            window.location.href = '/dashboard';
+          }
+        }, 1000);
+
+      } catch (error) {
+        console.error('Error:', error);
+        status.innerHTML = `
+          <p class="error" style="padding: 15px; border-radius: 8px;">
+            ❌ Error: ${error.message}
+          </p>
+        `;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
