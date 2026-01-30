@@ -251,8 +251,8 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8 gap-4 sm:gap-6">
-          <div className="flex-1">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 lg:mb-8 gap-3 sm:gap-4 lg:gap-6">
+          <div className="hidden sm:block flex-1">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
               Dashboard
             </h1>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
               Track your expenses and manage your budget
             </p>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center w-full sm:w-auto">
             <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
           </div>
         </div>

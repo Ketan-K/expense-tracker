@@ -53,7 +53,7 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
-        <div>
+        <div className="hidden sm:block">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Profile & Settings
           </h1>

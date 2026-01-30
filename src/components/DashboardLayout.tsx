@@ -6,9 +6,10 @@ import { usePathname } from "next/navigation";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  pageTitle?: string;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
   const pathname = usePathname();
 
   const navItems = [
@@ -16,6 +17,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/dashboard/add", icon: Plus, label: "Add", isMain: true },
     { href: "/dashboard/profile", icon: User, label: "Profile" },
   ];
+
+  // Get page title from pathname if not provided
+  const getPageTitle = () => {
+    if (pageTitle) return pageTitle;
+    if (pathname === "/dashboard") return "Dashboard";
+    if (pathname === "/dashboard/add") return "Add Expense";
+    if (pathname === "/dashboard/profile") return "Profile";
+    return "Expense Tracker";
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
@@ -26,8 +36,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
               <Wallet className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-              Expense Tracker
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              {getPageTitle()}
             </h1>
           </div>
         </div>
@@ -39,51 +49,84 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </main>
 
       {/* Bottom Navigation (Mobile) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 z-50">
-        <div className="flex items-center justify-center gap-4 px-4 py-3 safe-area-inset-bottom">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            const isMainAction = item.isMain;
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
+        {/* Backdrop with gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-gray-900 dark:via-gray-900/95 dark:to-transparent"></div>
+        
+        {/* Navigation Bar */}
+        <div className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+          <div className="flex items-end justify-around px-2 pb-safe-area">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              const isMainAction = item.isMain;
 
-            if (isMainAction) {
+              if (isMainAction) {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="relative flex flex-col items-center -mt-6 px-6"
+                  >
+                    <div className={`relative w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 ${
+                      isActive 
+                        ? 'shadow-indigo-500/50 scale-105' 
+                        : 'shadow-indigo-500/30 hover:scale-105 active:scale-95'
+                    }`}>
+                      <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
+                      {isActive && (
+                        <div className="absolute -inset-1 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-md opacity-50 -z-10"></div>
+                      )}
+                    </div>
+                    <span className={`text-[10px] font-semibold mt-1.5 transition-all duration-200 ${
+                      isActive 
+                        ? 'text-indigo-600 dark:text-indigo-400 scale-105' 
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative -mt-8"
+                  className="relative flex flex-col items-center py-3 px-6 min-w-[70px] group"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 active:scale-95 transition-transform">
-                    <Icon className="w-8 h-8 text-white" strokeWidth={2.5} />
+                  <div className={`relative transition-all duration-300 ${
+                    isActive ? 'scale-110' : 'group-active:scale-90'
+                  }`}>
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-xl blur-lg"></div>
+                    )}
+                    <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-gradient-to-br from-indigo-500/10 to-purple-600/10 dark:from-indigo-500/20 dark:to-purple-600/20' 
+                        : 'group-hover:bg-gray-100 dark:group-hover:bg-gray-800'
+                    }`}>
+                      <Icon className={`w-5 h-5 transition-all duration-300 ${
+                        isActive 
+                          ? 'text-indigo-600 dark:text-indigo-400' 
+                          : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                      }`} strokeWidth={isActive ? 2.5 : 2} />
+                    </div>
                   </div>
+                  <span className={`text-[10px] font-semibold mt-1 transition-all duration-200 ${
+                    isActive 
+                      ? 'text-indigo-600 dark:text-indigo-400 scale-105' 
+                      : 'text-gray-500 dark:text-gray-400 scale-95 group-hover:scale-100'
+                  }`}>
+                    {item.label}
+                  </span>
                   {isActive && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                    <div className="absolute -top-px left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-indigo-600 to-transparent rounded-full"></div>
                   )}
                 </Link>
               );
-            }
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex-1 max-w-[120px]"
-              >
-                <div
-                  className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl transition-all duration-200 active:scale-95 ${
-                    isActive
-                      ? "text-indigo-600 dark:text-indigo-400"
-                      : "text-gray-600 dark:text-gray-400"
-                  }`}
-                >
-                  <Icon className={`w-6 h-6 ${isActive ? "" : "opacity-70"}`} />
-                  <span className={`text-xs mt-1 font-medium ${isActive ? "" : "opacity-70"}`}>
-                    {item.label}
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
+            })}
+          </div>
         </div>
       </nav>
 
