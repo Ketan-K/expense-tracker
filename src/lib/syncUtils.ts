@@ -71,9 +71,6 @@ export async function processSyncQueue(userId: string): Promise<{
     return stats;
   }
 
-  // Show loading toast
-  toast.loading(`Syncing ${itemsToProcess.length} items...`, { id: "sync" });
-
   for (const item of itemsToProcess) {
     // Skip if already exceeded max retries
     if (item.retryCount >= MAX_RETRIES) {
@@ -165,10 +162,8 @@ export async function processSyncQueue(userId: string): Promise<{
     }
   }
 
-  // Update toast based on results
-  if (stats.success > 0 && stats.failed === 0) {
-    toast.success(`Synced ${stats.success} items`, { id: "sync" });
-  } else if (stats.failed > 0) {
+  // Update toast based on results - only show errors, success is silent
+  if (stats.failed > 0) {
     toast.error(`Failed to sync ${stats.failed} items`, { id: "sync" });
   } else {
     toast.dismiss("sync");

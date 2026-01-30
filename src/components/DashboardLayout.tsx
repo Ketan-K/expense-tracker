@@ -45,15 +45,34 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+      {/* Animated Money Background */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.02] overflow-hidden">
+        {['₹', '$', 'Budget', 'Save', '₹', '$', 'Track', 'Spend', '₹', '$', 'Invest', 'Earn', '₹', '$', 'Money', 'Growth', '₹', '$', 'Profit', 'Goals'].map((item, i) => (
+          <div
+            key={i}
+            className="absolute font-mono text-indigo-600 dark:text-purple-400"
+            style={{
+              left: `${(i * 7) % 100}%`,
+              top: `${(i * 13) % 100}%`,
+              fontSize: item.length > 2 ? '1.5rem' : '2rem',
+              animation: `float ${15 + (i % 5) * 3}s ease-in-out infinite`,
+              animationDelay: `${i * 0.5}s`,
+            }}
+          >
+            {item}
+          </div>
+        ))}
+      </div>
+      
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-50">
+      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left duration-500">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
               <Wallet className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
               {getPageTitle()}
             </h1>
           </div>

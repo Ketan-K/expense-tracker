@@ -8,17 +8,22 @@ import ReportsClient from "@/components/reports/ReportsClient";
 import MonthSelector from "@/components/reports/MonthSelector";
 import BudgetCard from "@/components/budgets/BudgetCard";
 import BudgetFormModal from "@/components/budgets/BudgetFormModal";
+import EditExpenseModal from "@/components/EditExpenseModal";
 import FilterBar, { FilterState } from "@/components/filters/FilterBar";
 import ExportButtons from "@/components/reports/ExportButtons";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Plus, Target } from "lucide-react";
 import { toast } from "sonner";
+import { processSyncQueue } from "@/lib/syncUtils";
+import { LocalExpense } from "@/lib/db";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<LocalExpense | null>(null);
+  const [financeTip, setFinanceTip] = useState("Track your expenses, master your money");
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     categories: [],
@@ -30,6 +35,23 @@ export default function DashboardPage() {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
   const monthString = format(selectedMonth, "yyyy-MM");
+
+  // Fetch finance tip on mount
+  useEffect(() => {
+    const fetchFinanceTip = async () => {
+      try {
+        const response = await fetch('/api/finance-tip');
+        const data = await response.json();
+        if (data.tip) {
+          setFinanceTip(data.tip);
+        }
+      } catch (error) {
+        console.error("Error fetching finance tip:", error);
+      }
+    };
+
+    fetchFinanceTip();
+  }, []);
 
   // Fetch expenses from IndexedDB
   const expenses = useLiveQuery(
@@ -265,21 +287,75 @@ export default function DashboardPage() {
     });
   }, [budgetData]);
 
+  const handleEditTransaction = useCallback(async (transaction: { id: string; amount: number; category: string; description: string; date: string }) => {
+    if (!session?.user?.id) return;
+    
+    const expense = await db.expenses.get(transaction.id);
+    if (expense) {
+      setEditingExpense(expense);
+    }
+  }, [session?.user?.id]);
+
+  const handleDeleteTransaction = useCallback(async (id: string) => {
+    if (!session?.user?.id) return;
+    
+    try {
+      // Delete from IndexedDB
+      await db.expenses.delete(id);
+      
+      // Add to sync queue
+      await db.syncQueue.add({
+        action: "DELETE",
+        collection: "expenses",
+        data: { _id: id },
+        timestamp: Date.now(),
+        retryCount: 0,
+        status: "pending",
+        localId: id,
+      });
+      
+      toast.success("Transaction deleted");
+      
+      // Trigger background sync
+      processSyncQueue(session.user.id).catch(console.error);
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast.error("Failed to delete transaction");
+    }
+  }, [session?.user?.id]);
+
   if (!session) {
     return null;
   }
 
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const userName = session.user?.name?.split(' ')[0] || 'there';
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 lg:mb-8 gap-3 sm:gap-4 lg:gap-6">
+      <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
+        {/* Greeting Section */}
+        <div className="mb-6 animate-in slide-in-from-top duration-500">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+            {getGreeting()}, {userName}! 👋
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 italic">
+            "{financeTip}"
+          </p>
+        </div>
+
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4 lg:gap-6 animate-in slide-in-from-top duration-700 delay-100">
           <div className="hidden sm:block flex-1">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-              Dashboard
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-              Track your expenses and manage your budget
-            </p>
+            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">
+              Overview
+            </h2>
           </div>
           <div className="flex items-center w-full sm:w-auto">
             <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
@@ -288,7 +364,7 @@ export default function DashboardPage() {
 
         {/* Budgets Section */}
         {budgetData.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-6 animate-in slide-in-from-bottom duration-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Target className="w-5 h-5" />
@@ -303,7 +379,7 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {budgetData.map((budget) => (
+              {budgetData.map((budget, index) => (
                 <BudgetCard
                   key={budget._id}
                   categoryName={budget.categoryName}
@@ -319,43 +395,43 @@ export default function DashboardPage() {
 
         {/* Set Budget Button - Show when no budgets */}
         {budgetData.length === 0 && (
-          <div className="mb-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border-2 border-indigo-200 dark:border-indigo-800 shadow-lg hover:shadow-xl transition-all">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+          <div className="mb-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 rounded-2xl p-4 border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
+            <div className="flex items-start gap-3 mb-3">
               <div className="flex-shrink-0">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Target className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Target className="w-6 h-6 text-white" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">
                   Start Managing Your Budget
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Set spending limits for each category and get real-time alerts when you're approaching your budget. Stay in control of your finances!
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                  Set spending limits and get alerts when approaching your budget.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    Track spending
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    Track
                   </span>
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                    Get alerts
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
+                    Alerts
                   </span>
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                    Save money
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/60 dark:bg-gray-700/60 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    Save
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => setShowBudgetModal(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl sm:rounded-2xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-98 text-base"
-              >
-                <Plus className="w-5 h-5" />
-                Set Your First Budget
-              </button>
             </div>
+            <button
+              onClick={() => setShowBudgetModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-95 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Set Your First Budget
+            </button>
           </div>
         )}
 
@@ -375,6 +451,8 @@ export default function DashboardPage() {
           totalSpent={totalSpent}
           dailyAverage={dailyAverage}
           selectedMonth={selectedMonth}
+          onEditTransaction={handleEditTransaction}
+          onDeleteTransaction={handleDeleteTransaction}
         />
       </div>
 
@@ -387,6 +465,14 @@ export default function DashboardPage() {
         onBudgetAdded={() => {
           // Budgets will auto-refresh via useLiveQuery
         }}
+      />
+
+      {/* Edit Expense Modal */}
+      <EditExpenseModal
+        expense={editingExpense}
+        isOpen={!!editingExpense}
+        onClose={() => setEditingExpense(null)}
+        categories={categories || []}
       />
     </DashboardLayout>
   );

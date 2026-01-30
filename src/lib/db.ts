@@ -63,10 +63,10 @@ export class ExpenseTrackerDB extends Dexie {
   syncMetadata!: Table<SyncMetadata, string>;
 
   constructor() {
-    super("ExpenseTrackerDB");
+    super("ExpenseTrackerDB_v2");
     
-    // Version 3: Complete schema refresh with _id, timestamps, and syncMetadata
-    this.version(3).stores({
+    // Version 1: Fresh schema with _id, timestamps, and syncMetadata
+    this.version(1).stores({
       expenses: "_id, userId, date, category, synced, createdAt, updatedAt",
       categories: "_id, &[userId+name], userId, name, synced, createdAt",
       budgets: "_id, userId, categoryId, month, synced, createdAt, updatedAt",

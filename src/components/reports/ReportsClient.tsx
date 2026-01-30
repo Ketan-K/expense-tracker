@@ -40,6 +40,8 @@ interface ReportsClientProps {
   dailyAverage: number;
   selectedMonth: Date;
   initialView?: "overview" | "trends" | "transactions";
+  onEditTransaction?: (transaction: Transaction) => void;
+  onDeleteTransaction?: (id: string) => void;
 }
 
 export default function ReportsClient({
@@ -50,6 +52,8 @@ export default function ReportsClient({
   dailyAverage,
   selectedMonth,
   initialView = "overview",
+  onEditTransaction,
+  onDeleteTransaction,
 }: ReportsClientProps) {
   const [activeView, setActiveView] = useState<"overview" | "trends" | "transactions">(initialView);
   useEffect(() => {
@@ -93,7 +97,11 @@ export default function ReportsClient({
           <div className="flex justify-end">
             <ExportButtons selectedMonth={selectedMonth} />
           </div>
-          <TransactionsList transactions={transactions} />
+          <TransactionsList 
+            transactions={transactions} 
+            onEdit={onEditTransaction}
+            onDelete={onDeleteTransaction}
+          />
         </div>
       )}
     </div>

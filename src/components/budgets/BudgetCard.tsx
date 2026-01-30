@@ -28,7 +28,7 @@ export default function BudgetCard({
   const remaining = budgetAmount - spentAmount;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700">
+    <div className="bg-gradient-to-br from-white via-gray-50 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-indigo-900/10 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-in fade-in slide-in-from-bottom duration-500">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div

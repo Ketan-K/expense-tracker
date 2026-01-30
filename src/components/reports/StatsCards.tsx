@@ -34,19 +34,27 @@ export default function StatsCards({ totalSpent, dailyAverage, categoryCount }: 
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {stats.map((stat) => {
+    <div className="grid grid-cols-3 gap-2 sm:gap-4 animate-in fade-in duration-500">
+      {stats.map((stat, index) => {
         const Icon = stat.icon;
+        const gradients = [
+          "from-indigo-500 via-purple-500 to-purple-600",
+          "from-pink-500 via-rose-500 to-rose-600",
+          "from-amber-500 via-orange-500 to-orange-600"
+        ];
         return (
           <div
             key={stat.label}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700"
+            className={`bg-gradient-to-br ${gradients[index]} rounded-xl p-3 sm:p-4 shadow-lg text-white hover:shadow-2xl transition-all duration-300 hover:scale-105 animate-in slide-in-from-bottom duration-500`}
+            style={{ animationDelay: `${index * 100}ms` }}
           >
-            <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center mb-3`}>
-              <Icon className={`w-5 h-5 ${stat.color}`} />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 sm:mb-3">
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stat.value}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
+            <p className="text-base sm:text-xl lg:text-2xl font-bold mb-1 truncate" title={stat.value}>
+              {stat.value}
+            </p>
+            <p className="text-xs sm:text-sm opacity-90 truncate">{stat.label}</p>
           </div>
         );
       })}
