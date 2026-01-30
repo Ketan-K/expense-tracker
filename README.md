@@ -75,20 +75,95 @@ Generate NEXTAUTH_SECRET: `openssl rand -base64 32`
 
 ```bash
 npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+expense-tracker/
+├── src/
+│   ├── app/                  # Next.js App Router pages
+│   │   ├── api/             # API routes
+│   │   ├── auth/            # Authentication pages
+│   │   └── dashboard/       # Dashboard pages
+│   ├── components/          # React components
+│   ├── lib/                 # Utilities and database
+│   └── auth.ts             # NextAuth configuration
+├── public/                  # Static assets
+└── docs/                    # Documentation
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [SETUP.md](SETUP.md) - Detailed setup instructions
+- [QUICKSTART.md](QUICKSTART.md) - 5-minute getting started guide
+- [IMPLEMENTATION.md](IMPLEMENTATION.md) - Complete feature list and architecture
+- [CHECKLIST.md](CHECKLIST.md) - Pre-launch testing checklist
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Vercel (Recommended)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push your code to GitHub
+2. Import your repository on [Vercel](https://vercel.com)
+3. Add environment variables in Vercel dashboard
+4. Deploy!
+
+**Note**: Update Google OAuth redirect URIs with your Vercel domain.
+
+### Other Platforms
+
+The app can be deployed to any platform that supports Next.js:
+- Netlify
+- Railway
+- Render
+- DigitalOcean App Platform
+
+## Usage
+
+1. **Sign In** - Use your Google account to authenticate
+2. **Add Expenses** - Track daily transactions with categories
+3. **View Dashboard** - See spending overview and statistics
+4. **Generate Reports** - Analyze spending patterns with charts
+5. **Export Data** - Download CSV or Excel reports
+6. **Offline Mode** - Add expenses offline, auto-syncs when online
+
+## Features in Detail
+
+### Offline-First Architecture
+- All data stored locally in IndexedDB
+- Automatic background sync when connection restored
+- Optimistic UI updates for instant feedback
+
+### Reports & Analytics
+- Monthly spending breakdown
+- Category-wise distribution (pie charts)
+- Transaction history with filters
+- Export to CSV/Excel
+
+### PWA Support
+- Install as native app on mobile/desktop
+- Offline functionality
+- Push notifications (future feature)
+- Background sync
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For issues and questions, please create an issue on GitHub.
+
+## Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- Styled with [Tailwind CSS](https://tailwindcss.com/)
+- Icons by [Lucide](https://lucide.dev/)
+- Charts by [Recharts](https://recharts.org/)
