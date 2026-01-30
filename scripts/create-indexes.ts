@@ -4,10 +4,11 @@ import dotenv from "dotenv";
 // Load environment variables
 dotenv.config({ path: ".env.local" });
 
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI!;
 
 if (!uri) {
   throw new Error("MONGODB_URI environment variable not set");
+  process.exit(1);
 }
 
 async function createIndexes() {
