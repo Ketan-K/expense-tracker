@@ -187,12 +187,12 @@ export default function DashboardPage() {
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
               Recent Transactions
             </h2>
-            <a
-              href="/dashboard/add"
-              className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
             >
               View all
-            </a>
+            </button>
           </div>
           
           {recentExpenses.length === 0 ? (
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={expense.id}
-                    className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-all duration-200 hover:shadow-md active:scale-98"
+                    className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-all duration-200 hover:shadow-md active:scale-98 cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div

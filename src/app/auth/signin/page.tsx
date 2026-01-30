@@ -43,7 +43,7 @@ export default function SignInPage() {
 
           <button
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold py-4 sm:py-5 px-6 rounded-xl sm:rounded-2xl transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-sm sm:text-base"
+            className="w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold py-4 sm:py-5 px-6 rounded-xl sm:rounded-2xl transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24">
               <path

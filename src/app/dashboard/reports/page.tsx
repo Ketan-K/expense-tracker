@@ -118,14 +118,14 @@ export default function ReportsPage() {
           <div className="flex gap-2 sm:gap-3">
             <button
               onClick={handleExportCSV}
-              className="flex-1 sm:flex-none px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95 text-sm sm:text-base font-medium"
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95 text-sm sm:text-base font-medium cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">CSV</span>
             </button>
             <button
               onClick={handleExportExcel}
-              className="flex-1 sm:flex-none px-4 sm:px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95 text-sm sm:text-base font-medium"
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95 text-sm sm:text-base font-medium cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Excel</span>

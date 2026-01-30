@@ -220,7 +220,7 @@ export default function AddExpensePage() {
                     onClick={() =>
                       setFormData({ ...formData, amount: amount.toString() })
                     }
-                    className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all hover:shadow-md active:scale-95"
+                    className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium transition-all hover:shadow-md active:scale-95 cursor-pointer"
                   >
                     ₹{amount}
                   </button>
