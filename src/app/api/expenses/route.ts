@@ -4,9 +4,12 @@ import { Expense } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
+  console.log("[API] GET /api/expenses - Request received");
   try {
     const session = await auth();
+    console.log("[API] Session check:", { hasSession: !!session, hasUserId: !!session?.user?.id });
     if (!session?.user?.id) {
+      console.log("[API] ✗ Unauthorized - No session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -47,9 +50,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  console.log("[API] POST /api/expenses - Request received");
   try {
     const session = await auth();
     if (!session?.user?.id) {
+      console.log("[API] ✗ Unauthorized - No session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
