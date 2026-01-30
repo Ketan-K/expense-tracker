@@ -1,7 +1,7 @@
 import Dexie, { Table } from "dexie";
 
 export interface LocalExpense {
-  id?: string;
+  _id?: string;
   userId: string;
   date: Date;
   amount: number;
@@ -9,26 +9,30 @@ export interface LocalExpense {
   description?: string;
   paymentMethod?: string;
   synced: boolean;
-  lastModified: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface LocalCategory {
-  id?: string;
+  _id?: string;
   userId: string;
   name: string;
   icon: string;
   color: string;
   isDefault: boolean;
   synced: boolean;
+  createdAt: Date;
 }
 
 export interface LocalBudget {
-  id?: string;
+  _id?: string;
   userId: string;
   categoryId: string;
   month: string;
   amount: number;
   synced: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface SyncQueueItem {
@@ -38,9 +42,17 @@ export interface SyncQueueItem {
   data: any;
   timestamp: number;
   retryCount: number;
-  status: "pending" | "syncing" | "failed";
+  status: "pending" | "syncing" | "failed" | "success";
   localId?: string;
   remoteId?: string;
+  lastAttempt?: number;
+  error?: string;
+}
+
+export interface SyncMetadata {
+  key: string;
+  value: any;
+  updatedAt: Date;
 }
 
 export class ExpenseTrackerDB extends Dexie {
@@ -48,15 +60,18 @@ export class ExpenseTrackerDB extends Dexie {
   categories!: Table<LocalCategory, string>;
   budgets!: Table<LocalBudget, string>;
   syncQueue!: Table<SyncQueueItem, number>;
+  syncMetadata!: Table<SyncMetadata, string>;
 
   constructor() {
     super("ExpenseTrackerDB");
     
-    this.version(1).stores({
-      expenses: "id, userId, date, category, synced, lastModified",
-      categories: "id, [userId+name], userId, name, synced",
-      budgets: "id, userId, categoryId, month, synced",
-      syncQueue: "++id, status, timestamp, collection",
+    // Version 3: Complete schema refresh with _id, timestamps, and syncMetadata
+    this.version(3).stores({
+      expenses: "_id, userId, date, category, synced, createdAt, updatedAt",
+      categories: "_id, &[userId+name], userId, name, synced, createdAt",
+      budgets: "_id, userId, categoryId, month, synced, createdAt, updatedAt",
+      syncQueue: "++id, status, timestamp, collection, localId, lastAttempt",
+      syncMetadata: "key, updatedAt",
     });
   }
 }

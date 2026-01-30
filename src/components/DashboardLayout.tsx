@@ -1,8 +1,10 @@
 "use client";
 
-import { Home, Plus, User, Wallet } from "lucide-react";
+import { Home, Plus, User, Wallet, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "@/lib/db";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,6 +13,21 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Get sync queue status
+  const syncQueue = useLiveQuery(async () => {
+    return await db.syncQueue.toArray();
+  }, []);
+
+  const syncStats = {
+    syncing: syncQueue?.filter((item) => item.status === "syncing").length || 0,
+    failed: syncQueue?.filter((item) => item.status === "failed").length || 0,
+    pending: syncQueue?.filter((item) => item.status === "pending").length || 0,
+  };
+
+  const totalPending = syncStats.syncing + syncStats.pending;
+  const hasFailed = syncStats.failed > 0;
 
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -40,6 +57,31 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
               {getPageTitle()}
             </h1>
           </div>
+          
+          {/* Sync Status Indicator */}
+          {(totalPending > 0 || hasFailed) && (
+            <button
+              onClick={() => router.push("/dashboard/profile")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all"
+              title={hasFailed ? `${syncStats.failed} items failed` : `Syncing ${totalPending} items`}
+            >
+              {hasFailed ? (
+                <>
+                  <AlertCircle className="w-4 h-4 text-red-500" />
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                    {syncStats.failed}
+                  </span>
+                </>
+              ) : totalPending > 0 ? (
+                <>
+                  <RefreshCw className="w-4 h-4 text-orange-500 animate-spin" />
+                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                    {totalPending}
+                  </span>
+                </>
+              ) : null}
+            </button>
+          )}
         </div>
       </header>
 
@@ -137,12 +179,37 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <Wallet className="w-6 h-6 text-white" />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 Expense Tracker
               </h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">Track & Save</p>
             </div>
+            
+            {/* Sync Status Badge (Desktop) */}
+            {(totalPending > 0 || hasFailed) && (
+              <button
+                onClick={() => router.push("/dashboard/profile")}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-700"
+                title={hasFailed ? `${syncStats.failed} items failed` : `Syncing ${totalPending} items`}
+              >
+                {hasFailed ? (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                    <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                      {syncStats.failed}
+                    </span>
+                  </>
+                ) : totalPending > 0 ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 text-orange-500 animate-spin" />
+                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                      {totalPending}
+                    </span>
+                  </>
+                ) : null}
+              </button>
+            )}
           </div>
         </div>
         <nav className="p-4 space-y-2">

@@ -42,11 +42,16 @@ export async function POST(request: Request) {
       try {
         const { action, collection, data, localId } = op;
 
+        console.log("🔄 Processing operation:", { action, collection, localId, data });
+
         if (collection === "expenses") {
           if (action === "CREATE") {
             // Validate expense data
             const validation = validateExpense(data);
+            console.log("📋 Validation result:", validation);
+            
             if (!validation.isValid) {
+              console.error("❌ Validation failed for expense:", localId, validation.errors);
               results.push({
                 localId,
                 success: false,
@@ -62,7 +67,10 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
+            console.log("💾 Inserting expense to MongoDB:", expense);
             const result = await db.collection<Expense>("expenses").insertOne(expense);
+            console.log("✅ Expense inserted with ID:", result.insertedId.toString());
+            
             results.push({
               localId,
               remoteId: result.insertedId.toString(),

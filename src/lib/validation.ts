@@ -1,12 +1,29 @@
 import validator from "validator";
-import DOMPurify from "isomorphic-dompurify";
 import { ObjectId } from "mongodb";
+
+// Lazy load DOMPurify only when needed (client-side)
+let DOMPurify: any = null;
+if (typeof window !== 'undefined') {
+  import('isomorphic-dompurify').then(module => {
+    DOMPurify = module.default;
+  });
+}
 
 /**
  * Sanitize string input by removing HTML/scripts
  */
 export function sanitizeString(input: string): string {
   if (typeof input !== "string") return "";
+  
+  // Server-side: use simple sanitization
+  if (typeof window === 'undefined' || !DOMPurify) {
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .trim();
+  }
+  
+  // Client-side: use DOMPurify
   return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim();
 }
 

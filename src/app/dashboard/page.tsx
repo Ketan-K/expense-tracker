@@ -158,7 +158,7 @@ export default function DashboardPage() {
     // Prepare transactions list
     let transactionsList = filtered
       .map((expense) => ({
-        id: expense.id?.toString() || "",
+        id: expense._id?.toString() || "",
         amount: expense.amount,
         category: expense.category,
         categoryColor: categoryMap.get(expense.category)?.color || "#6366f1",
@@ -206,7 +206,11 @@ export default function DashboardPage() {
     if (!budgets || !categories || !expenses) return [];
 
     const categoryById = new Map(
-      categories.map((cat) => [cat.id, { name: cat.name, icon: cat.icon, color: cat.color }])
+      categories.map((cat) => [cat._id, { name: cat.name, icon: cat.icon, color: cat.color }])
+    );
+    
+    const categoryByName = new Map(
+      categories.map((cat) => [cat.name, { id: cat._id, icon: cat.icon, color: cat.color }])
     );
 
     const categorySpending = expenses.reduce((acc: Record<string, number>, expense) => {
@@ -215,13 +219,30 @@ export default function DashboardPage() {
     }, {} as Record<string, number>);
 
     return budgets.map((budget) => {
-      const category = categoryById.get(budget.categoryId);
-      const categoryName = category?.name || "Unknown";
+      // Try to find category by ID first
+      let category = categoryById.get(budget.categoryId);
+      let categoryName = category?.name;
+      
+      if (!category) {
+        // categoryId might be the category name instead of ID (backwards compatibility)
+        const catByName = categoryByName.get(budget.categoryId);
+        if (catByName) {
+          categoryName = budget.categoryId; // It's actually a name
+          category = { name: categoryName, icon: catByName.icon, color: catByName.color };
+        } else {
+          // Last resort: couldn't find the category at all
+          console.warn(`Budget category not found: ${budget.categoryId}`, {
+            availableCategories: Array.from(categoryById.keys()),
+            availableCategoryNames: Array.from(categoryByName.keys())
+          });
+          categoryName = "Unknown";
+        }
+      }
       
       return {
         ...budget,
-        categoryName,
-        spent: categorySpending[categoryName] || 0,
+        categoryName: categoryName || "Unknown",
+        spent: categorySpending[categoryName || "Unknown"] || 0,
         icon: category?.icon || "HelpCircle",
         color: category?.color || "#6366f1",
       };
@@ -284,7 +305,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {budgetData.map((budget) => (
                 <BudgetCard
-                  key={budget.id}
+                  key={budget._id}
                   categoryName={budget.categoryName}
                   categoryIcon={budget.icon}
                   categoryColor={budget.color}

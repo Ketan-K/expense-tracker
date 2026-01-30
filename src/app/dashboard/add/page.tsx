@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { Calendar, DollarSign, FileText, CreditCard, Save, X } from "lucide-react";
 import { format } from "date-fns";
 import { getIconComponent, availableIcons } from "@/lib/types";
+import { generateObjectId } from "@/lib/idGenerator";
+import { processSyncQueue } from "@/lib/syncUtils";
 
 export default function AddExpensePage() {
   const { data: session } = useSession();
@@ -47,13 +49,14 @@ export default function AddExpensePage() {
           for (const cat of serverCategories) {
             try {
               await db.categories.put({
-                id: cat._id,
+                _id: cat._id,
                 userId: session.user.id,
                 name: cat.name,
                 icon: cat.icon,
                 color: cat.color,
                 isDefault: cat.isDefault,
                 synced: true,
+                createdAt: new Date(cat.createdAt),
               });
             } catch (error) {
               // Ignore duplicate key errors
@@ -81,9 +84,12 @@ export default function AddExpensePage() {
     }
 
     try {
+      const now = new Date();
+      const expenseId = generateObjectId();
+
       // Add to IndexedDB (offline-first)
       const expense = {
-        id: `temp-${Date.now()}`,
+        _id: expenseId,
         userId: session.user.id,
         date: new Date(formData.date),
         amount: parseFloat(formData.amount),
@@ -91,7 +97,8 @@ export default function AddExpensePage() {
         description: formData.description,
         paymentMethod: formData.paymentMethod,
         synced: false,
-        lastModified: new Date(),
+        createdAt: now,
+        updatedAt: now,
       };
 
       await db.expenses.add(expense);
@@ -104,7 +111,7 @@ export default function AddExpensePage() {
         timestamp: Date.now(),
         retryCount: 0,
         status: "pending",
-        localId: expense.id,
+        localId: expenseId,
       });
 
       toast.success("Expense added successfully!");
@@ -120,58 +127,11 @@ export default function AddExpensePage() {
 
       // Trigger sync if online
       if (navigator.onLine) {
-        triggerSync();
+        processSyncQueue(session.user.id);
       }
     } catch (error) {
       console.error("Error adding expense:", error);
       toast.error("Failed to add expense");
-    }
-  };
-
-  const triggerSync = async () => {
-    try {
-      const pendingItems = await db.syncQueue
-        .where("status")
-        .equals("pending")
-        .toArray();
-
-      if (pendingItems.length === 0) return;
-
-      const operations = pendingItems.map((item) => ({
-        action: item.action,
-        collection: item.collection,
-        data: item.data,
-        localId: item.localId,
-      }));
-
-      const response = await fetch("/api/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operations }),
-      });
-
-      if (response.ok) {
-        const { results } = await response.json();
-
-        // Update synced status and remove from queue
-        for (const result of results) {
-          if (result.success) {
-            await db.expenses
-              .where("id")
-              .equals(result.localId)
-              .modify({ synced: true, id: result.remoteId });
-
-            await db.syncQueue
-              .where("localId")
-              .equals(result.localId)
-              .delete();
-          }
-        }
-
-        toast.success("Synced with server");
-      }
-    } catch (error) {
-      console.error("Sync error:", error);
     }
   };
 
@@ -265,7 +225,7 @@ export default function AddExpensePage() {
                   const isOther = category.name === "Other";
                   return (
                     <button
-                      key={category.id}
+                      key={category._id}
                       type="button"
                       onClick={() => {
                         if (isOther) {
@@ -522,15 +482,19 @@ export default function AddExpensePage() {
                     }
 
                     try {
+                      const categoryId = generateObjectId();
+                      const now = new Date();
+
                       // Add to IndexedDB
                       const newCategory = {
-                        id: `temp-${Date.now()}`,
+                        _id: categoryId,
                         userId: session.user.id,
                         name: customCategory.name.trim(),
                         icon: customCategory.icon,
                         color: customCategory.color,
                         isDefault: false,
                         synced: false,
+                        createdAt: now,
                       };
 
                       await db.categories.add(newCategory);
@@ -543,7 +507,7 @@ export default function AddExpensePage() {
                         timestamp: Date.now(),
                         retryCount: 0,
                         status: "pending",
-                        localId: newCategory.id,
+                        localId: categoryId,
                       });
 
                       // Set as selected category
@@ -561,28 +525,7 @@ export default function AddExpensePage() {
 
                       // Trigger sync if online
                       if (navigator.onLine) {
-                        try {
-                          const response = await fetch("/api/categories", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              name: newCategory.name,
-                              icon: newCategory.icon,
-                              color: newCategory.color,
-                              isDefault: false,
-                            }),
-                          });
-
-                          if (response.ok) {
-                            const savedCategory = await response.json();
-                            await db.categories
-                              .where("id")
-                              .equals(newCategory.id)
-                              .modify({ synced: true, id: savedCategory._id });
-                          }
-                        } catch (error) {
-                          console.error("Sync error:", error);
-                        }
+                        processSyncQueue(session.user.id);
                       }
                     } catch (error) {
                       console.error("Error creating category:", error);

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useConfirm } from "@/hooks/useConfirm";
+import { generateObjectId } from "@/lib/idGenerator";
+import { processSyncQueue } from "@/lib/syncUtils";
 
 interface BudgetFormModalProps {
   isOpen: boolean;
@@ -44,15 +46,18 @@ export default function BudgetFormModal({
       const category = categories.find((c) => c.name === selectedCategory);
       if (!category) throw new Error("Category not found");
 
-      const budgetId = `budget-${session.user.id}-${category.id || category.name}-${monthString}`;
+      const budgetId = generateObjectId();
+      const now = new Date();
 
       await db.budgets.add({
-        id: budgetId,
+        _id: budgetId,
         userId: session.user.id,
-        categoryId: category.id?.toString() || category.name,
+        categoryId: category._id || category.name,
         amount: parseFloat(amount),
         month: monthString,
         synced: false,
+        createdAt: now,
+        updatedAt: now,
       });
 
       // Add to sync queue
@@ -60,14 +65,14 @@ export default function BudgetFormModal({
         collection: "budgets",
         action: "CREATE",
         data: {
-          userId: session.user.id,
-          categoryId: category.id?.toString() || category.name,
+          categoryId: category._id || category.name,
           amount: parseFloat(amount),
           month: monthString,
         },
         timestamp: Date.now(),
         status: "pending",
         retryCount: 0,
+        localId: budgetId,
       });
 
       toast.success(`Budget set for ${category.name}`);
@@ -75,6 +80,11 @@ export default function BudgetFormModal({
       setAmount("");
       onBudgetAdded();
       onClose();
+
+      // Trigger sync if online
+      if (navigator.onLine) {
+        processSyncQueue(session.user.id);
+      }
     } catch (error) {
       toast.error("Failed to create budget");
       console.error(error);
@@ -118,21 +128,24 @@ export default function BudgetFormModal({
           return;
         }
         await Promise.all(
-          existingBudgets.map((b) => b.id && db.budgets.delete(b.id))
+          existingBudgets.map((b) => b._id && db.budgets.delete(b._id))
         );
       }
 
+      const now = new Date();
       await Promise.all(
         lastMonthBudgets.map(async (budget) => {
-          const budgetId = `budget-${session.user.id}-${budget.categoryId}-${monthString}`;
+          const budgetId = generateObjectId();
           
           const newBudget = {
-            id: budgetId,
+            _id: budgetId,
             userId: session.user.id!,
             categoryId: budget.categoryId,
             amount: budget.amount,
             month: monthString,
             synced: false,
+            createdAt: now,
+            updatedAt: now,
           };
 
           await db.budgets.add(newBudget);
@@ -140,10 +153,15 @@ export default function BudgetFormModal({
           await db.syncQueue.add({
             collection: "budgets",
             action: "CREATE",
-            data: newBudget,
+            data: {
+              categoryId: budget.categoryId,
+              amount: budget.amount,
+              month: monthString,
+            },
             timestamp: Date.now(),
             status: "pending",
             retryCount: 0,
+            localId: budgetId,
           });
         })
       );
@@ -219,7 +237,7 @@ export default function BudgetFormModal({
                 const isSelected = selectedCategory === category.name;
                 return (
                   <button
-                    key={category.id || category.name}
+                    key={category._id || category.name}
                     type="button"
                     onClick={() => setSelectedCategory(category.name)}
                     className={`px-2 py-2.5 rounded-lg font-medium transition-all text-xs active:scale-95 flex flex-col items-center gap-1.5 ${
