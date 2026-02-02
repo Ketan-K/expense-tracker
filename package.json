@@ -1,13 +1,31 @@
 {
   "name": "expense-tracker",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "A modern expense tracking application with multi-theme support and PWA capabilities",
+  "author": "Ketan K",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ketan-K/expense-tracker.git"
+  },
+  "keywords": [
+    "expense-tracker",
+    "finance",
+    "budget",
+    "pwa",
+    "nextjs",
+    "mongodb",
+    "multi-theme"
+  ],
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "db:indexes": "tsx scripts/create-indexes.ts",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write .",
+    "icons:generate": "node scripts/generate-icons.mjs",
     "prepare": "husky",
     "dev:acme": "cross-env NEXT_PUBLIC_THEME=acme next dev --webpack",
     "build:acme": "cross-env NEXT_PUBLIC_THEME=acme next build --webpack",
@@ -15,8 +33,7 @@
     "dev:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next dev --webpack",
     "build:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next build --webpack",
     "start:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next start",
-    "build:all": "npm run build && npm run build:acme && npm run build:vibe",
-    "icons:generate": "node scripts/generate-icons.mjs"
+    "build:all": "npm run build && npm run build:acme && npm run build:vibe"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",
