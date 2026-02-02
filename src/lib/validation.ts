@@ -344,8 +344,12 @@ export function validateContact(data: {
   name?: any;
   phone?: any;
   email?: any;
+  primaryPhone?: any;
+  primaryEmail?: any;
   relationship?: any;
   notes?: any;
+  source?: any;
+  externalId?: any;
 }): { isValid: boolean; errors: string[]; sanitized?: any } {
   const errors: string[] = [];
 
@@ -360,18 +364,92 @@ export function validateContact(data: {
     errors.push("Name too long (max 100 characters)");
   }
 
-  // Validate phone (optional)
-  if (data.phone && typeof data.phone === "string") {
-    if (data.phone.length > 20) {
-      errors.push("Phone number too long");
+  // Validate phone (optional, supports both string and array)
+  let sanitizedPhone: string[] = [];
+  if (data.phone) {
+    if (typeof data.phone === "string") {
+      // Single phone number - convert to array
+      if (data.phone.trim()) {
+        if (data.phone.length > 20) {
+          errors.push("Phone number too long (max 20 characters)");
+        } else {
+          sanitizedPhone = [sanitizeString(data.phone)];
+        }
+      }
+    } else if (Array.isArray(data.phone)) {
+      // Array of phone numbers
+      for (const phone of data.phone) {
+        if (typeof phone === "string" && phone.trim()) {
+          if (phone.length > 20) {
+            errors.push("Phone number too long (max 20 characters)");
+          } else {
+            sanitizedPhone.push(sanitizeString(phone));
+          }
+        }
+      }
+      // Remove duplicates
+      sanitizedPhone = [...new Set(sanitizedPhone)];
     }
   }
 
-  // Validate email (optional)
-  if (data.email && typeof data.email === "string") {
-    if (!validator.isEmail(data.email)) {
-      errors.push("Invalid email format");
+  // Validate email (optional, supports both string and array)
+  let sanitizedEmail: string[] = [];
+  if (data.email) {
+    if (typeof data.email === "string") {
+      // Single email - convert to array
+      if (data.email.trim()) {
+        if (!validator.isEmail(data.email)) {
+          errors.push("Invalid email format");
+        } else {
+          sanitizedEmail = [sanitizeString(data.email)];
+        }
+      }
+    } else if (Array.isArray(data.email)) {
+      // Array of emails
+      for (const email of data.email) {
+        if (typeof email === "string" && email.trim()) {
+          if (!validator.isEmail(email)) {
+            errors.push(`Invalid email format: ${email}`);
+          } else {
+            sanitizedEmail.push(sanitizeString(email));
+          }
+        }
+      }
+      // Remove duplicates (case-insensitive)
+      const uniqueEmails = new Map<string, string>();
+      sanitizedEmail.forEach(e => uniqueEmails.set(e.toLowerCase(), e));
+      sanitizedEmail = Array.from(uniqueEmails.values());
     }
+  }
+
+  // Validate primaryPhone index
+  let primaryPhone: number | undefined = undefined;
+  if (data.primaryPhone !== undefined && data.primaryPhone !== null) {
+    const idx = parseInt(String(data.primaryPhone), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < sanitizedPhone.length) {
+      primaryPhone = idx;
+    } else if (sanitizedPhone.length > 0) {
+      // Default to first phone if invalid index
+      primaryPhone = 0;
+    }
+  } else if (sanitizedPhone.length > 0) {
+    // Default to first phone if not specified
+    primaryPhone = 0;
+  }
+
+  // Validate primaryEmail index
+  let primaryEmail: number | undefined = undefined;
+  if (data.primaryEmail !== undefined && data.primaryEmail !== null) {
+    const idx = parseInt(String(data.primaryEmail), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < sanitizedEmail.length) {
+      primaryEmail = idx;
+    } else if (sanitizedEmail.length > 0) {
+      // Default to first email if invalid index
+      primaryEmail = 0;
+    }
+  } else if (sanitizedEmail.length > 0) {
+    // Default to first email if not specified
+    primaryEmail = 0;
   }
 
   // Validate relationship (optional)
@@ -387,6 +465,16 @@ export function validateContact(data: {
     errors.push("Notes too long (max 1000 characters)");
   }
 
+  // Validate source (optional)
+  if (data.source && !["manual", "imported"].includes(String(data.source))) {
+    errors.push("Invalid source type");
+  }
+
+  // Validate externalId (optional)
+  if (data.externalId && typeof data.externalId !== "string") {
+    errors.push("External ID must be a string");
+  }
+
   if (errors.length > 0) {
     return { isValid: false, errors };
   }
@@ -396,10 +484,14 @@ export function validateContact(data: {
     errors: [],
     sanitized: {
       name: sanitizeString(String(data.name)),
-      phone: data.phone ? sanitizeString(String(data.phone)) : "",
-      email: data.email ? sanitizeString(String(data.email)) : "",
+      phone: sanitizedPhone,
+      email: sanitizedEmail,
+      primaryPhone,
+      primaryEmail,
       relationship: data.relationship ? sanitizeString(String(data.relationship)) : "",
       notes: data.notes ? sanitizeString(String(data.notes)) : "",
+      source: data.source ? sanitizeString(String(data.source)) : "manual",
+      externalId: data.externalId ? sanitizeString(String(data.externalId)) : undefined,
     },
   };
 }

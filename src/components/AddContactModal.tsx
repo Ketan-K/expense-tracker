@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Plus, Trash2, Smartphone } from "lucide-react";
 import { db, LocalContact } from "@/lib/db";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { generateObjectId } from "@/lib/idGenerator";
+import { isContactsAPISupported, pickContacts, convertPickerContactToSchema, isPotentialDuplicate } from "@/lib/contactsApi";
+import { ContactDuplicateDialog, DuplicateContact } from "./ContactDuplicateDialog";
 
 interface AddContactModalProps {
   isOpen: boolean;
@@ -21,10 +23,166 @@ export default function AddContactModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
-    email: "",
+    phones: [""],
+    emails: [""],
+    primaryPhone: 0,
+    primaryEmail: 0,
     relationship: "",
   });
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    open: boolean;
+    duplicate: DuplicateContact | null;
+  }>({ open: false, duplicate: null });
+  const [isImporting, setIsImporting] = useState(false);
+
+
+  const contactsSupported = typeof window !== 'undefined' && isContactsAPISupported();
+
+  const handleImportContact = async () => {
+    setIsImporting(true);
+    try {
+      const pickerContacts = await pickContacts(false); // Single selection
+      if (pickerContacts.length === 0) return;
+
+      const converted = convertPickerContactToSchema(pickerContacts[0]);
+      
+      // Check for duplicates
+      const existingContacts = await db.contacts.where("userId").equals(userId).toArray();
+      const duplicate = existingContacts.find(existing =>
+        isPotentialDuplicate(converted, {
+          name: existing.name,
+          phone: existing.phone,
+          email: existing.email,
+        })
+      );
+
+      if (duplicate) {
+        setDuplicateDialog({
+          open: true,
+          duplicate: {
+            imported: converted,
+            existing: duplicate,
+          },
+        });
+      } else {
+        // Pre-fill form with imported data
+        setFormData({
+          name: converted.name,
+          phones: converted.phone.length > 0 ? converted.phone : [""],
+          emails: converted.email.length > 0 ? converted.email : [""],
+          primaryPhone: converted.primaryPhone ?? 0,
+          primaryEmail: converted.primaryEmail ?? 0,
+          relationship: "",
+        });
+        toast.success("Contact imported! Review and save.");
+      }
+    } catch (error: any) {
+      if (error.message.includes('cancelled')) {
+        toast.info("Import cancelled");
+      } else if (error.message.includes('not supported')) {
+        toast.error("Contact import only works on Chrome/Edge for Android");
+      } else if (error.message.includes('internet connection')) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to import contact");
+        console.error(error);
+      }
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleMergeDuplicate = async (mergedContact: any) => {
+    if (!duplicateDialog.duplicate?.existing._id) return;
+    
+    try {
+      const now = new Date();
+      await db.contacts.update(duplicateDialog.duplicate.existing._id, {
+        ...mergedContact,
+        source: "imported",
+        updatedAt: now,
+        synced: false,
+      });
+
+      await db.syncQueue.add({
+        action: "UPDATE",
+        collection: "contacts",
+        data: {
+          _id: duplicateDialog.duplicate.existing._id,
+          ...mergedContact,
+          updatedAt: now,
+        },
+        timestamp: Date.now(),
+        retryCount: 0,
+        status: "pending",
+        localId: duplicateDialog.duplicate.existing._id,
+        remoteId: duplicateDialog.duplicate.existing._id,
+      });
+
+      toast.success("Contact merged successfully!");
+      if (navigator.onLine) processSyncQueue(userId);
+      
+      setDuplicateDialog({ open: false, duplicate: null });
+      onClose();
+    } catch (error) {
+      console.error("Error merging contact:", error);
+      toast.error("Failed to merge contact");
+    }
+  };
+
+  const handleCreateNewFromDuplicate = () => {
+    if (!duplicateDialog.duplicate) return;
+    
+    const { imported } = duplicateDialog.duplicate;
+    setFormData({
+      name: imported.name,
+      phones: imported.phone.length > 0 ? imported.phone : [""],
+      emails: imported.email.length > 0 ? imported.email : [""],
+      primaryPhone: 0,
+      primaryEmail: 0,
+      relationship: "",
+    });
+    setDuplicateDialog({ open: false, duplicate: null });
+    toast.info("Create as new contact");
+  };
+
+  const addPhoneField = () => {
+    setFormData({ ...formData, phones: [...formData.phones, ""] });
+  };
+
+  const removePhoneField = (index: number) => {
+    const newPhones = formData.phones.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      phones: newPhones.length > 0 ? newPhones : [""],
+      primaryPhone: formData.primaryPhone >= newPhones.length ? 0 : formData.primaryPhone,
+    });
+  };
+
+  const updatePhone = (index: number, value: string) => {
+    const newPhones = [...formData.phones];
+    newPhones[index] = value;
+    setFormData({ ...formData, phones: newPhones });
+  };
+
+  const addEmailField = () => {
+    setFormData({ ...formData, emails: [...formData.emails, ""] });
+  };
+
+  const removeEmailField = (index: number) => {
+    const newEmails = formData.emails.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      emails: newEmails.length > 0 ? newEmails : [""],
+      primaryEmail: formData.primaryEmail >= newEmails.length ? 0 : formData.primaryEmail,
+    });
+  };
+
+  const updateEmail = (index: number, value: string) => {
+    const newEmails = [...formData.emails];
+    newEmails[index] = value;
+    setFormData({ ...formData, emails: newEmails });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,13 +210,20 @@ export default function AddContactModal({
       const contactId = generateObjectId();
       const now = new Date();
 
+      // Filter out empty values and deduplicate
+      const phones = [...new Set(formData.phones.filter(p => p.trim()))];
+      const emails = [...new Set(formData.emails.filter(e => e.trim()))];
+
       const contact: LocalContact = {
         _id: contactId,
         userId: userId,
         name: formData.name.trim(),
-        phone: formData.phone.trim() || undefined,
-        email: formData.email.trim() || undefined,
+        phone: phones,
+        email: emails,
+        primaryPhone: phones.length > 0 ? Math.min(formData.primaryPhone, phones.length - 1) : undefined,
+        primaryEmail: emails.length > 0 ? Math.min(formData.primaryEmail, emails.length - 1) : undefined,
         relationship: formData.relationship.trim() || undefined,
+        source: "manual",
         synced: false,
         createdAt: now,
         updatedAt: now,
@@ -85,8 +250,10 @@ export default function AddContactModal({
       // Reset form
       setFormData({
         name: "",
-        phone: "",
-        email: "",
+        phones: [""],
+        emails: [""],
+        primaryPhone: 0,
+        primaryEmail: 0,
         relationship: "",
       });
 
@@ -108,12 +275,26 @@ export default function AddContactModal({
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Add Contact
           </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            {contactsSupported && (
+              <button
+                type="button"
+                onClick={handleImportContact}
+                disabled={isImporting || !navigator.onLine}
+                className="px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                title={!navigator.onLine ? "Import requires internet connection" : "Import from phone contacts"}
+              >
+                <Smartphone className="w-4 h-4" />
+                {isImporting ? "Importing..." : "Import"}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -130,28 +311,102 @@ export default function AddContactModal({
             />
           </div>
 
+          {/* Phone Numbers */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Phone
+              Phone Numbers
             </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-            />
+            <div className="space-y-2">
+              {formData.phones.map((phone, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => updatePhone(index, e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Phone number"
+                  />
+                  {formData.phones.filter(p => p.trim()).length > 1 && (
+                    <label className="flex items-center gap-1 text-sm">
+                      <input
+                        type="radio"
+                        name="primaryPhone"
+                        checked={formData.primaryPhone === index}
+                        onChange={() => setFormData({ ...formData, primaryPhone: index })}
+                        className="text-purple-600"
+                      />
+                      <span className="text-gray-600 dark:text-gray-400">Primary</span>
+                    </label>
+                  )}
+                  {formData.phones.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePhoneField(index)}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPhoneField}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Phone
+              </button>
+            </div>
           </div>
 
+          {/* Email Addresses */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email
+              Email Addresses
             </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-            />
+            <div className="space-y-2">
+              {formData.emails.map((email, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => updateEmail(index, e.target.value)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Email address"
+                  />
+                  {formData.emails.filter(e => e.trim()).length > 1 && (
+                    <label className="flex items-center gap-1 text-sm">
+                      <input
+                        type="radio"
+                        name="primaryEmail"
+                        checked={formData.primaryEmail === index}
+                        onChange={() => setFormData({ ...formData, primaryEmail: index })}
+                        className="text-purple-600"
+                      />
+                      <span className="text-gray-600 dark:text-gray-400">Primary</span>
+                    </label>
+                  )}
+                  {formData.emails.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEmailField(index)}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addEmailField}
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Email
+              </button>
+            </div>
           </div>
 
           <div>
@@ -185,6 +440,15 @@ export default function AddContactModal({
           </div>
         </form>
       </div>
+
+      <ContactDuplicateDialog
+        open={duplicateDialog.open}
+        onOpenChange={(open: boolean) => setDuplicateDialog({ ...duplicateDialog, open })}
+        duplicate={duplicateDialog.duplicate}
+        onMerge={handleMergeDuplicate}
+        onSkip={() => setDuplicateDialog({ open: false, duplicate: null })}
+        onCreateNew={handleCreateNewFromDuplicate}
+      />
     </div>
   );
 }

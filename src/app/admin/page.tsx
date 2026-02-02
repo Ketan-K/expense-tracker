@@ -1,272 +1,384 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Shield, Database, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react";
 
 export default function AdminPage() {
-  const [secret, setSecret] = useState("");
-  const [migrateResult, setMigrateResult] = useState<any>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [migrateExpenseTypeResult, setMigrateExpenseTypeResult] = useState<any>(null);
   const [indexesResult, setIndexesResult] = useState<any>(null);
-  const [loading, setLoading] = useState<{ migrate: boolean; indexes: boolean }>({
-    migrate: false,
+  const [contactsMigrateResult, setContactsMigrateResult] = useState<any>(null);
+  const [loading, setLoading] = useState<{ 
+    migrateExpenseType: boolean; 
+    indexes: boolean; 
+    contactsMigrate: boolean;
+  }>({
+    migrateExpenseType: false,
     indexes: false,
+    contactsMigrate: false,
   });
 
-  const runMigration = async (dryRun = false) => {
-    if (!secret) {
-      alert("Please enter admin secret");
+  // Check admin authorization
+  useEffect(() => {
+    if (status === "loading") return;
+    
+    if (status === "unauthenticated") {
+      router.push("/auth/signin?callbackUrl=/admin");
       return;
     }
 
-    setLoading({ ...loading, migrate: true });
-    setMigrateResult(null);
+    // Check if user is admin
+    fetch("/api/admin/check-access")
+      .then(res => res.json())
+      .then(data => {
+        if (data.isAdmin) {
+          setIsAuthorized(true);
+        } else {
+          router.push("/dashboard");
+        }
+      })
+      .catch(() => {
+        router.push("/dashboard");
+      });
+  }, [status, router]);
+
+  const migrateExpenseType = async (dryRun = false) => {
+    setLoading({ ...loading, migrateExpenseType: true });
+    setMigrateExpenseTypeResult(null);
 
     try {
-      const url = dryRun 
-        ? `/api/admin/migrate?secret=${encodeURIComponent(secret)}&dry-run=true`
-        : `/api/admin/migrate?secret=${encodeURIComponent(secret)}`;
-      
-      const response = await fetch(url, { method: "GET" });
+      const response = await fetch("/api/admin/migrate-expense-type", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dryRun }),
+      });
       const data = await response.json();
-      setMigrateResult(data);
+      setMigrateExpenseTypeResult(data);
     } catch (error) {
-      setMigrateResult({
+      setMigrateExpenseTypeResult({
+        success: false,
         error: "Request failed",
         details: error instanceof Error ? error.message : String(error),
       });
     } finally {
-      setLoading({ ...loading, migrate: false });
+      setLoading({ ...loading, migrateExpenseType: false });
     }
   };
 
-  const createIndexes = async () => {
-    if (!secret) {
-      alert("Please enter admin secret");
-      return;
-    }
-
+  const ensureIndexes = async () => {
     setLoading({ ...loading, indexes: true });
     setIndexesResult(null);
 
     try {
-      const response = await fetch(
-        `/api/admin/create-indexes?secret=${encodeURIComponent(secret)}`,
-        { method: "GET" }
-      );
+      const response = await fetch("/api/admin/ensure-indexes", { method: "POST" });
       const data = await response.json();
       setIndexesResult(data);
     } catch (error) {
-      setIndexesResult({
-        error: "Request failed",
-        details: error instanceof Error ? error.message : String(error),
+      setIndexesResult({ 
+        error: "Request failed", 
+        details: error instanceof Error ? error.message : String(error)
       });
     } finally {
       setLoading({ ...loading, indexes: false });
     }
   };
 
+  const migrateContacts = async () => {
+    setLoading({ ...loading, contactsMigrate: true });
+    setContactsMigrateResult(null);
+
+    try {
+      const response = await fetch("/api/admin/migrate-contacts", { method: "POST" });
+      const data = await response.json();
+      setContactsMigrateResult(data);
+    } catch (error) {
+      setContactsMigrateResult({ 
+        error: "Request failed", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
+    } finally {
+      setLoading({ ...loading, contactsMigrate: false });
+    }
+  };
+
+  // Show loading while checking authorization
+  if (status === "loading" || isAuthorized === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Checking authorization...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only render admin page if authorized
+  if (!isAuthorized) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Shield className="w-8 h-8 text-red-500" />
-            <h1 className="text-3xl font-bold text-white">Admin Panel</h1>
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+              <Shield className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
           </div>
-          <p className="text-gray-400">Database Migration & Maintenance</p>
+          <p className="text-gray-600 dark:text-gray-400">Database migrations and system maintenance</p>
         </div>
 
-        {/* Secret Input */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Admin Secret
-          </label>
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="Enter ADMIN_SECRET from env"
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-          />
-          <p className="text-xs text-gray-500 mt-2">
-            Get this from your Vercel environment variables (ADMIN_SECRET)
-          </p>
-        </div>
-
-        {/* Migration Section */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
-          <div className="flex items-center gap-3 mb-4">
-            <Database className="w-6 h-6 text-blue-500" />
-            <h2 className="text-xl font-semibold text-white">Run Migration</h2>
-          </div>
-          <p className="text-gray-400 mb-4">
-            Adds <code className="px-2 py-1 bg-gray-700 rounded text-sm">type: "expense"</code> to all
-            existing expenses in MongoDB
-          </p>
-
-          <div className="flex gap-3 mb-4">
-            <button
-              onClick={() => runMigration(true)}
-              disabled={loading.migrate}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {loading.migrate ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
-              Dry Run (Check Only)
-            </button>
-            <button
-              onClick={() => runMigration(false)}
-              disabled={loading.migrate}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {loading.migrate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              Run Migration
-            </button>
-          </div>
-
-          {migrateResult && (
-            <div
-              className={`p-4 rounded-lg ${
-                migrateResult.error
-                  ? "bg-red-900/20 border border-red-800"
-                  : "bg-green-900/20 border border-green-800"
-              }`}
-            >
-              <div className="flex items-start gap-3 mb-2">
-                {migrateResult.error ? (
-                  <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <p className="font-medium text-white mb-1">
-                    {migrateResult.message || migrateResult.error}
-                  </p>
-                  {migrateResult.details && (
-                    <p className="text-sm text-gray-400">{migrateResult.details}</p>
-                  )}
-                </div>
+        <div className="grid gap-6">
+          {/* Ensure Indexes Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
-              {migrateResult.stats && (
-                <pre className="mt-3 p-3 bg-gray-900 rounded text-xs text-gray-300 overflow-auto">
-                  {JSON.stringify(migrateResult.stats, null, 2)}
-                </pre>
-              )}
-              {migrateResult.dryRun && (
-                <p className="mt-2 text-sm text-yellow-400">
-                  ⚠️ This was a dry run. No changes were made.
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Database Indexes</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Ensure optimal query performance
                 </p>
-              )}
+              </div>
             </div>
-          )}
-        </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+              Automatically checks and creates missing indexes for all collections. Safe to run multiple times.
+            </p>
 
-        {/* Create Indexes Section */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center gap-3 mb-4">
-            <Database className="w-6 h-6 text-purple-500" />
-            <h2 className="text-xl font-semibold text-white">Create Database Indexes</h2>
-          </div>
-          <p className="text-gray-400 mb-4">
-            Creates optimized indexes for faster queries on all collections
-          </p>
-
-          <button
-            onClick={createIndexes}
-            disabled={loading.indexes}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {loading.indexes ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-            Create Indexes
-          </button>
-
-          {indexesResult && (
-            <div
-              className={`mt-4 p-4 rounded-lg ${
-                indexesResult.error
-                  ? "bg-red-900/20 border border-red-800"
-                  : "bg-green-900/20 border border-green-800"
-              }`}
+            <button
+              onClick={ensureIndexes}
+              disabled={loading.indexes}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
             >
-              <div className="flex items-start gap-3 mb-2">
-                {indexesResult.error ? (
-                  <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <p className="font-medium text-white mb-1">
-                    {indexesResult.message || indexesResult.error}
-                  </p>
-                  {indexesResult.details && (
-                    <p className="text-sm text-gray-400">{indexesResult.details}</p>
+              {loading.indexes ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              {loading.indexes ? "Checking..." : "Ensure Indexes"}
+            </button>
+
+            {indexesResult && (
+              <div
+                className={`mt-4 p-4 rounded-lg ${
+                  indexesResult.error
+                    ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    : "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                }`}
+              >
+                <div className="flex items-start gap-3 mb-2">
+                  {indexesResult.error ? (
+                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                   )}
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 dark:text-white mb-1">
+                      {indexesResult.message || indexesResult.error}
+                    </p>
+                    {indexesResult.details && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{indexesResult.details}</p>
+                    )}
+                    {indexesResult.created !== undefined && (
+                      <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-1">
+                        <p>✅ Created: {indexesResult.created}</p>
+                        <p>ℹ️ Already existed: {indexesResult.existing}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {indexesResult.errors && indexesResult.errors.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400">Errors:</p>
+                    {indexesResult.errors.map((error: string, idx: number) => (
+                      <div key={idx} className="p-2 rounded text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                        {error}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Migrate Expense Type Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <Database className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Expense Type Migration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Add type field to legacy expenses
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+              Adds <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm">type: "expense"</code> to all existing expenses without this field.
+            </p>
+
+            <div className="flex gap-3 mb-4">
+              <button
+                onClick={() => migrateExpenseType(true)}
+                disabled={loading.migrateExpenseType}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {loading.migrateExpenseType ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
+                Dry Run
+              </button>
+              <button
+                onClick={() => migrateExpenseType(false)}
+                disabled={loading.migrateExpenseType}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              >
+                {loading.migrateExpenseType ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                Run Migration
+              </button>
+            </div>
+
+            {migrateExpenseTypeResult && (
+              <div
+                className={`p-4 rounded-lg ${
+                  migrateExpenseTypeResult.success
+                    ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                    : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                }`}
+              >
+                <div className="flex items-start gap-3 mb-2">
+                  {migrateExpenseTypeResult.success ? (
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 dark:text-white mb-1">
+                      {migrateExpenseTypeResult.message || migrateExpenseTypeResult.error}
+                    </p>
+                    {migrateExpenseTypeResult.details && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{migrateExpenseTypeResult.details}</p>
+                    )}
+                  </div>
+                </div>
+                {migrateExpenseTypeResult.stats && (
+                  <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-900 rounded text-xs text-gray-700 dark:text-gray-300">
+                    <p>Found: {migrateExpenseTypeResult.stats.found}</p>
+                    <p>Migrated: {migrateExpenseTypeResult.stats.migrated}</p>
+                    {migrateExpenseTypeResult.stats.remaining !== undefined && (
+                      <p>Remaining: {migrateExpenseTypeResult.stats.remaining}</p>
+                    )}
+                  </div>
+                )}
+                {migrateExpenseTypeResult.dryRun && (
+                  <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
+                    ⚠️ This was a dry run. No changes were made.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Contacts Migration Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Database className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Contacts Array Migration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Convert phone/email to arrays
+                </p>
+              </div>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+              Converts contact <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm">phone</code> and{" "}
+              <code className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm">email</code> from strings to
+              arrays with primary field markers.
+            </p>
+
+            <button
+              onClick={migrateContacts}
+              disabled={loading.contactsMigrate}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+            >
+              {loading.contactsMigrate ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Database className="w-4 h-4" />
+              )}
+              {loading.contactsMigrate ? "Migrating..." : "Migrate Contacts"}
+            </button>
+
+            {contactsMigrateResult && (
+              <div
+                className={`mt-4 p-4 rounded-lg ${
+                  contactsMigrateResult.error || !contactsMigrateResult.success
+                    ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {contactsMigrateResult.error || !contactsMigrateResult.success ? (
+                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {contactsMigrateResult.success ? contactsMigrateResult.message : "Migration Failed"}
+                    </p>
+                    {contactsMigrateResult.error ? (
+                      <p className="text-sm text-red-600 dark:text-red-300 mt-1">{contactsMigrateResult.error}</p>
+                    ) : (
+                      <>
+                        {contactsMigrateResult.migrated !== undefined && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                            Migrated {contactsMigrateResult.migrated} of {contactsMigrateResult.total} contacts
+                          </p>
+                        )}
+                        {contactsMigrateResult.remaining > 0 && (
+                          <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                            Warning: {contactsMigrateResult.remaining} contacts still have string fields
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-              {indexesResult.results && (
-                <div className="mt-3 space-y-2">
-                  {indexesResult.results.map((result: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className={`p-2 rounded text-sm ${
-                        result.status === "created"
-                          ? "bg-green-900/30 text-green-300"
-                          : "bg-red-900/30 text-red-300"
-                      }`}
-                    >
-                      <span className="font-mono">
-                        {result.collection}.{result.index}
-                      </span>
-                      <span className="ml-2 opacity-75">
-                        - {result.status}
-                        {result.error && `: ${result.error}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 p-6 bg-blue-900/20 border border-blue-800 rounded-lg">
-          <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-blue-400" />
-            Setup Instructions
+        <div className="mt-6 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            Usage Guide
           </h3>
-          <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm">
-            <li>Add <code className="px-2 py-1 bg-gray-800 rounded">ADMIN_SECRET</code> to your Vercel environment variables (any random string)</li>
-            <li>Redeploy your app to apply the environment variable</li>
-            <li>Enter the secret above and run "Dry Run" first to check what will be updated</li>
-            <li>Run the migration to update existing expenses</li>
-            <li>Create indexes to optimize database performance</li>
-          </ol>
-        </div>
-
-        {/* Alternative: cURL Commands */}
-        <div className="mt-6 p-6 bg-gray-800 border border-gray-700 rounded-lg">
-          <h3 className="text-lg font-semibold text-white mb-3">Alternative: Use cURL</h3>
-          <p className="text-gray-400 mb-3 text-sm">
-            You can also run these commands from your terminal:
-          </p>
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Dry run migration:</p>
-              <code className="block p-3 bg-gray-900 text-gray-300 rounded text-xs overflow-x-auto">
-                curl "https://your-app.vercel.app/api/admin/migrate?secret=YOUR_SECRET&dry-run=true"
-              </code>
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex gap-2">
+              <span className="font-semibold min-w-[140px]">Database Indexes:</span>
+              <span>Run first after deployment to ensure optimal performance</span>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Run migration:</p>
-              <code className="block p-3 bg-gray-900 text-gray-300 rounded text-xs overflow-x-auto">
-                curl "https://your-app.vercel.app/api/admin/migrate?secret=YOUR_SECRET"
-              </code>
+            <div className="flex gap-2">
+              <span className="font-semibold min-w-[140px]">Expense Type:</span>
+              <span>Run if upgrading from old version without expense types</span>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Create indexes:</p>
-              <code className="block p-3 bg-gray-900 text-gray-300 rounded text-xs overflow-x-auto">
-                curl "https://your-app.vercel.app/api/admin/create-indexes?secret=YOUR_SECRET"
-              </code>
+            <div className="flex gap-2">
+              <span className="font-semibold min-w-[140px]">Contacts Arrays:</span>
+              <span>Run if upgrading to support multiple phone/email fields</span>
+            </div>
+            <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                💡 Tip: Use "Dry Run" buttons to preview changes before applying migrations. All operations are safe to run multiple times.
+              </p>
             </div>
           </div>
         </div>

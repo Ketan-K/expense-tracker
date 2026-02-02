@@ -80,12 +80,18 @@ export default function ContactSelector({
       const contactId = generateObjectId();
       const now = new Date();
 
+      // Convert single values to arrays
+      const phones = newContact.phone.trim() ? [newContact.phone.trim()] : [];
+      const emails = newContact.email.trim() ? [newContact.email.trim()] : [];
+
       const contact: LocalContact = {
         _id: contactId,
         userId: userId,
         name: newContact.name.trim(),
-        phone: newContact.phone.trim() || undefined,
-        email: newContact.email.trim() || undefined,
+        phone: phones,
+        email: emails,
+        primaryPhone: phones.length > 0 ? 0 : undefined,
+        primaryEmail: emails.length > 0 ? 0 : undefined,
         relationship: newContact.relationship || undefined,
         notes: newContact.notes.trim() || undefined,
         source: "manual",

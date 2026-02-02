@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { getIconComponent } from "@/lib/types";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Receipt } from "lucide-react";
 import { useState } from "react";
 
 interface Transaction {
@@ -30,8 +30,12 @@ export default function TransactionsList({ transactions, onEdit, onDelete }: Tra
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
           All Transactions
         </h2>
-        <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
-          No transactions to display
+        <div className="p-12 text-center">
+          <Receipt className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No expenses yet</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">
+            Start tracking your spending by adding your first expense
+          </p>
         </div>
       </div>
     );

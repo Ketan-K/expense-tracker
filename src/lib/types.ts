@@ -120,12 +120,14 @@ export interface Contact {
   _id?: ObjectId;
   userId: string;
   name: string;
-  phone?: string;
-  email?: string;
+  phone?: string[]; // Array of phone numbers
+  email?: string[]; // Array of email addresses
+  primaryPhone?: number; // Index of primary phone in array
+  primaryEmail?: number; // Index of primary email in array
   relationship?: string; // "friend", "family", "business", "other"
   notes?: string;
-  source?: "manual" | "imported"; // For Phase 2 mobile contact integration
-  externalId?: string; // For linking to mobile contacts in Phase 2
+  source?: "manual" | "imported"; // For mobile contact integration
+  externalId?: string; // For linking to mobile contacts
   createdAt: Date;
   updatedAt: Date;
 }

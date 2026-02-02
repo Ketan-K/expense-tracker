@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { performSync } from "@/lib/syncUtils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -14,6 +17,31 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+
+  // Perform immediate sync on mount
+  useEffect(() => {
+    if (session?.user?.id && navigator.onLine) {
+      performSync(session.user.id).catch(console.error);
+      setLastSyncTime(new Date());
+    }
+  }, [session?.user?.id]);
+
+  // Manual sync trigger
+  const handleManualSync = async () => {
+    if (!session?.user?.id || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      await performSync(session.user.id);
+      setLastSyncTime(new Date());
+    } catch (error) {
+      console.error('Sync error:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Get sync queue status
   const syncQueue = useLiveQuery(async () => {
@@ -84,12 +112,21 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
           </div>
           
           {/* Sync Status Indicator */}
-          {(totalPending > 0 || hasFailed) && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push("/dashboard/profile")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all"
-              title={hasFailed ? `${syncStats.failed} items failed` : `Syncing ${totalPending} items`}
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+              title={lastSyncTime ? `Last synced: ${lastSyncTime.toLocaleTimeString()}` : "Sync now"}
             >
+              <RefreshCw className={`w-4 h-4 text-gray-600 dark:text-gray-400 ${isSyncing ? 'animate-spin' : ''}`} />
+            </button>
+            {(totalPending > 0 || hasFailed) && (
+              <button
+                onClick={() => router.push("/dashboard/profile")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all"
+                title={hasFailed ? `${syncStats.failed} items failed` : `Syncing ${totalPending} items`}
+              >
               {hasFailed ? (
                 <>
                   <AlertCircle className="w-4 h-4 text-red-500" />
@@ -106,7 +143,8 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
                 </>
               ) : null}
             </button>
-          )}
+            )}
+          </div>
         </div>
       </header>
 

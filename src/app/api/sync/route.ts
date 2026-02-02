@@ -1,9 +1,17 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Expense, Category, Budget } from "@/lib/types";
+import { Expense, Category, Budget, Income, Loan, LoanPayment, Contact } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { validateExpense, validateCategory, validateBudget } from "@/lib/validation";
+import { 
+  validateExpense, 
+  validateCategory, 
+  validateBudget,
+  validateIncome,
+  validateLoan,
+  validateLoanPayment,
+  validateContact
+} from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
@@ -171,6 +179,312 @@ export async function POST(request: Request) {
             results.push({
               localId,
               remoteId: result?._id?.toString(),
+              success: true,
+            });
+          }
+        } else if (collection === "incomes") {
+          if (action === "CREATE") {
+            // Validate income data
+            const validation = validateIncome(data);
+            if (!validation.isValid) {
+              console.error("❌ Validation failed for income:", localId, validation.errors);
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const income: Income = {
+              userId: session.user.id,
+              ...validation.sanitized!,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            console.log("💾 Inserting income to MongoDB:", income);
+            const result = await db.collection<Income>("incomes").insertOne(income);
+            console.log("✅ Income inserted with ID:", result.insertedId.toString());
+            
+            results.push({
+              localId,
+              remoteId: result.insertedId.toString(),
+              success: true,
+            });
+          } else if (action === "UPDATE" && data._id) {
+            // Validate income data
+            const validation = validateIncome(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const updateData = {
+              ...validation.sanitized!,
+              updatedAt: new Date(),
+            };
+
+            await db.collection<Income>("incomes").updateOne(
+              { _id: new ObjectId(data._id), userId: session.user.id },
+              { $set: updateData }
+            );
+
+            results.push({
+              localId,
+              remoteId: data._id,
+              success: true,
+            });
+          } else if (action === "DELETE" && data._id) {
+            await db.collection<Income>("incomes").deleteOne({
+              _id: new ObjectId(data._id),
+              userId: session.user.id,
+            });
+
+            results.push({
+              localId,
+              remoteId: data._id,
+              success: true,
+            });
+          }
+        } else if (collection === "loans") {
+          if (action === "CREATE") {
+            // Validate loan data
+            const validation = validateLoan(data);
+            if (!validation.isValid) {
+              console.error("❌ Validation failed for loan:", localId, validation.errors);
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const loan: Loan = {
+              userId: session.user.id,
+              ...validation.sanitized!,
+              outstandingAmount: validation.sanitized!.principalAmount, // Initially outstanding = principal
+              status: "active",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            console.log("💾 Inserting loan to MongoDB:", loan);
+            const result = await db.collection<Loan>("loans").insertOne(loan);
+            console.log("✅ Loan inserted with ID:", result.insertedId.toString());
+            
+            results.push({
+              localId,
+              remoteId: result.insertedId.toString(),
+              success: true,
+            });
+          } else if (action === "UPDATE" && data._id) {
+            // Validate loan data
+            const validation = validateLoan(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const updateData = {
+              ...validation.sanitized!,
+              outstandingAmount: data.outstandingAmount, // Preserve outstanding amount from data
+              status: data.status || "active",
+              updatedAt: new Date(),
+            };
+
+            await db.collection<Loan>("loans").updateOne(
+              { _id: new ObjectId(data._id), userId: session.user.id },
+              { $set: updateData }
+            );
+
+            results.push({
+              localId,
+              remoteId: data._id,
+              success: true,
+            });
+          } else if (action === "DELETE" && data._id) {
+            await db.collection<Loan>("loans").deleteOne({
+              _id: new ObjectId(data._id),
+              userId: session.user.id,
+            });
+
+            results.push({
+              localId,
+              remoteId: data._id,
+              success: true,
+            });
+          }
+        } else if (collection === "loanPayments") {
+          if (action === "CREATE") {
+            // Validate loan payment data
+            const validation = validateLoanPayment(data);
+            if (!validation.isValid) {
+              console.error("❌ Validation failed for loan payment:", localId, validation.errors);
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const loanPayment: LoanPayment = {
+              userId: session.user.id,
+              ...validation.sanitized!,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            console.log("💾 Inserting loan payment to MongoDB:", loanPayment);
+            const result = await db.collection<LoanPayment>("loanPayments").insertOne(loanPayment);
+            console.log("✅ Loan payment inserted with ID:", result.insertedId.toString());
+            
+            // Update parent loan's outstanding amount
+            if (loanPayment.loanId) {
+              await db.collection<Loan>("loans").updateOne(
+                { _id: new ObjectId(loanPayment.loanId), userId: session.user.id },
+                { 
+                  $inc: { outstandingAmount: -loanPayment.amount },
+                  $set: { updatedAt: new Date() }
+                }
+              );
+              console.log("✅ Updated parent loan outstanding amount");
+            }
+
+            results.push({
+              localId,
+              remoteId: result.insertedId.toString(),
+              success: true,
+            });
+          } else if (action === "DELETE" && data._id) {
+            // Get payment amount before deleting
+            const payment = await db.collection<LoanPayment>("loanPayments").findOne({
+              _id: new ObjectId(data._id),
+              userId: session.user.id,
+            });
+
+            if (payment) {
+              await db.collection<LoanPayment>("loanPayments").deleteOne({
+                _id: new ObjectId(data._id),
+                userId: session.user.id,
+              });
+
+              // Reverse the payment amount in parent loan
+              if (payment.loanId) {
+                await db.collection<Loan>("loans").updateOne(
+                  { _id: new ObjectId(payment.loanId), userId: session.user.id },
+                  { 
+                    $inc: { outstandingAmount: payment.amount },
+                    $set: { updatedAt: new Date() }
+                  }
+                );
+                console.log("✅ Reversed parent loan outstanding amount");
+              }
+
+              results.push({
+                localId,
+                remoteId: data._id,
+                success: true,
+              });
+            } else {
+              results.push({
+                localId,
+                success: false,
+                error: "Loan payment not found",
+              });
+            }
+          }
+        } else if (collection === "contacts") {
+          if (action === "CREATE") {
+            // Validate contact data
+            const validation = validateContact(data);
+            if (!validation.isValid) {
+              console.error("❌ Validation failed for contact:", localId, validation.errors);
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const contact: Contact = {
+              userId: session.user.id,
+              ...validation.sanitized!,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            console.log("💾 Inserting contact to MongoDB:", contact);
+            const result = await db.collection<Contact>("contacts").insertOne(contact);
+            console.log("✅ Contact inserted with ID:", result.insertedId.toString());
+            
+            results.push({
+              localId,
+              remoteId: result.insertedId.toString(),
+              success: true,
+            });
+          } else if (action === "UPDATE" && data._id) {
+            // Validate contact data
+            const validation = validateContact(data);
+            if (!validation.isValid) {
+              results.push({
+                localId,
+                success: false,
+                error: `Validation failed: ${validation.errors.join(", ")}`,
+              });
+              continue;
+            }
+
+            const updateData = {
+              ...validation.sanitized!,
+              updatedAt: new Date(),
+            };
+
+            await db.collection<Contact>("contacts").updateOne(
+              { _id: new ObjectId(data._id), userId: session.user.id },
+              { $set: updateData }
+            );
+
+            results.push({
+              localId,
+              remoteId: data._id,
+              success: true,
+            });
+          } else if (action === "DELETE" && data._id) {
+            // Check if contact is referenced by any loans
+            const loansWithContact = await db.collection<Loan>("loans").countDocuments({
+              userId: session.user.id,
+              contactId: data._id,
+            });
+
+            if (loansWithContact > 0) {
+              results.push({
+                localId,
+                success: false,
+                error: `Cannot delete contact: ${loansWithContact} loans reference this contact`,
+              });
+              continue;
+            }
+
+            await db.collection<Contact>("contacts").deleteOne({
+              _id: new ObjectId(data._id),
+              userId: session.user.id,
+            });
+
+            results.push({
+              localId,
+              remoteId: data._id,
               success: true,
             });
           }

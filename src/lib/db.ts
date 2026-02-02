@@ -33,8 +33,10 @@ export interface LocalContact {
   _id?: string;
   userId: string;
   name: string;
-  phone?: string;
-  email?: string;
+  phone?: string[]; // Array of phone numbers
+  email?: string[]; // Array of email addresses
+  primaryPhone?: number; // Index of primary phone in array
+  primaryEmail?: number; // Index of primary email in array
   relationship?: string;
   notes?: string;
   source?: "manual" | "imported";
@@ -157,6 +159,41 @@ export class ExpenseTrackerDB extends Dexie {
       await expenses.toCollection().modify((expense) => {
         if (!expense.type) {
           expense.type = "expense";
+        }
+      });
+    });
+
+    // Version 3: Migrate contacts phone/email to arrays for mobile contact import
+    this.version(3).stores({
+      expenses: "_id, userId, date, category, type, synced, createdAt, updatedAt",
+      categories: "_id, &[userId+name], userId, name, synced, createdAt",
+      budgets: "_id, userId, categoryId, month, synced, createdAt, updatedAt",
+      incomes: "_id, userId, date, source, synced, createdAt, updatedAt",
+      loans: "_id, userId, contactId, direction, status, dueDate, synced, createdAt, updatedAt",
+      loanPayments: "_id, loanId, userId, date, synced, createdAt, updatedAt",
+      contacts: "_id, userId, &[userId+name], name, source, externalId, synced, createdAt, updatedAt",
+      syncQueue: "++id, status, timestamp, collection, localId, lastAttempt",
+      syncMetadata: "key, updatedAt",
+    }).upgrade(async (tx) => {
+      // Migrate existing contacts to have phone/email as arrays
+      const contacts = tx.table<LocalContact>("contacts");
+      await contacts.toCollection().modify((contact: any) => {
+        // Convert phone string to array
+        if (typeof contact.phone === "string" && contact.phone.trim()) {
+          contact.phone = [contact.phone.trim()];
+          contact.primaryPhone = 0;
+        } else if (!contact.phone || contact.phone === "") {
+          contact.phone = [];
+          contact.primaryPhone = undefined;
+        }
+
+        // Convert email string to array
+        if (typeof contact.email === "string" && contact.email.trim()) {
+          contact.email = [contact.email.trim()];
+          contact.primaryEmail = 0;
+        } else if (!contact.email || contact.email === "") {
+          contact.email = [];
+          contact.primaryEmail = undefined;
         }
       });
     });

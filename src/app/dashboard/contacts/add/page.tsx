@@ -16,8 +16,10 @@ export default function AddContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
-    email: "",
+    phones: [""],
+    emails: [""],
+    primaryPhone: 0,
+    primaryEmail: 0,
     relationship: "",
   });
 
@@ -63,13 +65,20 @@ export default function AddContactPage() {
       const contactId = generateObjectId();
       const now = new Date();
 
+      // Filter out empty values and deduplicate
+      const phones = [...new Set(formData.phones.filter(p => p.trim()))];
+      const emails = [...new Set(formData.emails.filter(e => e.trim()))];
+
       const contact: LocalContact = {
         _id: contactId,
         userId: session.user.id,
         name: formData.name.trim(),
-        phone: formData.phone.trim() || undefined,
-        email: formData.email.trim() || undefined,
+        phone: phones,
+        email: emails,
+        primaryPhone: phones.length > 0 ? Math.min(formData.primaryPhone, phones.length - 1) : undefined,
+        primaryEmail: emails.length > 0 ? Math.min(formData.primaryEmail, emails.length - 1) : undefined,
         relationship: formData.relationship.trim() || undefined,
+        source: "manual",
         synced: false,
         createdAt: now,
         updatedAt: now,
@@ -146,8 +155,8 @@ export default function AddContactPage() {
                 </label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.phones[0]}
+                  onChange={(e) => setFormData({ ...formData, phones: [e.target.value] })}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   placeholder="+91 1234567890"
                 />
@@ -159,8 +168,8 @@ export default function AddContactPage() {
                 </label>
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={formData.emails[0]}
+                  onChange={(e) => setFormData({ ...formData, emails: [e.target.value] })}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   placeholder="contact@example.com"
                 />

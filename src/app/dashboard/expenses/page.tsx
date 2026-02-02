@@ -11,7 +11,9 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns
 import EditExpenseModal from "@/components/EditExpenseModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import MonthSelector from "@/components/reports/MonthSelector";
+import TransactionsList from "@/components/reports/TransactionsList";
 import { toast } from "sonner";
+import { processSyncQueue } from "@/lib/syncUtils";
 
 export default function ExpensesPage() {
   const { data: session, status } = useSession();
@@ -93,16 +95,50 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this expense?")) return;
-
     try {
+      const expense = await db.expenses.get(id);
+      if (!expense) return;
+
       await db.expenses.delete(id);
-      toast.success("Expense deleted successfully");
+
+      await db.syncQueue.add({
+        action: "DELETE",
+        collection: "expenses",
+        data: { _id: id },
+        timestamp: Date.now(),
+        retryCount: 0,
+        status: "pending",
+        remoteId: id,
+      });
+
+      toast.success("Expense deleted");
+
+      if (navigator.onLine && session?.user?.id) {
+        processSyncQueue(session.user.id);
+      }
     } catch (error) {
       console.error("Error deleting expense:", error);
       toast.error("Failed to delete expense");
     }
   };
+
+  const handleEdit = (transaction: { id: string; amount: number; category: string; description: string; date: string }) => {
+    const expense = expenses?.find(e => e._id === transaction.id);
+    if (expense) {
+      setEditingExpense(expense);
+    }
+  };
+
+  // Transform expenses to transaction format for TransactionsList
+  const transactions = expenses?.map(expense => ({
+    id: expense._id!,
+    amount: expense.amount,
+    category: expense.category,
+    categoryColor: getCategoryColor(expense.category),
+    categoryIcon: getCategoryIcon(expense.category),
+    description: expense.description || "",
+    date: expense.date.toString(),
+  })) || [];
 
   return (
     <DashboardLayout>
@@ -178,79 +214,11 @@ export default function ExpensesPage() {
           </div>
 
           {/* Expenses List */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-indigo-500" />
-                {format(new Date(), "MMMM yyyy")}
-              </h2>
-            </div>
-
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {!expenses || expenses.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Receipt className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No expenses yet</p>
-                  <p className="text-gray-400 dark:text-gray-500 text-sm">
-                    Start tracking your spending by adding your first expense
-                  </p>
-                </div>
-              ) : (
-                expenses.map((expense) => (
-                  <div
-                    key={expense._id}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1 min-w-0">
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-sm"
-                          style={{ backgroundColor: `${getCategoryColor(expense.category)}20` }}
-                        >
-                          {getCategoryIcon(expense.category)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                              {expense.description}
-                            </h3>
-                            <p className="text-xl font-bold text-red-600 dark:text-red-400 flex-shrink-0">
-                              -{formatCurrency(expense.amount)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <Tag className="w-4 h-4" />
-                              {expense.category}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {format(new Date(expense.date), "MMM dd, yyyy")}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setEditingExpense(expense)}
-                          className="px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => expense._id && handleDelete(expense._id)}
-                          className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <TransactionsList 
+            transactions={transactions}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </div>
       </div>
 

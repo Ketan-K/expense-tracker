@@ -162,16 +162,34 @@ export default function ContactsPage() {
                     </div>
 
                     <div className="space-y-2 mb-4">
-                      {contact.phone && (
+                      {contact.phone && contact.phone.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Phone className="w-4 h-4" />
-                          {contact.phone}
+                          <span>
+                            {Array.isArray(contact.phone)
+                              ? contact.phone[contact.primaryPhone ?? 0] || contact.phone[0]
+                              : contact.phone}
+                          </span>
+                          {Array.isArray(contact.phone) && contact.phone.length > 1 && (
+                            <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded">
+                              +{contact.phone.length - 1} more
+                            </span>
+                          )}
                         </div>
                       )}
-                      {contact.email && (
+                      {contact.email && contact.email.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Mail className="w-4 h-4" />
-                          {contact.email}
+                          <span className="truncate">
+                            {Array.isArray(contact.email)
+                              ? contact.email[contact.primaryEmail ?? 0] || contact.email[0]
+                              : contact.email}
+                          </span>
+                          {Array.isArray(contact.email) && contact.email.length > 1 && (
+                            <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded">
+                              +{contact.email.length - 1} more
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
