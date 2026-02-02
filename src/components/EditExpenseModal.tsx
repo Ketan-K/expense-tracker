@@ -28,6 +28,7 @@ export default function EditExpenseModal({
     category: string;
     description: string;
     paymentMethod: string;
+    type?: "expense" | "income";
   }) => {
     if (!expense) return;
 
@@ -40,6 +41,7 @@ export default function EditExpenseModal({
         description: formData.description,
         paymentMethod: formData.paymentMethod,
         date: new Date(formData.date),
+        type: formData.type || expense.type || "expense",
         updatedAt: new Date(),
       };
 
@@ -83,6 +85,7 @@ export default function EditExpenseModal({
         category: expense.category,
         description: expense.description || "",
         paymentMethod: expense.paymentMethod || "upi",
+        type: expense.type || "expense",
       }
     : undefined;
 

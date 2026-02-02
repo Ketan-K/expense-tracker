@@ -16,6 +16,7 @@ interface ExpenseFormProps {
     category?: string;
     description?: string;
     paymentMethod?: string;
+    type?: "expense" | "income";
   };
   categories: { _id?: string; name: string; icon: string; color: string }[];
   onSubmit: (data: {
@@ -24,6 +25,7 @@ interface ExpenseFormProps {
     category: string;
     description: string;
     paymentMethod: string;
+    type?: "expense" | "income";
   }) => void | Promise<void>;
   onCancel?: () => void;
   submitLabel?: string;
@@ -48,6 +50,7 @@ export default function ExpenseForm({
     category: initialData?.category || "",
     description: initialData?.description || "",
     paymentMethod: initialData?.paymentMethod || "upi",
+    type: (initialData?.type || "expense") as "expense" | "income",
   });
 
   const [showCustomCategory, setShowCustomCategory] = useState(false);
@@ -66,6 +69,7 @@ export default function ExpenseForm({
         category: initialData.category || "",
         description: initialData.description || "",
         paymentMethod: initialData.paymentMethod || "upi",
+        type: (initialData.type || "expense") as "expense" | "income",
       });
     }
   }, [initialData]);
@@ -82,6 +86,7 @@ export default function ExpenseForm({
         category: "",
         description: "",
         paymentMethod: "upi",
+        type: "expense",
       });
     }
   };

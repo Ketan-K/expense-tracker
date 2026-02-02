@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Plus, User, Wallet, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { Home, Plus, User, Wallet, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Handshake, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -31,7 +31,10 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
 
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/dashboard/income", icon: TrendingUp, label: "Income" },
+    { href: "/dashboard/loans", icon: Handshake, label: "Loans" },
     { href: "/dashboard/add", icon: Plus, label: "Add", isMain: true },
+    { href: "/dashboard/contacts", icon: Users, label: "Contacts" },
     { href: "/dashboard/profile", icon: User, label: "Profile" },
   ];
 
@@ -39,6 +42,9 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
   const getPageTitle = () => {
     if (pageTitle) return pageTitle;
     if (pathname === "/dashboard") return "Dashboard";
+    if (pathname.startsWith("/dashboard/income")) return "Income";
+    if (pathname.startsWith("/dashboard/loans")) return "Loans";
+    if (pathname.startsWith("/dashboard/contacts")) return "Contacts";
     if (pathname === "/dashboard/add") return "Add Expense";
     if (pathname === "/dashboard/profile") return "Profile";
     return "Expense Tracker";

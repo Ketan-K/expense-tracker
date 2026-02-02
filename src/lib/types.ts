@@ -97,6 +97,64 @@ export interface Expense {
   category: string;
   description?: string;
   paymentMethod?: string;
+  type?: "expense" | "income"; // For backward compatibility and future migration
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Income {
+  _id?: ObjectId;
+  userId: string;
+  date: Date;
+  amount: number;
+  source: string; // "Salary", "Freelance", "Business", etc.
+  category?: string; // Optional income categorization
+  description?: string;
+  taxable?: boolean;
+  recurring?: boolean; // Monthly salary vs one-time bonus
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Contact {
+  _id?: ObjectId;
+  userId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  relationship?: string; // "friend", "family", "business", "other"
+  notes?: string;
+  source?: "manual" | "imported"; // For Phase 2 mobile contact integration
+  externalId?: string; // For linking to mobile contacts in Phase 2
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Loan {
+  _id?: ObjectId;
+  userId: string;
+  contactId?: string; // Reference to Contact
+  contactName: string; // Fallback if no contact selected
+  direction: "given" | "taken"; // Money I gave vs money I took
+  principalAmount: number;
+  outstandingAmount: number;
+  interestRate?: number; // Optional for display/reference only
+  startDate: Date;
+  dueDate?: Date;
+  status: "active" | "paid" | "overdue";
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LoanPayment {
+  _id?: ObjectId;
+  loanId: string; // Reference to Loan
+  userId: string;
+  amount: number;
+  date: Date;
+  paymentMethod?: string;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -134,6 +192,16 @@ export const DEFAULT_CATEGORIES = [
   { name: "Bills", icon: "Receipt", color: "#ef4444", isDefault: true },
   { name: "Health", icon: "Heart", color: "#22c55e", isDefault: true },
   { name: "Other", icon: "PlusCircle", color: "#6b7280", isDefault: true },
+];
+
+export const DEFAULT_INCOME_SOURCES = [
+  "Salary",
+  "Freelance",
+  "Business",
+  "Investment Returns",
+  "Rental Income",
+  "Gift",
+  "Other Income",
 ];
 
 // Icon mapping utility

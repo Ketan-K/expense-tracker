@@ -30,6 +30,13 @@ async function createIndexes() {
     );
     console.log("✅ Created index: userId_date_desc");
 
+    // Compound index for type and date filtering
+    await db.collection("expenses").createIndex(
+      { userId: 1, type: 1, date: -1 },
+      { name: "userId_type_date", background: true }
+    );
+    console.log("✅ Created index: userId_type_date");
+
     // Compound index for category filtering
     await db.collection("expenses").createIndex(
       { userId: 1, category: 1, date: -1 },
@@ -77,6 +84,81 @@ async function createIndexes() {
       { name: "userId_month_desc", background: true }
     );
     console.log("✅ Created index: userId_month_desc");
+
+    // Incomes Collection Indexes
+    console.log("\n📊 Creating indexes for 'incomes' collection...");
+    
+    // Compound index for user queries with date range
+    await db.collection("incomes").createIndex(
+      { userId: 1, date: -1 },
+      { name: "userId_date_desc", background: true }
+    );
+    console.log("✅ Created index: userId_date_desc");
+
+    // Compound index for source filtering
+    await db.collection("incomes").createIndex(
+      { userId: 1, source: 1, date: -1 },
+      { name: "userId_source_date", background: true }
+    );
+    console.log("✅ Created index: userId_source_date");
+
+    // Contacts Collection Indexes
+    console.log("\n📊 Creating indexes for 'contacts' collection...");
+    
+    // Index for user's contacts sorted by name
+    await db.collection("contacts").createIndex(
+      { userId: 1, name: 1 },
+      { name: "userId_name", unique: true, background: true }
+    );
+    console.log("✅ Created index: userId_name (unique)");
+
+    // Index for external contact ID (for mobile sync in Phase 2)
+    await db.collection("contacts").createIndex(
+      { userId: 1, externalId: 1, source: 1 },
+      { name: "userId_externalId_source", sparse: true, background: true }
+    );
+    console.log("✅ Created index: userId_externalId_source");
+
+    // Loans Collection Indexes
+    console.log("\n📊 Creating indexes for 'loans' collection...");
+    
+    // Compound index for direction and status filtering
+    await db.collection("loans").createIndex(
+      { userId: 1, direction: 1, status: 1 },
+      { name: "userId_direction_status", background: true }
+    );
+    console.log("✅ Created index: userId_direction_status");
+
+    // Index for contact-based loan queries
+    await db.collection("loans").createIndex(
+      { userId: 1, contactId: 1 },
+      { name: "userId_contactId", background: true }
+    );
+    console.log("✅ Created index: userId_contactId");
+
+    // Index for due date queries (for reminders)
+    await db.collection("loans").createIndex(
+      { userId: 1, status: 1, dueDate: 1 },
+      { name: "userId_status_dueDate", background: true }
+    );
+    console.log("✅ Created index: userId_status_dueDate");
+
+    // Loan Payments Collection Indexes
+    console.log("\n📊 Creating indexes for 'loanPayments' collection...");
+    
+    // Index for querying payments by loan
+    await db.collection("loanPayments").createIndex(
+      { loanId: 1, date: -1 },
+      { name: "loanId_date_desc", background: true }
+    );
+    console.log("✅ Created index: loanId_date_desc");
+
+    // Index for user's payments
+    await db.collection("loanPayments").createIndex(
+      { userId: 1, date: -1 },
+      { name: "userId_date_desc", background: true }
+    );
+    console.log("✅ Created index: userId_date_desc");
 
     // NextAuth Collections (if using MongoDB adapter)
     console.log("\n📊 Creating indexes for NextAuth collections...");
@@ -129,7 +211,19 @@ async function createIndexes() {
 
     // List all indexes
     console.log("\n📋 Listing all indexes...\n");
-    const collections = ["expenses", "categories", "budgets", "users", "sessions", "accounts", "verificationtokens"];
+    const collections = [
+      "expenses", 
+      "categories", 
+      "budgets", 
+      "incomes", 
+      "contacts", 
+      "loans", 
+      "loanPayments", 
+      "users", 
+      "sessions", 
+      "accounts", 
+      "verificationtokens"
+    ];
     
     for (const collectionName of collections) {
       const indexes = await db.collection(collectionName).indexes();

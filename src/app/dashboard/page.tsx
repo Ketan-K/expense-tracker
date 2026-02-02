@@ -13,13 +13,15 @@ import FilterBar, { FilterState } from "@/components/filters/FilterBar";
 import ExportButtons from "@/components/reports/ExportButtons";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Plus, Target } from "lucide-react";
+import { Plus, Target, TrendingUp, TrendingDown, Wallet, Handshake, DollarSign, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { LocalExpense } from "@/lib/db";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<LocalExpense | null>(null);
@@ -68,6 +70,36 @@ export default function DashboardPage() {
         .toArray();
     },
     [session?.user?.id, monthStart.getTime(), monthEnd.getTime()]
+  );
+
+  // Fetch incomes from IndexedDB
+  const incomes = useLiveQuery(
+    async () => {
+      if (!session?.user?.id) return [];
+      
+      return await db.incomes
+        .where("userId")
+        .equals(session.user.id)
+        .and((income) => {
+          const incomeDate = new Date(income.date);
+          return incomeDate >= monthStart && incomeDate <= monthEnd;
+        })
+        .toArray();
+    },
+    [session?.user?.id, monthStart.getTime(), monthEnd.getTime()]
+  );
+
+  // Fetch loans from IndexedDB
+  const loans = useLiveQuery(
+    async () => {
+      if (!session?.user?.id) return [];
+      
+      return await db.loans
+        .where("userId")
+        .equals(session.user.id)
+        .toArray();
+    },
+    [session?.user?.id]
   );
 
   const categories = useLiveQuery(
@@ -338,6 +370,40 @@ export default function DashboardPage() {
 
   const userName = session.user?.name?.split(' ')[0] || 'there';
 
+  // Calculate financial overview stats
+  const financialStats = useMemo(() => {
+    const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+    const totalIncome = incomes?.reduce((sum, i) => sum + i.amount, 0) || 0;
+    const netCashFlow = totalIncome - totalExpenses;
+
+    const activeLoans = loans?.filter(l => l.status === "active") || [];
+    const moneyGiven = activeLoans
+      .filter(l => l.direction === "given")
+      .reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
+    const moneyTaken = activeLoans
+      .filter(l => l.direction === "taken")
+      .reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
+    const netLoanPosition = moneyGiven - moneyTaken;
+
+    return {
+      totalExpenses,
+      totalIncome,
+      netCashFlow,
+      moneyGiven,
+      moneyTaken,
+      netLoanPosition,
+      activeLoansCount: activeLoans.length,
+    };
+  }, [expenses, incomes, loans]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
@@ -349,6 +415,72 @@ export default function DashboardPage() {
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 italic">
             "{financeTip}"
           </p>
+        </div>
+
+        {/* Financial Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-in slide-in-from-bottom duration-700">
+          {/* Income Card */}
+          <div 
+            onClick={() => router.push("/dashboard/income")}
+            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white cursor-pointer hover:shadow-xl transition-all group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Total Income</h3>
+              <TrendingUp className="w-5 h-5 opacity-90 group-hover:scale-110 transition-transform" />
+            </div>
+            <p className="text-3xl font-bold mb-1">{formatCurrency(financialStats.totalIncome)}</p>
+            <p className="text-xs opacity-75 flex items-center gap-1">
+              This month <ArrowRight className="w-3 h-3" />
+            </p>
+          </div>
+
+          {/* Expenses Card */}
+          <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Total Expenses</h3>
+              <TrendingDown className="w-5 h-5 opacity-90" />
+            </div>
+            <p className="text-3xl font-bold mb-1">{formatCurrency(financialStats.totalExpenses)}</p>
+            <p className="text-xs opacity-75">This month</p>
+          </div>
+
+          {/* Net Cash Flow Card */}
+          <div className={`rounded-2xl shadow-lg p-6 text-white ${
+            financialStats.netCashFlow >= 0
+              ? "bg-gradient-to-br from-blue-500 to-indigo-600"
+              : "bg-gradient-to-br from-orange-500 to-red-600"
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Net Cash Flow</h3>
+              <Wallet className="w-5 h-5 opacity-90" />
+            </div>
+            <p className="text-3xl font-bold mb-1">
+              {financialStats.netCashFlow >= 0 ? "+" : ""}
+              {formatCurrency(financialStats.netCashFlow)}
+            </p>
+            <p className="text-xs opacity-75">
+              {financialStats.netCashFlow >= 0 ? "Surplus" : "Deficit"} this month
+            </p>
+          </div>
+
+          {/* Loans Net Position Card */}
+          <div 
+            onClick={() => router.push("/dashboard/loans")}
+            className={`rounded-2xl shadow-lg p-6 text-white cursor-pointer hover:shadow-xl transition-all group ${
+              financialStats.netLoanPosition >= 0
+                ? "bg-gradient-to-br from-orange-500 to-red-600"
+                : "bg-gradient-to-br from-blue-500 to-indigo-600"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Loans Net</h3>
+              <Handshake className="w-5 h-5 opacity-90 group-hover:scale-110 transition-transform" />
+            </div>
+            <p className="text-3xl font-bold mb-1">{formatCurrency(Math.abs(financialStats.netLoanPosition))}</p>
+            <p className="text-xs opacity-75 flex items-center gap-1">
+              {financialStats.netLoanPosition >= 0 ? "To receive" : "To pay"} <ArrowRight className="w-3 h-3" />
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4 lg:gap-6 animate-in slide-in-from-top duration-700 delay-100">
