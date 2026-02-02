@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Expense } from "@/lib/types";
+import type { Expense } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateExpense, validateQueryParams, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
@@ -61,10 +61,7 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching expenses:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -100,18 +97,16 @@ export async function POST(request: Request) {
       updatedAt: new Date(),
     };
 
+    // Use client-provided _id if available to prevent duplicates
     const result = await db.collection<Expense>("expenses").insertOne(expense);
 
     const response = NextResponse.json({
       ...expense,
-      _id: result.insertedId,
+      _id: expense._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating expense:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -1,16 +1,16 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Expense, Category, Budget, Income, Loan, LoanPayment, Contact } from "@/lib/types";
+import type { Expense, Category, Budget, Income, Loan, LoanPayment, Contact } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { 
-  validateExpense, 
-  validateCategory, 
+import {
+  validateExpense,
+  validateCategory,
   validateBudget,
   validateIncome,
   validateLoan,
   validateLoanPayment,
-  validateContact
+  validateContact,
 } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
@@ -28,17 +28,18 @@ export async function POST(request: Request) {
     }
 
     // Apply rate limiting (sync has stricter limits)
-    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.sync);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id,
+      getIP(request),
+      rateLimiters.sync
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
     const { operations } = body;
 
     if (!operations || !Array.isArray(operations)) {
-      return NextResponse.json(
-        { error: "Invalid request format" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request format" }, { status: 400 });
     }
 
     const client = await clientPromise;
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
             // Validate expense data
             const validation = validateExpense(data);
             console.log("📋 Validation result:", validation);
-            
+
             if (!validation.isValid) {
               console.error("❌ Validation failed for expense:", localId, validation.errors);
               results.push({
@@ -77,11 +78,12 @@ export async function POST(request: Request) {
 
             console.log("💾 Inserting expense to MongoDB:", expense);
             const result = await db.collection<Expense>("expenses").insertOne(expense);
-            console.log("✅ Expense inserted with ID:", result.insertedId.toString());
-            
+            const finalId = expense._id || result.insertedId;
+            console.log("✅ Expense inserted with ID:", finalId.toString());
+
             results.push({
               localId,
-              remoteId: result.insertedId.toString(),
+              remoteId: finalId.toString(),
               success: true,
             });
           } else if (action === "UPDATE" && data._id) {
@@ -101,10 +103,12 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
-            await db.collection<Expense>("expenses").updateOne(
-              { _id: new ObjectId(data._id), userId: session.user.id },
-              { $set: updateData }
-            );
+            await db
+              .collection<Expense>("expenses")
+              .updateOne(
+                { _id: new ObjectId(data._id), userId: session.user.id },
+                { $set: updateData }
+              );
 
             results.push({
               localId,
@@ -144,9 +148,10 @@ export async function POST(request: Request) {
             };
 
             const result = await db.collection<Category>("categories").insertOne(category);
+            const finalId = category._id || result.insertedId;
             results.push({
               localId,
-              remoteId: result.insertedId.toString(),
+              remoteId: finalId.toString(),
               success: true,
             });
           }
@@ -170,11 +175,17 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
-            const result = await db.collection<Budget>("budgets").findOneAndUpdate(
-              { userId: session.user.id, categoryId: validation.sanitized!.categoryId, month: validation.sanitized!.month },
-              { $set: budget },
-              { upsert: true, returnDocument: "after" }
-            );
+            const result = await db
+              .collection<Budget>("budgets")
+              .findOneAndUpdate(
+                {
+                  userId: session.user.id,
+                  categoryId: validation.sanitized!.categoryId,
+                  month: validation.sanitized!.month,
+                },
+                { $set: budget },
+                { upsert: true, returnDocument: "after" }
+              );
 
             results.push({
               localId,
@@ -205,11 +216,12 @@ export async function POST(request: Request) {
 
             console.log("💾 Inserting income to MongoDB:", income);
             const result = await db.collection<Income>("incomes").insertOne(income);
-            console.log("✅ Income inserted with ID:", result.insertedId.toString());
-            
+            const finalId = income._id || result.insertedId;
+            console.log("✅ Income inserted with ID:", finalId.toString());
+
             results.push({
               localId,
-              remoteId: result.insertedId.toString(),
+              remoteId: finalId.toString(),
               success: true,
             });
           } else if (action === "UPDATE" && data._id) {
@@ -229,10 +241,12 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
-            await db.collection<Income>("incomes").updateOne(
-              { _id: new ObjectId(data._id), userId: session.user.id },
-              { $set: updateData }
-            );
+            await db
+              .collection<Income>("incomes")
+              .updateOne(
+                { _id: new ObjectId(data._id), userId: session.user.id },
+                { $set: updateData }
+              );
 
             results.push({
               localId,
@@ -276,11 +290,12 @@ export async function POST(request: Request) {
 
             console.log("💾 Inserting loan to MongoDB:", loan);
             const result = await db.collection<Loan>("loans").insertOne(loan);
-            console.log("✅ Loan inserted with ID:", result.insertedId.toString());
-            
+            const finalId = loan._id || result.insertedId;
+            console.log("✅ Loan inserted with ID:", finalId.toString());
+
             results.push({
               localId,
-              remoteId: result.insertedId.toString(),
+              remoteId: finalId.toString(),
               success: true,
             });
           } else if (action === "UPDATE" && data._id) {
@@ -302,10 +317,12 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
-            await db.collection<Loan>("loans").updateOne(
-              { _id: new ObjectId(data._id), userId: session.user.id },
-              { $set: updateData }
-            );
+            await db
+              .collection<Loan>("loans")
+              .updateOne(
+                { _id: new ObjectId(data._id), userId: session.user.id },
+                { $set: updateData }
+              );
 
             results.push({
               localId,
@@ -348,22 +365,23 @@ export async function POST(request: Request) {
             console.log("💾 Inserting loan payment to MongoDB:", loanPayment);
             const result = await db.collection<LoanPayment>("loanPayments").insertOne(loanPayment);
             console.log("✅ Loan payment inserted with ID:", result.insertedId.toString());
-            
+
             // Update parent loan's outstanding amount
             if (loanPayment.loanId) {
               await db.collection<Loan>("loans").updateOne(
                 { _id: new ObjectId(loanPayment.loanId), userId: session.user.id },
-                { 
+                {
                   $inc: { outstandingAmount: -loanPayment.amount },
-                  $set: { updatedAt: new Date() }
+                  $set: { updatedAt: new Date() },
                 }
               );
               console.log("✅ Updated parent loan outstanding amount");
             }
 
+            const finalId = loanPayment._id || result.insertedId;
             results.push({
               localId,
-              remoteId: result.insertedId.toString(),
+              remoteId: finalId.toString(),
               success: true,
             });
           } else if (action === "DELETE" && data._id) {
@@ -383,9 +401,9 @@ export async function POST(request: Request) {
               if (payment.loanId) {
                 await db.collection<Loan>("loans").updateOne(
                   { _id: new ObjectId(payment.loanId), userId: session.user.id },
-                  { 
+                  {
                     $inc: { outstandingAmount: payment.amount },
-                    $set: { updatedAt: new Date() }
+                    $set: { updatedAt: new Date() },
                   }
                 );
                 console.log("✅ Reversed parent loan outstanding amount");
@@ -427,11 +445,12 @@ export async function POST(request: Request) {
 
             console.log("💾 Inserting contact to MongoDB:", contact);
             const result = await db.collection<Contact>("contacts").insertOne(contact);
-            console.log("✅ Contact inserted with ID:", result.insertedId.toString());
-            
+            const finalId = contact._id || result.insertedId;
+            console.log("✅ Contact inserted with ID:", finalId.toString());
+
             results.push({
               localId,
-              remoteId: result.insertedId.toString(),
+              remoteId: finalId.toString(),
               success: true,
             });
           } else if (action === "UPDATE" && data._id) {
@@ -451,10 +470,12 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
-            await db.collection<Contact>("contacts").updateOne(
-              { _id: new ObjectId(data._id), userId: session.user.id },
-              { $set: updateData }
-            );
+            await db
+              .collection<Contact>("contacts")
+              .updateOne(
+                { _id: new ObjectId(data._id), userId: session.user.id },
+                { $set: updateData }
+              );
 
             results.push({
               localId,
@@ -503,9 +524,6 @@ export async function POST(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error syncing data:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

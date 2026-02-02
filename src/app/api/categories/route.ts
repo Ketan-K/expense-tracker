@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Category, DEFAULT_CATEGORIES } from "@/lib/types";
+import { type Category, DEFAULT_CATEGORIES } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateCategory, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
     // Initialize default categories for new users
     if (categories.length === 0) {
-      const defaultCategories = DEFAULT_CATEGORIES.map((cat) => ({
+      const defaultCategories = DEFAULT_CATEGORIES.map(cat => ({
         ...cat,
         userId: session.user.id,
         createdAt: new Date(),
@@ -49,10 +49,7 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching categories:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -84,7 +81,7 @@ export async function POST(request: Request) {
     // Check if category with this name already exists for this user
     const existingCategory = await db.collection<Category>("categories").findOne({
       userId: session.user.id,
-      name: { $regex: new RegExp(`^${sanitizeString(validation.sanitized!.name)}$`, 'i') } // Case-insensitive match
+      name: { $regex: new RegExp(`^${sanitizeString(validation.sanitized!.name)}$`, "i") }, // Case-insensitive match
     });
 
     if (existingCategory) {
@@ -105,14 +102,11 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ...category,
-      _id: result.insertedId,
+      _id: category._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating category:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

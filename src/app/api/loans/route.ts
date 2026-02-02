@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Loan } from "@/lib/types";
+import type { Loan } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateLoan, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
@@ -43,20 +43,13 @@ export async function GET(request: Request) {
       query.contactId = sanitizeString(contactId);
     }
 
-    const loans = await db
-      .collection<Loan>("loans")
-      .find(query)
-      .sort({ startDate: -1 })
-      .toArray();
+    const loans = await db.collection<Loan>("loans").find(query).sort({ startDate: -1 }).toArray();
 
     const response = NextResponse.json(loans);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching loans:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -96,14 +89,11 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ...loan,
-      _id: result.insertedId,
+      _id: loan._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating loan:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

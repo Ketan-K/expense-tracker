@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Budget } from "@/lib/types";
+import type { Budget } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateBudget, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
@@ -51,10 +51,7 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching budgets:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -94,11 +91,13 @@ export async function POST(request: Request) {
 
     if (existing) {
       // Update existing budget
-      const result = await db.collection<Budget>("budgets").findOneAndUpdate(
-        { userId: session.user.id, categoryId, month },
-        { $set: { amount, updatedAt: new Date() } },
-        { returnDocument: "after" }
-      );
+      const result = await db
+        .collection<Budget>("budgets")
+        .findOneAndUpdate(
+          { userId: session.user.id, categoryId, month },
+          { $set: { amount, updatedAt: new Date() } },
+          { returnDocument: "after" }
+        );
 
       const response = NextResponse.json(result);
       return addCorsHeaders(response, request.headers.get("origin"));
@@ -117,14 +116,11 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ...budget,
-      _id: result.insertedId,
+      _id: budget._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating budget:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

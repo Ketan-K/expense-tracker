@@ -3,8 +3,8 @@ import { ObjectId } from "mongodb";
 
 // Lazy load DOMPurify only when needed (client-side)
 let DOMPurify: any = null;
-if (typeof window !== 'undefined') {
-  import('isomorphic-dompurify').then(module => {
+if (typeof window !== "undefined") {
+  import("isomorphic-dompurify").then(module => {
     DOMPurify = module.default;
   });
 }
@@ -14,15 +14,15 @@ if (typeof window !== 'undefined') {
  */
 export function sanitizeString(input: string): string {
   if (typeof input !== "string") return "";
-  
+
   // Server-side: use simple sanitization
-  if (typeof window === 'undefined' || !DOMPurify) {
+  if (typeof window === "undefined" || !DOMPurify) {
     return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<[^>]*>/g, '')
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<[^>]*>/g, "")
       .trim();
   }
-  
+
   // Client-side: use DOMPurify
   return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim();
 }
@@ -31,6 +31,7 @@ export function sanitizeString(input: string): string {
  * Validate and sanitize expense input data
  */
 export function validateExpense(data: {
+  _id?: any;
   date?: any;
   amount?: any;
   category?: any;
@@ -100,28 +101,35 @@ export function validateExpense(data: {
   }
 
   // Return sanitized data
+  const sanitized: any = {
+    date: new Date(data.date),
+    amount: parseFloat(String(data.amount)),
+    category: sanitizeString(String(data.category)),
+    description: data.description ? sanitizeString(String(data.description)) : "",
+    paymentMethod: data.paymentMethod ? sanitizeString(String(data.paymentMethod)) : "",
+    type: data.type ? sanitizeString(String(data.type)) : "expense", // Default to expense
+  };
+
+  // Preserve _id if provided (for client-generated IDs)
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      date: new Date(data.date),
-      amount: parseFloat(String(data.amount)),
-      category: sanitizeString(String(data.category)),
-      description: data.description ? sanitizeString(String(data.description)) : "",
-      paymentMethod: data.paymentMethod ? sanitizeString(String(data.paymentMethod)) : "",
-      type: data.type ? sanitizeString(String(data.type)) : "expense", // Default to expense
-    },
+    sanitized,
   };
 }
 
 /**
  * Validate and sanitize category input data
  */
-export function validateCategory(data: {
-  name?: any;
-  icon?: any;
-  color?: any;
-}): { isValid: boolean; errors: string[]; sanitized?: any } {
+export function validateCategory(data: { _id?: any; name?: any; icon?: any; color?: any }): {
+  isValid: boolean;
+  errors: string[];
+  sanitized?: any;
+} {
   const errors: string[] = [];
 
   // Validate name
@@ -157,25 +165,31 @@ export function validateCategory(data: {
     return { isValid: false, errors };
   }
 
+  const sanitized: any = {
+    name: sanitizeString(String(data.name)),
+    icon: sanitizeString(String(data.icon)),
+    color: String(data.color).toLowerCase(),
+  };
+
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      name: sanitizeString(String(data.name)),
-      icon: sanitizeString(String(data.icon)),
-      color: String(data.color).toLowerCase(),
-    },
+    sanitized,
   };
 }
 
 /**
  * Validate and sanitize budget input data
  */
-export function validateBudget(data: {
-  categoryId?: any;
-  amount?: any;
-  month?: any;
-}): { isValid: boolean; errors: string[]; sanitized?: any } {
+export function validateBudget(data: { _id?: any; categoryId?: any; amount?: any; month?: any }): {
+  isValid: boolean;
+  errors: string[];
+  sanitized?: any;
+} {
   const errors: string[] = [];
 
   // Validate categoryId
@@ -209,14 +223,20 @@ export function validateBudget(data: {
     return { isValid: false, errors };
   }
 
+  const sanitized: any = {
+    categoryId: sanitizeString(String(data.categoryId)),
+    amount: parseFloat(String(data.amount)),
+    month: String(data.month),
+  };
+
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      categoryId: sanitizeString(String(data.categoryId)),
-      amount: parseFloat(String(data.amount)),
-      month: String(data.month),
-    },
+    sanitized,
   };
 }
 
@@ -266,6 +286,7 @@ export function sanitizeObjectId(id: string): boolean {
  * Validate and sanitize income input data
  */
 export function validateIncome(data: {
+  _id?: any;
   date?: any;
   amount?: any;
   source?: any;
@@ -322,18 +343,24 @@ export function validateIncome(data: {
     return { isValid: false, errors };
   }
 
+  const sanitized: any = {
+    date: new Date(data.date),
+    amount: parseFloat(String(data.amount)),
+    source: sanitizeString(String(data.source)),
+    category: data.category ? sanitizeString(String(data.category)) : "",
+    description: data.description ? sanitizeString(String(data.description)) : "",
+    taxable: data.taxable === true || data.taxable === "true",
+    recurring: data.recurring === true || data.recurring === "true",
+  };
+
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      date: new Date(data.date),
-      amount: parseFloat(String(data.amount)),
-      source: sanitizeString(String(data.source)),
-      category: data.category ? sanitizeString(String(data.category)) : "",
-      description: data.description ? sanitizeString(String(data.description)) : "",
-      taxable: data.taxable === true || data.taxable === "true",
-      recurring: data.recurring === true || data.recurring === "true",
-    },
+    sanitized,
   };
 }
 
@@ -341,6 +368,7 @@ export function validateIncome(data: {
  * Validate and sanitize contact input data
  */
 export function validateContact(data: {
+  _id?: any;
   name?: any;
   phone?: any;
   email?: any;
@@ -479,20 +507,26 @@ export function validateContact(data: {
     return { isValid: false, errors };
   }
 
+  const sanitized: any = {
+    name: sanitizeString(String(data.name)),
+    phone: sanitizedPhone,
+    email: sanitizedEmail,
+    primaryPhone,
+    primaryEmail,
+    relationship: data.relationship ? sanitizeString(String(data.relationship)) : "",
+    notes: data.notes ? sanitizeString(String(data.notes)) : "",
+    source: data.source ? sanitizeString(String(data.source)) : "manual",
+    externalId: data.externalId ? sanitizeString(String(data.externalId)) : undefined,
+  };
+
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      name: sanitizeString(String(data.name)),
-      phone: sanitizedPhone,
-      email: sanitizedEmail,
-      primaryPhone,
-      primaryEmail,
-      relationship: data.relationship ? sanitizeString(String(data.relationship)) : "",
-      notes: data.notes ? sanitizeString(String(data.notes)) : "",
-      source: data.source ? sanitizeString(String(data.source)) : "manual",
-      externalId: data.externalId ? sanitizeString(String(data.externalId)) : undefined,
-    },
+    sanitized,
   };
 }
 
@@ -500,6 +534,7 @@ export function validateContact(data: {
  * Validate and sanitize loan input data
  */
 export function validateLoan(data: {
+  _id?: any;
   contactId?: any;
   contactName?: any;
   direction?: any;
@@ -585,19 +620,25 @@ export function validateLoan(data: {
     return { isValid: false, errors };
   }
 
+  const sanitized: any = {
+    contactId: data.contactId ? sanitizeString(String(data.contactId)) : undefined,
+    contactName: sanitizeString(String(data.contactName)),
+    direction: sanitizeString(String(data.direction)),
+    principalAmount: parseFloat(String(data.principalAmount)),
+    interestRate: data.interestRate ? parseFloat(String(data.interestRate)) : undefined,
+    startDate: new Date(data.startDate),
+    dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+    description: data.description ? sanitizeString(String(data.description)) : "",
+  };
+
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      contactId: data.contactId ? sanitizeString(String(data.contactId)) : undefined,
-      contactName: sanitizeString(String(data.contactName)),
-      direction: sanitizeString(String(data.direction)),
-      principalAmount: parseFloat(String(data.principalAmount)),
-      interestRate: data.interestRate ? parseFloat(String(data.interestRate)) : undefined,
-      startDate: new Date(data.startDate),
-      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-      description: data.description ? sanitizeString(String(data.description)) : "",
-    },
+    sanitized,
   };
 }
 
@@ -605,6 +646,7 @@ export function validateLoan(data: {
  * Validate and sanitize loan payment input data
  */
 export function validateLoanPayment(data: {
+  _id?: any;
   loanId?: any;
   amount?: any;
   date?: any;
@@ -662,15 +704,21 @@ export function validateLoanPayment(data: {
     return { isValid: false, errors };
   }
 
+  const sanitized: any = {
+    loanId: sanitizeString(String(data.loanId)),
+    amount: parseFloat(String(data.amount)),
+    date: new Date(data.date),
+    paymentMethod: data.paymentMethod ? sanitizeString(String(data.paymentMethod)) : "",
+    notes: data.notes ? sanitizeString(String(data.notes)) : "",
+  };
+
+  if (data._id) {
+    sanitized._id = data._id;
+  }
+
   return {
     isValid: true,
     errors: [],
-    sanitized: {
-      loanId: sanitizeString(String(data.loanId)),
-      amount: parseFloat(String(data.amount)),
-      date: new Date(data.date),
-      paymentMethod: data.paymentMethod ? sanitizeString(String(data.paymentMethod)) : "",
-      notes: data.notes ? sanitizeString(String(data.notes)) : "",
-    },
+    sanitized,
   };
 }

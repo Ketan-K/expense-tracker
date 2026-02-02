@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { LoanPayment, Loan } from "@/lib/types";
+import type { LoanPayment, Loan } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { validateLoanPayment, sanitizeString } from "@/lib/validation";
@@ -44,10 +44,7 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching loan payments:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -81,10 +78,7 @@ export async function POST(request: Request) {
     });
 
     if (!loan) {
-      return NextResponse.json(
-        { error: "Loan not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Loan not found" }, { status: 404 });
     }
 
     // Verify payment amount doesn't exceed outstanding amount
@@ -122,14 +116,11 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ...payment,
-      _id: result.insertedId,
+      _id: payment._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating loan payment:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

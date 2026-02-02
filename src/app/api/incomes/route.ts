@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Income } from "@/lib/types";
+import type { Income } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateIncome, validateQueryParams, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
@@ -49,20 +49,13 @@ export async function GET(request: Request) {
       query.source = sanitizeString(source);
     }
 
-    const incomes = await db
-      .collection<Income>("incomes")
-      .find(query)
-      .sort({ date: -1 })
-      .toArray();
+    const incomes = await db.collection<Income>("incomes").find(query).sort({ date: -1 }).toArray();
 
     const response = NextResponse.json(incomes);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching incomes:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -100,14 +93,11 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ...income,
-      _id: result.insertedId,
+      _id: income._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating income:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

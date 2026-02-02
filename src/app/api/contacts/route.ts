@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import clientPromise from "@/lib/mongodb";
-import { Contact } from "@/lib/types";
+import type { Contact } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateContact, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
@@ -45,10 +45,7 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching contacts:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -84,10 +81,7 @@ export async function POST(request: Request) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Contact with this name already exists" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "Contact with this name already exists" }, { status: 409 });
     }
 
     const contact: Contact = {
@@ -102,14 +96,11 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       ...contact,
-      _id: result.insertedId,
+      _id: contact._id || result.insertedId,
     });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating contact:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
