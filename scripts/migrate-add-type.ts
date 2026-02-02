@@ -22,6 +22,10 @@ if (!MONGODB_URI) {
 async function migrateExpenses() {
   console.log("🚀 Starting migration: Add 'type' field to expenses...\n");
 
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI environment variable is not set");
+  }
+
   const client = new MongoClient(MONGODB_URI);
 
   try {
