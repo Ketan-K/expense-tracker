@@ -48,7 +48,7 @@ const eslintConfig = defineConfig([
       "quotes": ["error", "double", { avoidEscape: true }],
       "indent": ["error", 2, { SwitchCase: 1 }],
       "comma-dangle": ["error", "es5"],
-      "arrow-parens": ["error", "always"],
+      "arrow-parens": ["error", "as-needed"],
     }
   }
 ]);
