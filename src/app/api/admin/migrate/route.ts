@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
+import clientPromise from "@/lib/mongodb";
 
 /**
  * Migration API endpoint - adds type field to existing expenses
@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    const client = await clientPromise;
+    const db = client.db();
     const expensesCollection = db.collection("expenses");
 
     // Count expenses without type field
@@ -125,7 +126,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    const client = await clientPromise;
+    const db = client.db();
     const expensesCollection = db.collection("expenses");
 
     // Count expenses without type field

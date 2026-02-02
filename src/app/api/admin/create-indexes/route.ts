@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
+import clientPromise from "@/lib/mongodb";
 
 /**
  * Create Database Indexes API endpoint
@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    const client = await clientPromise;
+    const db = client.db();
     const results = [];
 
     // Expenses indexes
