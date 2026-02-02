@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Plus, User, Wallet, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Handshake, Users } from "lucide-react";
+import { Home, User, Wallet, RefreshCw, AlertCircle, TrendingUp, Handshake, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -31,9 +31,9 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
 
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/dashboard/expenses", icon: Wallet, label: "Expenses" },
     { href: "/dashboard/income", icon: TrendingUp, label: "Income" },
     { href: "/dashboard/loans", icon: Handshake, label: "Loans" },
-    { href: "/dashboard/add", icon: Plus, label: "Add", isMain: true },
     { href: "/dashboard/contacts", icon: Users, label: "Contacts" },
     { href: "/dashboard/profile", icon: User, label: "Profile" },
   ];
@@ -42,10 +42,10 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
   const getPageTitle = () => {
     if (pageTitle) return pageTitle;
     if (pathname === "/dashboard") return "Dashboard";
+    if (pathname.startsWith("/dashboard/expenses")) return "Expenses";
     if (pathname.startsWith("/dashboard/income")) return "Income";
     if (pathname.startsWith("/dashboard/loans")) return "Loans";
     if (pathname.startsWith("/dashboard/contacts")) return "Contacts";
-    if (pathname === "/dashboard/add") return "Add Expense";
     if (pathname === "/dashboard/profile") return "Profile";
     return "Expense Tracker";
   };
@@ -122,45 +122,16 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
         
         {/* Navigation Bar */}
         <div className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
-          <div className="flex items-end justify-around px-2 pb-safe-area">
+          <div className="flex items-center justify-around px-2 pb-safe-area">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              const isMainAction = item.isMain;
-
-              if (isMainAction) {
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="relative flex flex-col items-center -mt-6 px-6"
-                  >
-                    <div className={`relative w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300 ${
-                      isActive 
-                        ? 'shadow-indigo-500/50 scale-105' 
-                        : 'shadow-indigo-500/30 hover:scale-105 active:scale-95'
-                    }`}>
-                      <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
-                      {isActive && (
-                        <div className="absolute -inset-1 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-md opacity-50 -z-10"></div>
-                      )}
-                    </div>
-                    <span className={`text-[10px] font-semibold mt-1.5 transition-all duration-200 ${
-                      isActive 
-                        ? 'text-indigo-600 dark:text-indigo-400 scale-105' 
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              }
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative flex flex-col items-center py-3 px-6 min-w-[70px] group"
+                  className="relative flex flex-col items-center py-3 px-4 min-w-[60px] group"
                 >
                   <div className={`relative transition-all duration-300 ${
                     isActive ? 'scale-110' : 'group-active:scale-90'

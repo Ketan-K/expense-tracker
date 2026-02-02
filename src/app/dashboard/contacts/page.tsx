@@ -7,11 +7,13 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Users, Plus, Search, Phone, Mail, Heart, TrendingUp, TrendingDown } from "lucide-react";
+import AddContactModal from "@/components/AddContactModal";
 
 export default function ContactsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const contacts = useLiveQuery(
     () => db.contacts.where("userId").equals(session?.user?.id || "").toArray(),
@@ -233,6 +235,12 @@ export default function ContactsPage() {
           )}
         </div>
       </div>
+
+      <AddContactModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        userId={session?.user?.id || ""}
+      />
     </DashboardLayout>
   );
 }

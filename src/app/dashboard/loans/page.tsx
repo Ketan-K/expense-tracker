@@ -8,6 +8,7 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Handshake, Plus, TrendingUp, TrendingDown, AlertCircle, Calendar, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import AddLoanModal from "@/components/AddLoanModal";
 
 type StatusFilter = "all" | "active" | "paid" | "overdue";
 type DirectionFilter = "all" | "given" | "taken";
@@ -17,6 +18,7 @@ export default function LoansPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>("all");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const loans = useLiveQuery(
     () => db.loans.where("userId").equals(session?.user?.id || "").toArray(),
@@ -283,6 +285,12 @@ export default function LoansPage() {
           )}
         </div>
       </div>
+
+      <AddLoanModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        userId={session?.user?.id || ""}
+      />
     </DashboardLayout>
   );
 }
