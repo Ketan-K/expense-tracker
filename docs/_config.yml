@@ -1,0 +1,3 @@
+# GitHub Pages Configuration
+# This file enables GitHub Pages deployment from the docs folder
+theme: jekyll-theme-minimal

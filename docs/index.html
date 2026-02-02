@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Finance - Money Moves Only 💸</title>
+    <meta name="description" content="Gen Z financial wellness app - Track, save, and stack that cash">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="light-mode">
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <div class="logo-icon">💸</div>
+                    <span class="logo-text">Vibe Finance</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#demo">Demo</a>
+                    <a href="#themes">Themes</a>
+                    <a href="https://github.com/Ketan-K/expense-tracker" target="_blank" class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        View on GitHub
+                    </a>
+                </div>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero section-snap" id="home">
+        <div class="hero-bg">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">
+                        <span class="gradient-text">Money Moves Only</span>
+                        <span class="emoji-float">💸</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Stop stressing about money. Start vibing with your finances. 🌟<br>
+                        The Gen Z financial wellness app that makes tracking expenses feel like scrolling your feed—
+                        effortless, beautiful, and totally your vibe.
+                    </p>
+                    <div class="hero-badges">
+                        <span class="badge">✨ Free & Open Source</span>
+                        <span class="badge">🔒 Privacy First</span>
+                        <span class="badge">⚡ Lightning Fast</span>
+                    </div>
+                    <div class="hero-cta">
+                        <a href="https://vibe-finance-io.vercel.app/" target="_blank" class="btn-large btn-gradient">
+                            Try Vibe Finance
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="https://expense-tracker-io.vercel.app/" target="_blank" class="btn-large btn-outline">
+                            Default Theme Demo
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+                            </svg>
+                        </a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Open Source</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">PWA</div>
+                            <div class="stat-label">Ready</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">Multi</div>
+                            <div class="stat-label">Theme</div>
+                        </div>
+                    </div>
+                    <div class="hero-links">
+                        <a href="https://vibe-finance-io.vercel.app/" target="_blank" class="demo-link vibe">
+                            <span class="demo-dot"></span>
+                            Live: Vibe Finance
+                        </a>
+                        <a href="https://expense-tracker-io.vercel.app/" target="_blank" class="demo-link default">
+                            <span class="demo-dot"></span>
+                            Live: Default Theme
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-mockup">
+                    <div class="phone-frame">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen">
+                            <div class="mockup-app">
+                                <div class="mockup-header">
+                                    <div class="mockup-logo">💸</div>
+                                    <div class="mockup-title">Vibe Finance</div>
+                                </div>
+                                <div class="mockup-balance">
+                                    <div class="balance-label">Total Balance</div>
+                                    <div class="balance-amount">$4,235.00</div>
+                                    <div class="balance-change positive">+12.5% this month</div>
+                                </div>
+                                <div class="mockup-cards">
+                                    <div class="quick-card total">
+                                        <div class="card-header">
+                                            <div class="card-icon-circle">📊</div>
+                                        </div>
+                                        <div class="card-value">₹965</div>
+                                        <div class="card-label">Total Spent</div>
+                                    </div>
+                                    <div class="quick-card daily">
+                                        <div class="card-header">
+                                            <div class="card-icon-circle">📅</div>
+                                        </div>
+                                        <div class="card-value">₹32</div>
+                                        <div class="card-label">Daily Avg</div>
+                                    </div>
+                                    <div class="quick-card categories">
+                                        <div class="card-header">
+                                            <div class="card-icon-circle">🏷️</div>
+                                        </div>
+                                        <div class="card-value">8</div>
+                                        <div class="card-label">Categories</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features section-snap">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">💜 Why You'll Love It</h2>
+                <p class="section-subtitle">Not just another boring finance app. This one's built different. 🚀</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Smart Analytics</h3>
+                    <p class="feature-description">
+                        See exactly where your money goes with stunning visualizations. No more mystery expenses—
+                        just crystal clear insights that help you level up your money game. 📈
+                    </p>
+                    <div class="feature-wireframe">
+                        <div class="wireframe-chart">
+                            <div class="chart-bar" style="--height: 60%"></div>
+                            <div class="chart-bar" style="--height: 80%"></div>
+                            <div class="chart-bar" style="--height: 45%"></div>
+                            <div class="chart-bar" style="--height: 90%"></div>
+                            <div class="chart-bar" style="--height: 70%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💼</div>
+                    <h3 class="feature-title">Budget Management</h3>
+                    <p class="feature-description">
+                        Set it and forget it (but not really). Create smart budgets that actually work for your lifestyle.
+                        Get friendly nudges when you're getting close to the limit. No judgment, just vibes. ✌️
+                    </p>
+                    <div class="feature-wireframe">
+                        <div class="wireframe-budgets">
+                            <div class="budget-item">
+                                <div class="budget-label">🍔 Food</div>
+                                <div class="budget-bar">
+                                    <div class="budget-progress" style="--progress: 65%"></div>
+                                </div>
+                            </div>
+                            <div class="budget-item">
+                                <div class="budget-label">🚗 Transport</div>
+                                <div class="budget-bar">
+                                    <div class="budget-progress" style="--progress: 40%"></div>
+                                </div>
+                            </div>
+                            <div class="budget-item">
+                                <div class="budget-label">🎮 Entertainment</div>
+                                <div class="budget-bar">
+                                    <div class="budget-progress" style="--progress: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3 class="feature-title">Multi-Device Sync</h3>
+                    <p class="feature-description">
+                        Start on your phone, finish on your laptop. Your data follows you everywhere like your favorite playlist.
+                        Always in sync, always up to date. Magic? Nope, just good engineering. 🎯
+                    </p>
+                    <div class="feature-wireframe">
+                        <div class="wireframe-sync">
+                            <div class="sync-device">📱</div>
+                            <div class="sync-arrows">⟷</div>
+                            <div class="sync-device">💻</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3 class="feature-title">Multi-Theme Support</h3>
+                    <p class="feature-description">
+                        Express yourself! Switch between gorgeous themes that match your aesthetic.
+                        From vibrant Vibe Finance to sleek minimalism—your money, your style. 💅
+                    </p>
+                    <div class="feature-wireframe">
+                        <div class="wireframe-themes">
+                            <div class="theme-preview vibe"></div>
+                            <div class="theme-preview default"></div>
+                            <div class="theme-preview custom"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3 class="feature-title">Contact Management</h3>
+                    <p class="feature-description">
+                        Keep track of who owes you (and who you owe). No more awkward "did you pay me back?" texts.
+                        Crystal clear transaction history with everyone in your circle. 🔗
+                    </p>
+                    <div class="feature-wireframe">
+                        <div class="wireframe-contacts">
+                            <div class="contact-item">
+                                <div class="contact-avatar">A</div>
+                                <div class="contact-name">Alice</div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-avatar">B</div>
+                                <div class="contact-name">Bob</div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-avatar">C</div>
+                                <div class="contact-name">Carol</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3 class="feature-title">PWA Ready</h3>
+                    <p class="feature-description">
+                        No app store, no problem! Install directly from your browser and enjoy a native app experience.
+                        Works offline too—because your finances don't take breaks. 📲
+                    </p>
+                    <div class="feature-wireframe">
+                        <div class="wireframe-pwa">
+                            <div class="pwa-icon">📲</div>
+                            <div class="pwa-text">Install App</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits section-snap">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">✨ The Vibe Finance Difference</h2>
+                <p class="section-subtitle">What makes us stand out from the crowd</p>
+            </div>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-emoji">🎯</div>
+                    <h3>Zero Learning Curve</h3>
+                    <p>Intuitive design that feels natural from day one. If you can use Instagram, you can use this.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-emoji">🔐</div>
+                    <h3>Your Data, Your Rules</h3>
+                    <p>100% privacy-focused. We don't sell your data. Ever. Self-host it if you want complete control.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-emoji">🌈</div>
+                    <h3>Designed for Delight</h3>
+                    <p>Finance apps don't have to be boring. Enjoy beautiful animations, smooth transitions, and vibrant colors.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-emoji">⚡</div>
+                    <h3>Blazing Fast</h3>
+                    <p>Built with Next.js 15 and modern tech. Lightning-fast performance that respects your time.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-emoji">💪</div>
+                    <h3>Community Driven</h3>
+                    <p>Open source and actively maintained. Join our community, contribute features, or fork it for yourself.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-emoji">🎨</div>
+                    <h3>White Label Ready</h3>
+                    <p>Rebrand it completely. Perfect for teams, startups, or anyone who wants their own finance tracker.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Demo Section -->
+    <section id="demo" class="demo section-snap">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">🎮 Try It Yourself</h2>
+                <p class="section-subtitle">See the magic in action with our interactive demo</p>
+            </div>
+            <div class="demo-container">
+                <div class="demo-tabs">
+                    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                    <button class="tab-btn" data-tab="expenses">Expenses</button>
+                    <button class="tab-btn" data-tab="analytics">Analytics</button>
+                    <button class="tab-btn" data-tab="budgets">Budgets</button>
+                </div>
+                <div class="demo-content">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-panel active" id="dashboard">
+                        <div class="demo-screen">
+                            <div class="demo-topbar">
+                                <div class="topbar-left">
+                                    <div class="logo-small">💸</div>
+                                    <span>Vibe Finance</span>
+                                </div>
+                                <div class="topbar-right">
+                                    <div class="profile-pic">👤</div>
+                                </div>
+                            </div>
+                            <div class="demo-body">
+                                <div class="balance-card-large">
+                                    <div class="balance-header">
+                                        <span>Total Balance</span>
+                                        <span class="balance-date">Dec 2025</span>
+                                    </div>
+                                    <div class="balance-main">$4,235.00</div>
+                                    <div class="balance-sub positive">+$432 from last month</div>
+                                </div>
+                                <div class="quick-stats">
+                                    <div class="stat-card gradient-purple">
+                                        <div class="stat-icon-bg">
+                                            <span class="stat-emoji">📊</span>
+                                        </div>
+                                        <div class="stat-details">
+                                            <div class="stat-amount">₹965</div>
+                                            <div class="stat-name">Total Spent</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card gradient-orange">
+                                        <div class="stat-icon-bg">
+                                            <span class="stat-emoji">📅</span>
+                                        </div>
+                                        <div class="stat-details">
+                                            <div class="stat-amount">₹32</div>
+                                            <div class="stat-name">Daily Average</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="recent-section">
+                                    <div class="section-title-small">Recent Transactions</div>
+                                    <div class="transaction-list">
+                                        <div class="transaction-item">
+                                            <div class="trans-left">
+                                                <div class="trans-icon-box food-bg">🍔</div>
+                                                <div class="trans-details">
+                                                    <div class="trans-name">Lunch at Chipotle</div>
+                                                    <div class="trans-date">Food & Dining • Today</div>
+                                                </div>
+                                            </div>
+                                            <div class="trans-amount">₹480</div>
+                                        </div>
+                                        <div class="transaction-item">
+                                            <div class="trans-left">
+                                                <div class="trans-icon-box transport-bg">🚗</div>
+                                                <div class="trans-details">
+                                                    <div class="trans-name">Uber Ride</div>
+                                                    <div class="trans-date">Transport • Yesterday</div>
+                                                </div>
+                                            </div>
+                                            <div class="trans-amount">₹285</div>
+                                        </div>
+                                        <div class="transaction-item">
+                                            <div class="trans-left">
+                                                <div class="trans-icon-box shopping-bg">🛍️</div>
+                                                <div class="trans-details">
+                                                    <div class="trans-name">Amazon Purchase</div>
+                                                    <div class="trans-date">Shopping • Dec 28</div>
+                                                </div>
+                                            </div>
+                                            <div class="trans-amount">₹200</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expenses Tab -->
+                    <div class="tab-panel" id="expenses">
+                        <div class="demo-screen">
+                            <div class="demo-topbar">
+                                <div class="topbar-left">
+                                    <button class="back-btn">←</button>
+                                    <span>Expenses</span>
+                                </div>
+                                <button class="add-btn">+</button>
+                            </div>
+                            <div class="demo-body">
+                                <div class="filter-bar">
+                                    <select class="filter-select">
+                                        <option>All Categories</option>
+                                        <option>Food</option>
+                                        <option>Transport</option>
+                                    </select>
+                                    <select class="filter-select">
+                                        <option>This Month</option>
+                                        <option>Last Month</option>
+                                    </select>
+                                </div>
+                                <div class="expense-summary">
+                                    <div class="summary-item">
+                                        <span>Total Spent</span>
+                                        <strong>₹965</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>Transactions</span>
+                                        <strong>24</strong>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span>Categories</span>
+                                        <strong>8</strong>
+                                    </div>
+                                </div>
+                                <div class="expense-list">
+                                    <div class="expense-group">
+                                        <div class="group-header">Today</div>
+                                        <div class="expense-item">
+                                            <div class="expense-left">
+                                                <div class="expense-icon food">🍔</div>
+                                                <div class="expense-info">
+                                                    <div class="expense-name">Chipotle</div>
+                                                    <div class="expense-category">Food & Dining</div>
+                                                </div>
+                                            </div>
+                                            <div class="expense-amount">$12.50</div>
+                                        </div>
+                                        <div class="expense-item">
+                                            <div class="expense-left">
+                                                <div class="expense-icon transport">🚗</div>
+                                                <div class="expense-info">
+                                                    <div class="expense-name">Uber</div>
+                                                    <div class="expense-category">Transport</div>
+                                                </div>
+                                            </div>
+                                            <div class="expense-amount">$8.20</div>
+                                        </div>
+                                    </div>
+                                    <div class="expense-group">
+                                        <div class="group-header">Yesterday</div>
+                                        <div class="expense-item">
+                                            <div class="expense-left">
+                                                <div class="expense-icon shopping">🛍️</div>
+                                                <div class="expense-info">
+                                                    <div class="expense-name">Amazon</div>
+                                                    <div class="expense-category">Shopping</div>
+                                                </div>
+                                            </div>
+                                            <div class="expense-amount">$45.99</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Tab -->
+                    <div class="tab-panel" id="analytics">
+                        <div class="demo-screen">
+                            <div class="demo-topbar">
+                                <div class="topbar-left">
+                                    <button class="back-btn">←</button>
+                                    <span>Analytics</span>
+                                </div>
+                            </div>
+                            <div class="demo-body">
+                                <div class="chart-section">
+                                    <div class="chart-header">
+                                        <span>Spending by Category</span>
+                                        <select class="chart-period">
+                                            <option>This Month</option>
+                                        </select>
+                                    </div>
+                                    <div class="pie-chart">
+                                        <svg viewBox="0 0 200 200" class="donut">
+                                            <circle cx="100" cy="100" r="80" fill="none" stroke="#f97316" stroke-width="40" 
+                                                    stroke-dasharray="157 314" transform="rotate(-90 100 100)"/>
+                                            <circle cx="100" cy="100" r="80" fill="none" stroke="#10b981" stroke-width="40" 
+                                                    stroke-dasharray="94 314" stroke-dashoffset="-157" transform="rotate(-90 100 100)"/>
+                                            <circle cx="100" cy="100" r="80" fill="none" stroke="#8b5cf6" stroke-width="40" 
+                                                    stroke-dasharray="63 314" stroke-dashoffset="-251" transform="rotate(-90 100 100)"/>
+                                        </svg>
+                                        <div class="chart-center">
+                                            <div class="chart-total">$965</div>
+                                            <div class="chart-label">Total</div>
+                                        </div>
+                                    </div>
+                                    <div class="chart-legend">
+                                        <div class="legend-item">
+                                            <div class="legend-color" style="background: #f97316"></div>
+                                            <span>Food - $480</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color" style="background: #10b981"></div>
+                                            <span>Transport - $285</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color" style="background: #8b5cf6"></div>
+                                            <span>Shopping - $200</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="trend-section">
+                                    <div class="trend-header">Monthly Trend</div>
+                                    <div class="bar-chart">
+                                        <div class="bar-item">
+                                            <div class="bar" style="--bar-height: 60%"></div>
+                                            <div class="bar-label">Jan</div>
+                                        </div>
+                                        <div class="bar-item">
+                                            <div class="bar" style="--bar-height: 75%"></div>
+                                            <div class="bar-label">Feb</div>
+                                        </div>
+                                        <div class="bar-item">
+                                            <div class="bar" style="--bar-height: 50%"></div>
+                                            <div class="bar-label">Mar</div>
+                                        </div>
+                                        <div class="bar-item">
+                                            <div class="bar" style="--bar-height: 85%"></div>
+                                            <div class="bar-label">Apr</div>
+                                        </div>
+                                        <div class="bar-item">
+                                            <div class="bar" style="--bar-height: 70%"></div>
+                                            <div class="bar-label">May</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Budgets Tab -->
+                    <div class="tab-panel" id="budgets">
+                        <div class="demo-screen">
+                            <div class="demo-topbar">
+                                <div class="topbar-left">
+                                    <button class="back-btn">←</button>
+                                    <span>Budgets</span>
+                                </div>
+                                <button class="add-btn">+</button>
+                            </div>
+                            <div class="demo-body">
+                                <div class="budget-overview">
+                                    <div class="budget-total">
+                                        <span>Total Budget</span>
+                                        <strong>$1,500 / $2,000</strong>
+                                    </div>
+                                    <div class="overall-progress">
+                                        <div class="progress-fill" style="width: 75%"></div>
+                                    </div>
+                                </div>
+                                <div class="budget-cards">
+                                    <div class="budget-card">
+                                        <div class="budget-card-header">
+                                            <div class="budget-card-icon-box food-bg">🍔</div>
+                                            <div class="budget-card-title">
+                                                <div class="budget-card-name">Food & Dining</div>
+                                                <div class="budget-card-amount">₹480 of ₹700</div>
+                                            </div>
+                                        </div>
+                                        <div class="budget-card-progress">
+                                            <div class="budget-card-bar">
+                                                <div class="budget-card-fill warning" style="width: 69%"></div>
+                                            </div>
+                                            <div class="budget-card-values">
+                                                <span class="budget-percent warning">69% used</span>
+                                                <span class="budget-remaining">₹220 left</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="budget-card">
+                                        <div class="budget-card-header">
+                                            <div class="budget-card-icon-box transport-bg">🚗</div>
+                                            <div class="budget-card-title">
+                                                <div class="budget-card-name">Transport</div>
+                                                <div class="budget-card-amount">₹200 of ₹500</div>
+                                            </div>
+                                        </div>
+                                        <div class="budget-card-progress">
+                                            <div class="budget-card-bar">
+                                                <div class="budget-card-fill safe" style="width: 40%"></div>
+                                            </div>
+                                            <div class="budget-card-values">
+                                                <span class="budget-percent safe">40% used</span>
+                                                <span class="budget-remaining">₹300 left</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="budget-card">
+                                        <div class="budget-card-header">
+                                            <div class="budget-card-icon-box shopping-bg">🛍️</div>
+                                            <div class="budget-card-title">
+                                                <div class="budget-card-name">Shopping</div>
+                                                <div class="budget-card-amount">₹255 of ₹300</div>
+                                            </div>
+                                        </div>
+                                        <div class="budget-card-progress">
+                                            <div class="budget-card-bar">
+                                                <div class="budget-card-fill danger" style="width: 85%"></div>
+                                            </div>
+                                            <div class="budget-card-values">
+                                                <span class="budget-percent danger">85% used</span>
+                                                <span class="budget-remaining">₹45 left</span>
+                                            </div>
+                                        </div>
+                                        <div class="budget-warning">
+                                            Approaching limit - 15% remaining
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Themes Section -->
+    <section id="themes" class="themes section-snap">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Multi-Theme Support</h2>
+                <p class="section-subtitle">White-label ready with customizable branding</p>
+            </div>
+            <div class="themes-grid">
+                <div class="theme-card">
+                    <div class="theme-preview-large vibe-theme">
+                        <div class="theme-nav">
+                            <div class="theme-logo">💸 Vibe Finance</div>
+                        </div>
+                        <div class="theme-content">
+                            <div class="theme-balance">$4,235</div>
+                            <div class="theme-cards-mini">
+                                <div class="mini-card"></div>
+                                <div class="mini-card"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Vibe Finance Theme</h3>
+                    <p>Purple to pink gradient. Gen Z focused branding.</p>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: linear-gradient(135deg, #8B5CF6, #EC4899)"></div>
+                        <div class="color-swatch" style="background: #8B5CF6"></div>
+                        <div class="color-swatch" style="background: #EC4899"></div>
+                    </div>
+                </div>
+                <div class="theme-card">
+                    <div class="theme-preview-large default-theme">
+                        <div class="theme-nav">
+                            <div class="theme-logo">💰 ExpenseTracker</div>
+                        </div>
+                        <div class="theme-content">
+                            <div class="theme-balance">$4,235</div>
+                            <div class="theme-cards-mini">
+                                <div class="mini-card"></div>
+                                <div class="mini-card"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Default Theme</h3>
+                    <p>Classic blue indigo palette. Professional look.</p>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: linear-gradient(135deg, #4F46E5, #0891B2)"></div>
+                        <div class="color-swatch" style="background: #4F46E5"></div>
+                        <div class="color-swatch" style="background: #0891B2"></div>
+                    </div>
+                </div>
+                <div class="theme-card">
+                    <div class="theme-preview-large custom-theme">
+                        <div class="theme-nav">
+                            <div class="theme-logo">🎨 Your Brand</div>
+                        </div>
+                        <div class="theme-content">
+                            <div class="theme-balance">$4,235</div>
+                            <div class="theme-cards-mini">
+                                <div class="mini-card"></div>
+                                <div class="mini-card"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Custom Theme</h3>
+                    <p>Fully customizable. Add your own branding.</p>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: linear-gradient(135deg, #10b981, #06b6d4)"></div>
+                        <div class="color-swatch" style="background: #10b981"></div>
+                        <div class="color-swatch" style="background: #06b6d4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section class="tech-stack section-snap">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Built With Modern Tech</h2>
+                <p class="section-subtitle">Powered by the best tools and frameworks</p>
+            </div>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <div class="tech-logo">⚛️</div>
+                    <div class="tech-name">Next.js 16</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-logo">📘</div>
+                    <div class="tech-name">TypeScript</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-logo">🍃</div>
+                    <div class="tech-name">MongoDB</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-logo">🔐</div>
+                    <div class="tech-name">NextAuth</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-logo">🎨</div>
+                    <div class="tech-name">Tailwind CSS</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-logo">📱</div>
+                    <div class="tech-name">PWA</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta section-snap">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Ready to Stack That Cash? 💰</h2>
+                <p class="cta-subtitle">Join thousands taking control of their finances. No ads, no BS, just pure financial wellness. ✨</p>
+                <div class="cta-buttons">
+                    <a href="https://vibe-finance-io.vercel.app/" target="_blank" class="btn-large btn-gradient">
+                        🚀 Launch App
+                    </a>
+                    <a href="https://github.com/Ketan-K/expense-tracker" target="_blank" class="btn-large btn-outline">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <div class="footer-logo">
+                        <div class="logo-icon">💸</div>
+                        <span>Vibe Finance</span>
+                    </div>
+                    <p class="footer-tagline">Money Moves Only</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="#features">Features</a>
+                        <a href="#demo">Demo</a>
+                        <a href="#themes">Themes</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Resources</h4>
+                        <a href="https://github.com/Ketan-K/expense-tracker/blob/master/README.md">Documentation</a>
+                        <a href="https://github.com/Ketan-K/expense-tracker">GitHub</a>
+                        <a href="https://github.com/Ketan-K/expense-tracker/issues">Issues</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Developer</h4>
+                        <a href="https://github.com/Ketan-K">GitHub Profile</a>
+                        <a href="https://github.com/Ketan-K/expense-tracker/blob/master/LICENSE">License</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Vibe Finance. Open Source Project.</p>
+                <p>Built with 💜 using Next.js</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

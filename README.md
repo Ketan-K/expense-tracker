@@ -2,6 +2,14 @@
 
 A modern, offline-first expense tracking Progressive Web App with comprehensive financial management features.
 
+## 🌐 Live Demos
+
+- **[Vibe Finance Theme](https://vibe-finance-io.vercel.app/)** - Gen Z focused purple-pink gradient theme
+- **[Default Theme](https://expense-tracker-io.vercel.app/)** - Professional indigo-cyan theme
+- **[Interactive Landing Page](https://ketan-k.github.io/expense-tracker/)** - Feature showcase with live mockups
+
+> Multi-theme PWA with Google OAuth, offline sync, and comprehensive expense tracking
+
 ## ✨ Features
 
 - 🔐 **Secure Authentication** - Google OAuth integration via NextAuth.js v5
