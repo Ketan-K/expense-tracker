@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { DEFAULT_INCOME_SOURCES } from "@/lib/types";
 import AmountInput from "@/components/shared/AmountInput";
 import DatePicker from "@/components/shared/DatePicker";
+import { t } from "@/lib/terminology";
 
 interface IncomeFormProps {
   initialData?: {

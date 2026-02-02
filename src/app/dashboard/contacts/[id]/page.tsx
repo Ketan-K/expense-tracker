@@ -5,7 +5,17 @@ import { useRouter, useParams } from "next/navigation";
 import { db } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Users, Phone, Mail, Heart, TrendingUp, TrendingDown, AlertCircle, Plus } from "lucide-react";
+import {
+  Users,
+  Phone,
+  Mail,
+  Heart,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Plus,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function ContactDetailsPage() {
   const { data: session, status } = useSession();
@@ -13,10 +23,7 @@ export default function ContactDetailsPage() {
   const params = useParams();
   const contactId = params.id as string;
 
-  const contact = useLiveQuery(
-    () => db.contacts.get(contactId),
-    [contactId]
-  );
+  const contact = useLiveQuery(() => db.contacts.get(contactId), [contactId]);
 
   const loans = useLiveQuery(
     () => db.loans.where("contactId").equals(contactId).reverse().sortBy("createdAt"),
@@ -44,7 +51,9 @@ export default function ContactDetailsPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Contact not found</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Contact not found
+            </h2>
             <button
               onClick={() => router.push("/dashboard/contacts")}
               className="text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -57,9 +66,9 @@ export default function ContactDetailsPage() {
     );
   }
 
-  const activeLoans = (loans || []).filter((l) => l.status === "active");
-  const givenLoans = activeLoans.filter((l) => l.direction === "given");
-  const takenLoans = activeLoans.filter((l) => l.direction === "taken");
+  const activeLoans = (loans || []).filter(l => l.status === "active");
+  const givenLoans = activeLoans.filter(l => l.direction === "given");
+  const takenLoans = activeLoans.filter(l => l.direction === "taken");
 
   const totalGiven = givenLoans.reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
   const totalTaken = takenLoans.reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
@@ -141,7 +150,10 @@ export default function ContactDetailsPage() {
                 {contact.phone && (
                   <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                     <Phone className="w-5 h-5 text-gray-400" />
-                    <a href={`tel:${contact.phone}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className="hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
                       {contact.phone}
                     </a>
                   </div>
@@ -149,7 +161,10 @@ export default function ContactDetailsPage() {
                 {contact.email && (
                   <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                     <Mail className="w-5 h-5 text-gray-400" />
-                    <a href={`mailto:${contact.email}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
                       {contact.email}
                     </a>
                   </div>
@@ -158,7 +173,7 @@ export default function ContactDetailsPage() {
 
               {/* Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                <motion.div 
+                <motion.div
                   className="bg-gradient-to-br from-app-loans to-app-loans-end rounded-xl p-4 sm:p-5 text-white"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -168,15 +183,13 @@ export default function ContactDetailsPage() {
                     <span className="text-sm font-medium opacity-90">I Gave</span>
                     <TrendingUp className="w-5 h-5 opacity-90" />
                   </div>
-                  <p className="text-2xl font-bold mb-1">
-                    {formatCurrency(totalGiven)}
-                  </p>
+                  <p className="text-2xl font-bold mb-1">{formatCurrency(totalGiven)}</p>
                   <p className="text-xs opacity-75">
                     {givenLoans.length} active {givenLoans.length === 1 ? "loan" : "loans"}
                   </p>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -186,15 +199,13 @@ export default function ContactDetailsPage() {
                     <span className="text-sm font-medium opacity-90">I Took</span>
                     <TrendingDown className="w-5 h-5 opacity-90" />
                   </div>
-                  <p className="text-2xl font-bold mb-1">
-                    {formatCurrency(totalTaken)}
-                  </p>
+                  <p className="text-2xl font-bold mb-1">{formatCurrency(totalTaken)}</p>
                   <p className="text-xs opacity-75">
                     {takenLoans.length} active {takenLoans.length === 1 ? "loan" : "loans"}
                   </p>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                   className={`bg-gradient-to-br ${
                     netPosition >= 0
                       ? "from-app-income to-app-income-end"
@@ -207,12 +218,8 @@ export default function ContactDetailsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium opacity-90">Net Position</span>
                   </div>
-                  <p className="text-2xl font-bold mb-1">
-                    {formatCurrency(Math.abs(netPosition))}
-                  </p>
-                  <p className="text-xs opacity-75">
-                    {netPosition >= 0 ? "to receive" : "to pay"}
-                  </p>
+                  <p className="text-2xl font-bold mb-1">{formatCurrency(Math.abs(netPosition))}</p>
+                  <p className="text-xs opacity-75">{netPosition >= 0 ? "to receive" : "to pay"}</p>
                 </motion.div>
               </div>
             </div>
@@ -234,7 +241,9 @@ export default function ContactDetailsPage() {
             {!loans || loans.length === 0 ? (
               <div className="text-center py-12">
                 <TrendingUp className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No loans yet</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  No loans yet
+                </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Create your first loan with {contact.name}
                 </p>
@@ -247,7 +256,7 @@ export default function ContactDetailsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {loans.map((loan) => (
+                {loans.map(loan => (
                   <div
                     key={loan._id}
                     onClick={() => router.push(`/dashboard/loans/${loan._id}`)}
@@ -256,11 +265,13 @@ export default function ContactDetailsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className={`p-2 rounded-lg ${
-                            loan.direction === "given"
-                              ? "bg-orange-100 dark:bg-orange-900/30"
-                              : "bg-blue-100 dark:bg-blue-900/30"
-                          }`}>
+                          <div
+                            className={`p-2 rounded-lg ${
+                              loan.direction === "given"
+                                ? "bg-orange-100 dark:bg-orange-900/30"
+                                : "bg-blue-100 dark:bg-blue-900/30"
+                            }`}
+                          >
                             {loan.direction === "given" ? (
                               <TrendingUp className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                             ) : (
@@ -278,7 +289,9 @@ export default function ContactDetailsPage() {
                         </div>
 
                         {loan.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{loan.description}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            {loan.description}
+                          </p>
                         )}
 
                         <div className="flex items-center gap-2">
@@ -300,7 +313,8 @@ export default function ContactDetailsPage() {
                         </p>
                         {loan.outstandingAmount !== loan.principalAmount && (
                           <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                            {formatCurrency(loan.principalAmount - (loan.outstandingAmount || 0))} paid
+                            {formatCurrency(loan.principalAmount - (loan.outstandingAmount || 0))}{" "}
+                            paid
                           </p>
                         )}
                       </div>

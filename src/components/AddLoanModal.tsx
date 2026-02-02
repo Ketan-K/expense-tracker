@@ -116,7 +116,12 @@ export default function AddLoanModal({ isOpen, onClose, userId }: AddLoanModalPr
             </div>
 
             <div className="p-6">
-              <LoanForm onSubmit={handleSubmit} onCancel={onClose} isSubmitting={isSubmitting} />
+              <LoanForm
+                onSubmit={handleSubmit}
+                onCancel={onClose}
+                isSubmitting={isSubmitting}
+                userId={userId}
+              />
             </div>
           </motion.div>
         </motion.div>

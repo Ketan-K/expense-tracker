@@ -125,129 +125,126 @@ export default function DashboardPage() {
   }, [session?.user?.id, monthString]);
 
   // Process data for charts with filters applied
-  const { categoryData, dailyData, transactions, totalSpent, dailyAverage, _filteredExpenses } =
-    useMemo(() => {
-      if (!expenses || !categories) {
-        return {
-          categoryData: [],
-          dailyData: [],
-          transactions: [],
-          totalSpent: 0,
-          dailyAverage: 0,
-          filteredExpenses: [],
-        };
-      }
-
-      // Apply filters
-      let filtered = expenses;
-
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        filtered = filtered.filter(e => e.description?.toLowerCase().includes(searchLower));
-      }
-
-      // Category filter
-      if (filters.categories.length > 0) {
-        filtered = filtered.filter(e => filters.categories.includes(e.category));
-      }
-
-      // Amount range filter
-      if (filters.amountRange) {
-        filtered = filtered.filter(
-          e => e.amount >= filters.amountRange!.min && e.amount <= filters.amountRange!.max
-        );
-      }
-
-      // Payment method filter
-      if (filters.paymentMethods.length > 0) {
-        filtered = filtered.filter(e => filters.paymentMethods.includes(e.paymentMethod || ""));
-      }
-
-      const categoryMap = new Map<string, { icon: string; color: string }>(
-        categories.map(cat => [cat.name, { icon: cat.icon, color: cat.color }])
-      );
-
-      const categoryTotals = filtered.reduce(
-        (acc: Record<string, number>, expense) => {
-          acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-          return acc;
-        },
-        {} as Record<string, number>
-      );
-
-      const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({
-        name,
-        value,
-        color: categoryMap.get(name)?.color || theme.colors.primary,
-        icon: categoryMap.get(name)?.icon || "HelpCircle",
-      }));
-
-      // Calculate daily trend
-      const dailyTrend = filtered.reduce(
-        (acc: Record<string, number>, expense) => {
-          const day = format(new Date(expense.date), "MMM dd");
-          acc[day] = (acc[day] || 0) + expense.amount;
-          return acc;
-        },
-        {} as Record<string, number>
-      );
-
-      const dailyData = Object.entries(dailyTrend)
-        .map(([date, amount]) => ({ date, amount }))
-        .sort((a, b) => {
-          const dateA = new Date(a.date + ", " + selectedMonth.getFullYear());
-          const dateB = new Date(b.date + ", " + selectedMonth.getFullYear());
-          return dateA.getTime() - dateB.getTime();
-        });
-
-      // Prepare transactions list
-      const transactionsList = filtered
-        .map(expense => ({
-          id: expense._id?.toString() || "",
-          amount: expense.amount,
-          category: expense.category,
-          categoryColor: categoryMap.get(expense.category)?.color || theme.colors.primary,
-          categoryIcon: categoryMap.get(expense.category)?.icon || "HelpCircle",
-          description: expense.description || "",
-          date: typeof expense.date === "string" ? expense.date : expense.date.toISOString(),
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-      // Apply sorting
-      if (filters.sortBy !== "date-desc") {
-        switch (filters.sortBy) {
-          case "date-asc":
-            transactionsList.sort(
-              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-            );
-            break;
-          case "amount-desc":
-            transactionsList.sort((a, b) => b.amount - a.amount);
-            break;
-          case "amount-asc":
-            transactionsList.sort((a, b) => a.amount - b.amount);
-            break;
-          case "category":
-            transactionsList.sort((a, b) => a.category.localeCompare(b.category));
-            break;
-        }
-      }
-
-      // Calculate stats
-      const totalSpent = filtered.reduce((sum, expense) => sum + expense.amount, 0);
-      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd }).length;
-      const dailyAverage = totalSpent / daysInMonth;
-
+  const { categoryData, dailyData, transactions, totalSpent, dailyAverage } = useMemo(() => {
+    if (!expenses || !categories) {
       return {
-        categoryData,
-        dailyData,
-        transactions: transactionsList,
-        totalSpent,
-        dailyAverage,
-        filteredExpenses: filtered,
+        categoryData: [],
+        dailyData: [],
+        transactions: [],
+        totalSpent: 0,
+        dailyAverage: 0,
+        filteredExpenses: [],
       };
-    }, [expenses, categories, monthStart, monthEnd, selectedMonth, filters]);
+    }
+
+    // Apply filters
+    let filtered = expenses;
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(e => e.description?.toLowerCase().includes(searchLower));
+    }
+
+    // Category filter
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter(e => filters.categories.includes(e.category));
+    }
+
+    // Amount range filter
+    if (filters.amountRange) {
+      filtered = filtered.filter(
+        e => e.amount >= filters.amountRange!.min && e.amount <= filters.amountRange!.max
+      );
+    }
+
+    // Payment method filter
+    if (filters.paymentMethods.length > 0) {
+      filtered = filtered.filter(e => filters.paymentMethods.includes(e.paymentMethod || ""));
+    }
+
+    const categoryMap = new Map<string, { icon: string; color: string }>(
+      categories.map(cat => [cat.name, { icon: cat.icon, color: cat.color }])
+    );
+
+    const categoryTotals = filtered.reduce(
+      (acc: Record<string, number>, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({
+      name,
+      value,
+      color: categoryMap.get(name)?.color || theme.colors.primary,
+      icon: categoryMap.get(name)?.icon || "HelpCircle",
+    }));
+
+    // Calculate daily trend
+    const dailyTrend = filtered.reduce(
+      (acc: Record<string, number>, expense) => {
+        const day = format(new Date(expense.date), "MMM dd");
+        acc[day] = (acc[day] || 0) + expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const dailyData = Object.entries(dailyTrend)
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => {
+        const dateA = new Date(a.date + ", " + selectedMonth.getFullYear());
+        const dateB = new Date(b.date + ", " + selectedMonth.getFullYear());
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    // Prepare transactions list
+    const transactionsList = filtered
+      .map(expense => ({
+        id: expense._id?.toString() || "",
+        amount: expense.amount,
+        category: expense.category,
+        categoryColor: categoryMap.get(expense.category)?.color || theme.colors.primary,
+        categoryIcon: categoryMap.get(expense.category)?.icon || "HelpCircle",
+        description: expense.description || "",
+        date: typeof expense.date === "string" ? expense.date : expense.date.toISOString(),
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Apply sorting
+    if (filters.sortBy !== "date-desc") {
+      switch (filters.sortBy) {
+        case "date-asc":
+          transactionsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          break;
+        case "amount-desc":
+          transactionsList.sort((a, b) => b.amount - a.amount);
+          break;
+        case "amount-asc":
+          transactionsList.sort((a, b) => a.amount - b.amount);
+          break;
+        case "category":
+          transactionsList.sort((a, b) => a.category.localeCompare(b.category));
+          break;
+      }
+    }
+
+    // Calculate stats
+    const totalSpent = filtered.reduce((sum, expense) => sum + expense.amount, 0);
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd }).length;
+    const dailyAverage = totalSpent / daysInMonth;
+
+    return {
+      categoryData,
+      dailyData,
+      transactions: transactionsList,
+      totalSpent,
+      dailyAverage,
+      filteredExpenses: filtered,
+    };
+  }, [expenses, categories, monthStart, monthEnd, selectedMonth, filters]);
 
   // Calculate budget data with spent amounts
   const budgetData = useMemo(() => {

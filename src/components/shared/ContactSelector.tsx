@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, UserPlus, User, Phone, Mail, X } from "lucide-react";
-import { db } from "@/lib/db";
+import { db, LocalContact } from "@/lib/db";
 import { toast } from "sonner";
 import { generateObjectId } from "@/lib/idGenerator";
 import { processSyncQueue } from "@/lib/syncUtils";
