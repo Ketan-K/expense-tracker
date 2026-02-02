@@ -3,20 +3,24 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Database, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, Database, CheckCircle, XCircle, AlertCircle, Loader2, Users, TrendingUp, Wallet, FileText } from "lucide-react";
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'indexes' | 'migrations'>('overview');
+  const [stats, setStats] = useState<any>(null);
   const [migrateExpenseTypeResult, setMigrateExpenseTypeResult] = useState<any>(null);
   const [indexesResult, setIndexesResult] = useState<any>(null);
   const [contactsMigrateResult, setContactsMigrateResult] = useState<any>(null);
   const [loading, setLoading] = useState<{ 
+    stats: boolean;
     migrateExpenseType: boolean; 
     indexes: boolean; 
     contactsMigrate: boolean;
   }>({
+    stats: false,
     migrateExpenseType: false,
     indexes: false,
     contactsMigrate: false,
@@ -37,6 +41,8 @@ export default function AdminPage() {
       .then(data => {
         if (data.isAdmin) {
           setIsAuthorized(true);
+          // Fetch stats
+          fetchStats();
         } else {
           router.push("/dashboard");
         }
@@ -45,6 +51,21 @@ export default function AdminPage() {
         router.push("/dashboard");
       });
   }, [status, router]);
+
+  const fetchStats = async () => {
+    setLoading({ ...loading, stats: true });
+    try {
+      const response = await fetch("/api/admin/stats");
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
+    }
+  };
 
   const migrateExpenseType = async (dryRun = false) => {
     setLoading({ ...loading, migrateExpenseType: true });
@@ -122,22 +143,204 @@ export default function AdminPage() {
     return null;
   }
 
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: TrendingUp },
+    { id: 'indexes', label: 'Database Indexes', icon: Database },
+    { id: 'migrations', label: 'Migrations', icon: Shield },
+  ] as const;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
               <Shield className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
+            </div>
           </div>
           <p className="text-gray-600 dark:text-gray-400">Database migrations and system maintenance</p>
         </div>
 
-        <div className="grid gap-6">
-          {/* Ensure Indexes Section */}
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex gap-2 -mb-px overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                      isActive
+                        ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                        : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="grid gap-6">
+            {/* System Statistics Section */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 shadow-lg border border-indigo-200 dark:border-indigo-800">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">System Statistics</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Real-time platform metrics
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={fetchStats}
+                disabled={loading.stats}
+                className="p-2 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh stats"
+              >
+                <Loader2 className={`w-5 h-5 text-indigo-600 dark:text-indigo-400 ${loading.stats ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {loading.stats && !stats ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Loading statistics...</p>
+              </div>
+            ) : stats ? (
+              <div className="space-y-6">
+                {/* User Statistics */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    User Statistics
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Users</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.users.total}</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Active Users</div>
+                      <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{stats.users.active}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">With linked accounts</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Users with Data</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.users.withData}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">Created expenses</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Statistics */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    Database Statistics
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Wallet className="w-4 h-4 text-red-500" />
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Expenses</div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">{stats.data.expenses.count.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        +{stats.data.expenses.recent} this week
+                      </div>
+                      <div className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">
+                        ₹{(stats.data.expenses.totalAmount / 1000).toFixed(1)}K
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-green-500" />
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Incomes</div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">{stats.data.incomes.count.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        +{stats.data.incomes.recent} this week
+                      </div>
+                      <div className="text-xs font-medium text-green-600 dark:text-green-400 mt-1">
+                        ₹{(stats.data.incomes.totalAmount / 1000).toFixed(1)}K
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-4 h-4 text-orange-500" />
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Loans</div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">{stats.data.loans.count.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        +{stats.data.loans.recent} this week
+                      </div>
+                      <div className="text-xs font-medium text-orange-600 dark:text-orange-400 mt-1">
+                        ₹{(stats.data.loans.totalAmount / 1000).toFixed(1)}K
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-4 h-4 text-blue-500" />
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Contacts</div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">{stats.data.contacts.toLocaleString()}</div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-purple-500" />
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Categories</div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">{stats.data.categories.toLocaleString()}</div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Database className="w-4 h-4 text-cyan-500" />
+                        <div className="text-xs text-gray-600 dark:text-gray-400">Budgets</div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white">{stats.data.budgets.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Last Updated */}
+                <div className="text-xs text-gray-500 dark:text-gray-500 text-right">
+                  Last updated: {new Date(stats.timestamp).toLocaleString('en-IN')}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Failed to load statistics</p>
+              </div>
+            )}
+          </div>
+        </div>
+        )}
+
+          {/* Database Indexes Tab */}
+          {activeTab === 'indexes' && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -205,9 +408,13 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        )}
 
-          {/* Migrate Expense Type Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+          {/* Migrations Tab */}
+          {activeTab === 'migrations' && (
+            <div className="grid gap-6">
+              {/* Migrate Expense Type Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <Database className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -354,10 +561,9 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Instructions */}
-        <div className="mt-6 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl">
+              {/* Instructions */}
+              <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Usage Guide
@@ -382,6 +588,8 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+            </div>
+          )}
       </div>
     </div>
   );

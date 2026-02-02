@@ -5,7 +5,8 @@ import { ensureIndexes } from "@/lib/ensureIndexes";
 export async function POST() {
   try {
     // Require admin access
-    await requireAdmin();
+    const session = await requireAdmin();
+    console.log(`[ADMIN ACTION] Ensure indexes initiated by ${session.user.email}`);
     
     const result = await ensureIndexes();
 

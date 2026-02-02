@@ -9,7 +9,8 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     // Require admin access
-    await requireAdmin();
+    const session = await requireAdmin();
+    console.log(`[ADMIN ACTION] Contacts migration initiated by ${session.user.email}`);
 
     const client = await clientPromise;
     const db = client.db();

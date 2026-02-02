@@ -14,9 +14,11 @@ import { processSyncQueue, pullFromServer } from "@/lib/syncUtils";
 export default function ProfilePage() {
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
-  const [dbStats, setDbStats] = useState({ expenses: 0, categories: 0, budgets: 0 });
+  const [dbStats, setDbStats] = useState({ expenses: 0, categories: 0, budgets: 0, incomes: 0, loans: 0, contacts: 0 });
   const [syncing, setSyncing] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [showQueueDetails, setShowQueueDetails] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
 
   // Get real-time sync queue status
@@ -65,7 +67,24 @@ export default function ProfilePage() {
         const expenseCount = await db.expenses.count();
         const categoryCount = await db.categories.count();
         const budgetCount = await db.budgets.count();
-        setDbStats({ expenses: expenseCount, categories: categoryCount, budgets: budgetCount });
+        const incomeCount = await db.incomes.count();
+        const loanCount = await db.loans.count();
+        const contactCount = await db.contacts.count();
+        
+        // Get last sync time from metadata
+        const metadata = await db.syncMetadata.where('key').equals('lastSync').first();
+        if (metadata?.value) {
+          setLastSyncTime(new Date(metadata.value));
+        }
+        
+        setDbStats({ 
+          expenses: expenseCount, 
+          categories: categoryCount, 
+          budgets: budgetCount,
+          incomes: incomeCount,
+          loans: loanCount,
+          contacts: contactCount
+        });
       }
     };
     
@@ -93,7 +112,7 @@ export default function ProfilePage() {
         await db.syncQueue.clear();
         await db.syncMetadata.clear();
         toast.success("Local data cleared");
-        setDbStats({ expenses: 0, categories: 0, budgets: 0 });
+        setDbStats({ expenses: 0, categories: 0, budgets: 0, incomes: 0, loans: 0, contacts: 0 });
       } catch (error) {
         toast.error("Failed to clear data");
       }
@@ -106,9 +125,17 @@ export default function ProfilePage() {
     setSyncing(true);
     try {
       await processSyncQueue(session.user.id);
+      
+      // Save last sync time
+      const now = new Date();
+      await db.syncMetadata.put({ key: 'lastSync', value: now.toISOString(), updatedAt: now });
+      setLastSyncTime(now);
+      
+      toast.success('Sync completed successfully');
       setShowSyncDialog(false);
     } catch (error) {
       console.error("Sync error:", error);
+      toast.error('Sync failed');
     } finally {
       setSyncing(false);
     }
@@ -124,7 +151,17 @@ export default function ProfilePage() {
       const expenseCount = await db.expenses.count();
       const categoryCount = await db.categories.count();
       const budgetCount = await db.budgets.count();
-      setDbStats({ expenses: expenseCount, categories: categoryCount, budgets: budgetCount });
+      const incomeCount = await db.incomes.count();
+      const loanCount = await db.loans.count();
+      const contactCount = await db.contacts.count();
+      setDbStats({ 
+        expenses: expenseCount, 
+        categories: categoryCount, 
+        budgets: budgetCount,
+        incomes: incomeCount,
+        loans: loanCount,
+        contacts: contactCount
+      });
       
     } catch (error) {
       console.error("Pull error:", error);
@@ -189,25 +226,33 @@ export default function ProfilePage() {
             <Database className="w-5 h-5 text-indigo-600" />
             Local Storage
           </h3>
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Expenses</span>
-              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                {dbStats.expenses}
-              </span>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Expenses</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.expenses}</div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Categories</span>
-              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                {dbStats.categories}
-              </span>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-3 sm:p-4 rounded-xl border border-green-200 dark:border-green-800">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Incomes</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.incomes}</div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Budgets</span>
-              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                {dbStats.budgets}
-              </span>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-3 sm:p-4 rounded-xl border border-purple-200 dark:border-purple-800">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Loans</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.loans}</div>
             </div>
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-3 sm:p-4 rounded-xl border border-orange-200 dark:border-orange-800">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Contacts</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.contacts}</div>
+            </div>
+            <div className="bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 p-3 sm:p-4 rounded-xl border border-cyan-200 dark:border-cyan-800">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Categories</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.categories}</div>
+            </div>
+            <div className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 p-3 sm:p-4 rounded-xl border border-rose-200 dark:border-rose-800">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Budgets</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.budgets}</div>
+            </div>
+          </div>
+          <div className="space-y-2">
             <button
               onClick={clearLocalData}
               className="w-full mt-4 py-3 sm:py-4 px-4 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl sm:rounded-2xl hover:bg-red-200 dark:hover:bg-red-900/30 transition-all font-medium text-sm sm:text-base active:scale-95 cursor-pointer"
@@ -231,27 +276,55 @@ export default function ProfilePage() {
             Sync Status
           </h3>
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Connection</span>
-              <span className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                {typeof window !== 'undefined' && navigator.onLine ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-green-600 dark:text-green-400">Online</span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-4 h-4 text-red-500" />
-                    <span className="text-red-600 dark:text-red-400">Offline</span>
-                  </>
-                )}
-              </span>
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700/30 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Connection Status</span>
+                <span className="text-sm font-semibold flex items-center gap-2">
+                  {typeof window !== 'undefined' && navigator.onLine ? (
+                    <>
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                      </span>
+                      <span className="text-green-600 dark:text-green-400">Online</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4 text-red-500" />
+                      <span className="text-red-600 dark:text-red-400">Offline</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              
+              {lastSyncTime && (
+                <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                  <span>Last sync:</span>
+                  <span className="font-medium">
+                    {lastSyncTime.toLocaleString('en-IN', { 
+                      month: 'short', 
+                      day: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Pending Sync</span>
-              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                {syncQueue?.length || 0} items
-              </span>
+
+            <div 
+              onClick={() => (syncQueue?.length || 0) > 0 && setShowQueueDetails(true)}
+              className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 cursor-pointer hover:shadow-md transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sync Queue</span>
+                <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                  {syncQueue?.length || 0}
+                </span>
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {(syncQueue?.length || 0) === 0 ? 'All changes synced' : 'Click to view details'}
+              </div>
             </div>
             {unsyncedStats && (unsyncedStats.expenses > 0 || unsyncedStats.budgets > 0 || unsyncedStats.categories > 0) && (
               <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
@@ -288,6 +361,129 @@ export default function ProfilePage() {
           Expense Tracker v1.0.0 • Built with Next.js
         </p>
       </div>
+
+      {/* Sync Queue Details Dialog */}
+      {showQueueDetails && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Database className="w-6 h-6 text-indigo-600" />
+                Sync Queue Details
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {syncQueue?.length || 0} pending operations
+              </p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {syncQueue && syncQueue.length > 0 ? (
+                <div className="space-y-3">
+                  {syncQueue.map((item, index) => (
+                    <div 
+                      key={item.id} 
+                      className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                            #{index + 1}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            item.action === 'CREATE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                            item.action === 'UPDATE' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                            'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          }`}>
+                            {item.action}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 font-medium">
+                            {item.collection}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                        {item.collection === 'expenses' && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.category || 'Uncategorized'}</div>
+                            <div className="text-gray-600 dark:text-gray-400">₹{item.data.amount?.toLocaleString('en-IN')}</div>
+                            {item.data.description && <div className="text-xs text-gray-500 dark:text-gray-500">{item.data.description}</div>}
+                          </>
+                        )}
+                        {item.collection === 'incomes' && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.source || 'Income'}</div>
+                            <div className="text-gray-600 dark:text-gray-400">₹{item.data.amount?.toLocaleString('en-IN')}</div>
+                          </>
+                        )}
+                        {item.collection === 'categories' && item.data && (
+                          <div className="font-medium">{item.data.name}</div>
+                        )}
+                        {item.collection === 'budgets' && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.category}</div>
+                            <div className="text-gray-600 dark:text-gray-400">Limit: ₹{item.data.limit?.toLocaleString('en-IN')}</div>
+                          </>
+                        )}
+                        {item.collection === 'contacts' && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.name}</div>
+                            {item.data.primaryPhone !== undefined && item.data.phones?.[item.data.primaryPhone] && (
+                              <div className="text-xs text-gray-500 dark:text-gray-500">{item.data.phones[item.data.primaryPhone]}</div>
+                            )}
+                          </>
+                        )}
+                        {item.collection === 'loans' && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.description || 'Loan'}</div>
+                            <div className="text-gray-600 dark:text-gray-400">₹{item.data.amount?.toLocaleString('en-IN')}</div>
+                          </>
+                        )}
+                      </div>
+                      
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center gap-2">
+                        <span>Created: {new Date(item.timestamp).toLocaleString('en-IN', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">All changes synced</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">No pending operations</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              {syncQueue && syncQueue.length > 0 && (
+                <button
+                  onClick={async () => {
+                    setShowQueueDetails(false);
+                    setShowSyncDialog(true);
+                  }}
+                  className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all font-medium flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Sync Now
+                </button>
+              )}
+              <button
+                onClick={() => setShowQueueDetails(false)}
+                className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl transition-all font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sync Dialog */}
       {showSyncDialog && (

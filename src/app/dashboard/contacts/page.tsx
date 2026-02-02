@@ -85,7 +85,7 @@ export default function ContactsPage() {
               </p>
             </div>
             <button
-              onClick={() => router.push("/dashboard/contacts/add")}
+              onClick={() => setShowAddModal(true)}
               className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
@@ -121,7 +121,7 @@ export default function ContactsPage() {
               </p>
               {!searchQuery && (
                 <button
-                  onClick={() => router.push("/dashboard/contacts/add")}
+                  onClick={() => setShowAddModal(true)}
                   className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Add Your First Contact

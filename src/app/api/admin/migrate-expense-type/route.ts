@@ -5,7 +5,8 @@ import clientPromise from "@/lib/mongodb";
 export async function POST(req: NextRequest) {
   try {
     // Require admin access
-    await requireAdmin();
+    const session = await requireAdmin();
+    console.log(`[ADMIN ACTION] Expense type migration initiated by ${session.user.email}`);
 
     const { dryRun } = await req.json();
 
