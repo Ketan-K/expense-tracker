@@ -11,11 +11,13 @@ The admin dashboard (`/admin`) provides database migration and maintenance tools
 Add the `ADMIN_EMAILS` environment variable with a comma-separated list of admin email addresses:
 
 **Local Development** (`.env.local`):
+
 ```env
 ADMIN_EMAILS=admin@example.com,developer@company.com
 ```
 
 **Production** (Vercel):
+
 1. Go to your project Settings → Environment Variables
 2. Add new variable:
    - Name: `ADMIN_EMAILS`
@@ -55,17 +57,20 @@ Once authenticated as admin, you can:
 ## Troubleshooting
 
 **"Access Denied" or redirected to dashboard**
+
 - Verify your email is in the `ADMIN_EMAILS` list
 - Check for typos or extra spaces in environment variable
 - Ensure you've redeployed after adding the variable
 - Sign out and sign back in
 
 **Can't access after adding email**
+
 - Clear browser cache and cookies
 - Verify environment variable is set correctly
 - Check Vercel deployment logs for errors
 
 **Multiple environments**
+
 - Set `ADMIN_EMAILS` separately for preview and production
 - Use different admin lists for different environments if needed
 
@@ -80,20 +85,23 @@ Once authenticated as admin, you can:
 ## Example Configuration
 
 **Single Admin**:
+
 ```env
 ADMIN_EMAILS=admin@myapp.com
 ```
 
 **Multiple Admins**:
+
 ```env
 ADMIN_EMAILS=admin@myapp.com,developer@myapp.com,manager@myapp.com
 ```
 
 **Multiple Environments**:
+
 ```env
 # Development
 ADMIN_EMAILS=dev@myapp.com,test@myapp.com
 
-# Production  
+# Production
 ADMIN_EMAILS=admin@myapp.com
 ```

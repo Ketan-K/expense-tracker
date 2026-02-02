@@ -30,7 +30,15 @@ A modern, offline-first expense tracking Progressive Web App with comprehensive 
 - **PWA**: next-pwa
 - **Exports**: xlsx, papaparse
 
-## 📋 Prerequisites
+## � Documentation
+
+- **[Quick Start Guide](docs/vibe-quickstart.md)** - Get started with Vibe Finance theme
+- **[Deployment Guide](docs/vibe-deployment.md)** - Deploy to Vercel or other platforms
+- **[Admin Setup](docs/admin.md)** - Configure admin access and tools
+- **[Development Guide](docs/linting.md)** - Code standards and linting setup
+- **[Vibe Finance Summary](docs/vibe-summary.md)** - Complete theme implementation details
+
+## �📋 Prerequisites
 
 - Node.js 18+ and npm
 - MongoDB Atlas account (free tier works)
@@ -69,13 +77,15 @@ npm install
 
 Create `.env.local` in the root directory:
 
-```env
+````env
 # Database
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/expense-tracker?retryWrites=true&w=majority
 
 # NextAuth
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=<generate-with-command-below>
+# Generate secret: openssl rand -base64 32
+# Or: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 # Google OAuth
 GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
@@ -85,46 +95,48 @@ GOOGLE_CLIENT_SECRET=<your-client-secret>
 ADMIN_EMAILS=admin@example.com,developer@example.com
 ```📁 Project Structure
 
-```
+````
+
 expense-tracker/
 ├── src/
-│   ├── app/
-│   │   ├── api/              # API routes
-│   │   │   ├── admin/        # Admin endpoints (migrations, indexes)
-│   │   │   ├── auth/         # NextAuth endpoints
-│   │   │   ├── budgets/      # Budget CRUD
-│   │   │   ├── categories/   # Category management
-│   │   │   ├── contacts/     # Contact management
-│   │   │   ├── expenses/     # Expense CRUD
-│   │   │   ├── export/       # CSV/Excel export
-│   │   │   ├── incomes/      # Income tracking
-│   │   │   ├── loans/        # Loan management
-│   │   │   └── sync/         # Offline sync
-│   │   ├── auth/            # Auth pages
-│   │   ├── admin/           # Admin dashboard
-│   │   └── dashboard/       # Main app pages
-│   ├── components/          # React components
-│   │   ├── budgets/         # Budget components
-│   │   ├── filters/         # Filter components
-│   │   ├── reports/         # Analytics components
-│   │   └── shared/          # Shared UI components
-│   ├── hooks/               # Custom React hooks
-│   ├── lib/                 # Core utilities
-│   │   ├── db.ts           # Dexie IndexedDB setup
-│   │   ├── mongodb.ts      # MongoDB connection
-│   │   ├── syncUtils.ts    # Offline sync logic
-│   │   ├── auth-utils.ts   # Admin authorization
-│   │   └── types.ts        # TypeScript types
-│   └── auth.ts             # NextAuth configuration
-├── public/                  # Static assets & PWA files
-└── ADMIN.md                # Admin setup guide
-```
+│ ├── app/
+│ │ ├── api/ # API routes
+│ │ │ ├── admin/ # Admin endpoints (migrations, indexes)
+│ │ │ ├── auth/ # NextAuth endpoints
+│ │ │ ├── budgets/ # Budget CRUD
+│ │ │ ├── categories/ # Category management
+│ │ │ ├── contacts/ # Contact management
+│ │ │ ├── expenses/ # Expense CRUD
+│ │ │ ├── export/ # CSV/Excel export
+│ │ │ ├── incomes/ # Income tracking
+│ │ │ ├── loans/ # Loan management
+│ │ │ └── sync/ # Offline sync
+│ │ ├── auth/ # Auth pages
+│ │ ├── admin/ # Admin dashboard
+│ │ └── dashboard/ # Main app pages
+│ ├── components/ # React components
+│ │ ├── budgets/ # Budget components
+│ │ ├── filters/ # Filter components
+│ │ ├── reports/ # Analytics components
+│ │ └── shared/ # Shared UI components
+│ ├── hooks/ # Custom React hooks
+│ ├── lib/ # Core utilities
+│ │ ├── db.ts # Dexie IndexedDB setup
+│ │ ├── mongodb.ts # MongoDB connection
+│ │ ├── syncUtils.ts # Offline sync logic
+│ │ ├── auth-utils.ts # Admin authorization
+│ │ └── types.ts # TypeScript types
+│ └── auth.ts # NextAuth configuration
+├── public/ # Static assets & PWA files
+│ └── auth.ts # NextAuth configuration
+├── public/ # Static assets & PWA files
+└── docs/ # Documentation
+├── admin.md # Admin setup guide
+├── vibe-deployment.md # Vibe Finance deployment
+├── vibe-quickstart.md # Quick start guide
+└── linting.md # Code standards
 
-## 📖 Documentation
-
-- **[ADMIN.md](ADMIN.md)** - Admin dashboard access and configuration
-- **README.md** - This file (setup and features)
-- **LICENSE** - MIT License
+````
 
 ## 🚢 Deployment
 
@@ -149,11 +161,52 @@ expense-tracker/
 3. Run **Database Indexes** to optimize performance
 4. Run migrations if upgrading from older versions
 
+See [Deployment Guide](docs/vibe-deployment.md) for detailed instructions.
+
 ### Other Platforms
 
-Compatible with any Next.js hosting platform:
-- Netlify
-- R📝 License
+Compatible with any Next.js hosting platform (Netlify, Railway, Render, etc.)
+
+## 🛠️ Development
+
+### Build Commands
+
+```bash
+# Development
+npm run dev
+
+# Development with Vibe Finance theme
+npm run dev:vibe
+
+# Production build
+npm run build
+
+# Production build with Vibe Finance theme
+npm run build:vibe
+
+# Start production server
+npm start
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+````
+
+See [Development Guide](docs/linting.md) for code standards.
+
+## 🔧 Admin Access
+
+Configure admin users in `.env.local`:
+
+```env
+ADMIN_EMAILS=admin@example.com,dev@example.com
+```
+
+See [Admin Setup Guide](docs/admin.md) for detailed configuration.
+
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -170,110 +223,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with ❤️ using modern web technologies**
-- Category-wise breakdowns (pie charts, bar charts)
-- Transaction history with search and filters
-- Date range selection for custom periods
-- Export data to CSV or Excel
-
-**Income Tracking**
-- Add income sources (salary, freelance, etc.)
-- Track income history
-- View income vs. expense comparisons
-
-**Loan Management**
-- Track loans given or taken
-- Record payment schedules
-- Monitor outstanding balances
-- Link contacts to loans
-
-**Offline Mode**
-- Add/edit expenses without internet
-- Changes stored in local queue
-- Auto-sync when connection restored
-- Visual sync status indicator
-
-**Admin Tools** (Admin users only)
-- Database index optimization
-- Data migrations for schema updates
-- System maintenance utilities
-
-## 🏗️ Architecture
-
-### Offline-First Design
-- **Dexie.js** manages local IndexedDB storage
-- **Sync Queue** tracks offline changes
-- **Optimistic Updates** for instant UI feedback
-- **Background Sync** when connection restored
-- **Conflict Resolution** with server-side timestamps
-
-### Security
-- **NextAuth.js v5** for authentication
-- **MongoDB** for secure data storage
-- **Admin Authorization** via email whitelist
-- **API Route Protection** with session validation
-- **Environment Variable** security for credentials
-
-## 🛠️ Development
-
-### Build Commands
-
-```bash
-# Development
-npm run dev
-
-# Production build
-npm run build
-
-# Start production server
-npm start
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-```
-
-## 🔧 Admin Access
-
-Configure admin users in `.env.local`:
-
-```env
-ADMIN_EMAILS=admin@example.com,dev@example.com
-```
-
-See **[ADMIN.md](ADMIN.md)** for detailed admin setup. Architecture
-- All data stored locally in IndexedDB
-- Automatic background sync when connection restored
-- Optimistic UI updates for instant feedback
-
-### Reports & Analytics
-- Monthly spending breakdown
-- Category-wise distribution (pie charts)
-- Transaction history with filters
-- Export to CSV/Excel
-
-### PWA Support
-- Install as native app on mobile/desktop
-- Offline functionality
-- Push notifications (future feature)
-- Background sync
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For issues and questions, please create an issue on GitHub.
-
-## Acknowledgments
-
-- Built with [Next.js](https://nextjs.org/)
-- Styled with [Tailwind CSS](https://tailwindcss.com/)
-- Icons by [Lucide](https://lucide.dev/)
-- Charts by [Recharts](https://recharts.org/)
