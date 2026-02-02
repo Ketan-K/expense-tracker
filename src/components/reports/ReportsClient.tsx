@@ -6,7 +6,6 @@ import StatsCards from "./StatsCards";
 import CategoryPieChart from "./CategoryPieChart";
 import DailyTrendChart from "./DailyTrendChart";
 import CategoryBarChart from "./CategoryBarChart";
-import CategoryTable from "./CategoryTable";
 import TransactionsList from "./TransactionsList";
 import ExportButtons from "./ExportButtons";
 
@@ -79,7 +78,6 @@ export default function ReportsClient({
       {activeView === "overview" && (
         <div className="space-y-6">
           <CategoryPieChart data={categoryData} />
-          <CategoryTable data={categoryData} />
         </div>
       )}
 

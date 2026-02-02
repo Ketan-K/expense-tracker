@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 
 interface MonthSelectorProps {
   selectedMonth: Date;
@@ -10,15 +10,11 @@ interface MonthSelectorProps {
 
 export default function MonthSelector({ selectedMonth, onMonthChange }: MonthSelectorProps) {
   const handlePreviousMonth = () => {
-    const newDate = new Date(selectedMonth);
-    newDate.setMonth(newDate.getMonth() - 1);
-    onMonthChange(newDate);
+    onMonthChange(subMonths(selectedMonth, 1));
   };
 
   const handleNextMonth = () => {
-    const newDate = new Date(selectedMonth);
-    newDate.setMonth(newDate.getMonth() + 1);
-    onMonthChange(newDate);
+    onMonthChange(addMonths(selectedMonth, 1));
   };
 
   const handleToday = () => {

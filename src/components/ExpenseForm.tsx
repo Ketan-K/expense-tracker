@@ -73,6 +73,17 @@ export default function ExpenseForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
+    
+    // Reset form if not editing (no initialData means it's a new expense)
+    if (!initialData) {
+      setFormData({
+        date: format(new Date(), "yyyy-MM-dd"),
+        amount: "",
+        category: "",
+        description: "",
+        paymentMethod: "upi",
+      });
+    }
   };
 
   const handleCreateCustomCategory = async () => {

@@ -25,6 +25,7 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
   }
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
+  const sortedData = [...data].sort((a, b) => b.value - a.value);
 
   return (
     <div className="bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/20 dark:from-gray-800 dark:via-indigo-900/10 dark:to-purple-900/5 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-bottom duration-500">
@@ -66,7 +67,7 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
 
       {/* Category List Below Chart */}
       <div className="mt-4 space-y-2">
-        {data.map((category, index) => {
+        {sortedData.map((category, index) => {
           const percentage = ((category.value / total) * 100).toFixed(1);
           return (
             <div 
