@@ -1,0 +1,43 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="vibeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A855F7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Abstract wave V with growth curve -->
+  <!-- Left wave descending -->
+  <path d="M 50 40 
+           C 60 60, 65 80, 70 100
+           C 75 120, 80 140, 85 160
+           C 87 170, 90 180, 95 190
+           L 100 195
+           C 95 185, 92 175, 90 165
+           C 85 145, 80 125, 75 105
+           C 70 85, 65 65, 55 45
+           L 50 40 Z" 
+        fill="url(#vibeGradient)"/>
+  
+  <!-- Right wave ascending (growth) -->
+  <path d="M 150 40
+           C 140 60, 135 80, 130 100
+           C 125 120, 120 140, 115 160
+           C 113 170, 110 180, 105 190
+           L 100 195
+           C 105 185, 108 175, 110 165
+           C 115 145, 120 125, 125 105
+           C 130 85, 135 65, 145 45
+           L 150 40 Z" 
+        fill="url(#vibeGradient)"/>
+  
+  <!-- Bottom wave curve (upward growth trend) -->
+  <path d="M 95 190
+           Q 100 192, 105 190
+           C 105 185, 103 180, 100 178
+           C 97 180, 95 185, 95 190 Z" 
+        fill="url(#vibeGradient)" 
+        opacity="0.8"/>
+</svg>
+

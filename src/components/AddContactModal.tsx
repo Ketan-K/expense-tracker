@@ -6,8 +6,14 @@ import { db, LocalContact } from "@/lib/db";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { generateObjectId } from "@/lib/idGenerator";
-import { isContactsAPISupported, pickContacts, convertPickerContactToSchema, isPotentialDuplicate } from "@/lib/contactsApi";
+import {
+  isContactsAPISupported,
+  pickContacts,
+  convertPickerContactToSchema,
+  isPotentialDuplicate,
+} from "@/lib/contactsApi";
 import { ContactDuplicateDialog, DuplicateContact } from "./ContactDuplicateDialog";
+import { t } from "@/lib/terminology";
 
 interface AddContactModalProps {
   isOpen: boolean;
@@ -15,11 +21,7 @@ interface AddContactModalProps {
   userId: string;
 }
 
-export default function AddContactModal({
-  isOpen,
-  onClose,
-  userId,
-}: AddContactModalProps) {
+export default function AddContactModal({ isOpen, onClose, userId }: AddContactModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -35,8 +37,7 @@ export default function AddContactModal({
   }>({ open: false, duplicate: null });
   const [isImporting, setIsImporting] = useState(false);
 
-
-  const contactsSupported = typeof window !== 'undefined' && isContactsAPISupported();
+  const contactsSupported = typeof window !== "undefined" && isContactsAPISupported();
 
   const handleImportContact = async () => {
     setIsImporting(true);
@@ -45,7 +46,7 @@ export default function AddContactModal({
       if (pickerContacts.length === 0) return;
 
       const converted = convertPickerContactToSchema(pickerContacts[0]);
-      
+
       // Check for duplicates
       const existingContacts = await db.contacts.where("userId").equals(userId).toArray();
       const duplicate = existingContacts.find(existing =>
@@ -77,11 +78,11 @@ export default function AddContactModal({
         toast.success("Contact imported! Review and save.");
       }
     } catch (error: any) {
-      if (error.message.includes('cancelled')) {
+      if (error.message.includes("cancelled")) {
         toast.info("Import cancelled");
-      } else if (error.message.includes('not supported')) {
+      } else if (error.message.includes("not supported")) {
         toast.error("Contact import only works on Chrome/Edge for Android");
-      } else if (error.message.includes('internet connection')) {
+      } else if (error.message.includes("internet connection")) {
         toast.error(error.message);
       } else {
         toast.error("Failed to import contact");
@@ -94,7 +95,7 @@ export default function AddContactModal({
 
   const handleMergeDuplicate = async (mergedContact: any) => {
     if (!duplicateDialog.duplicate?.existing._id) return;
-    
+
     try {
       const now = new Date();
       await db.contacts.update(duplicateDialog.duplicate.existing._id, {
@@ -121,7 +122,7 @@ export default function AddContactModal({
 
       toast.success("Contact merged successfully!");
       if (navigator.onLine) processSyncQueue(userId);
-      
+
       setDuplicateDialog({ open: false, duplicate: null });
       onClose();
     } catch (error) {
@@ -132,7 +133,7 @@ export default function AddContactModal({
 
   const handleCreateNewFromDuplicate = () => {
     if (!duplicateDialog.duplicate) return;
-    
+
     const { imported } = duplicateDialog.duplicate;
     setFormData({
       name: imported.name,
@@ -198,7 +199,7 @@ export default function AddContactModal({
       const existing = await db.contacts
         .where("userId")
         .equals(userId)
-        .and((c) => c.name.toLowerCase() === formData.name.toLowerCase())
+        .and(c => c.name.toLowerCase() === formData.name.toLowerCase())
         .first();
 
       if (existing) {
@@ -220,8 +221,10 @@ export default function AddContactModal({
         name: formData.name.trim(),
         phone: phones,
         email: emails,
-        primaryPhone: phones.length > 0 ? Math.min(formData.primaryPhone, phones.length - 1) : undefined,
-        primaryEmail: emails.length > 0 ? Math.min(formData.primaryEmail, emails.length - 1) : undefined,
+        primaryPhone:
+          phones.length > 0 ? Math.min(formData.primaryPhone, phones.length - 1) : undefined,
+        primaryEmail:
+          emails.length > 0 ? Math.min(formData.primaryEmail, emails.length - 1) : undefined,
         relationship: formData.relationship.trim() || undefined,
         source: "manual",
         synced: false,
@@ -273,7 +276,7 @@ export default function AddContactModal({
       <div className="bg-gradient-to-br from-white via-gray-50 to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/20 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom zoom-in duration-300 my-auto">
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            Add Contact
+            {t.add} {t.contacts}
           </h2>
           <div className="flex items-center gap-2">
             {contactsSupported && (
@@ -282,7 +285,11 @@ export default function AddContactModal({
                 onClick={handleImportContact}
                 disabled={isImporting || !navigator.onLine}
                 className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
-                title={!navigator.onLine ? "Import requires internet connection" : "Import from phone contacts"}
+                title={
+                  !navigator.onLine
+                    ? "Import requires internet connection"
+                    : "Import from phone contacts"
+                }
               >
                 <Smartphone className="w-4 h-4" />
                 {isImporting ? "Importing..." : "Import"}
@@ -305,7 +312,7 @@ export default function AddContactModal({
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
               required
             />
@@ -322,7 +329,7 @@ export default function AddContactModal({
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => updatePhone(index, e.target.value)}
+                    onChange={e => updatePhone(index, e.target.value)}
                     className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Phone number"
                   />
@@ -333,7 +340,7 @@ export default function AddContactModal({
                         name="primaryPhone"
                         checked={formData.primaryPhone === index}
                         onChange={() => setFormData({ ...formData, primaryPhone: index })}
-                        className="text-purple-600"
+                        className="text-[var(--color-app-gradient-from)]"
                       />
                       <span className="text-gray-600 dark:text-gray-400">Primary</span>
                     </label>
@@ -352,7 +359,7 @@ export default function AddContactModal({
               <button
                 type="button"
                 onClick={addPhoneField}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-[var(--color-app-gradient-from)] hover:text-[var(--color-app-gradient-from)] dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Phone
@@ -371,7 +378,7 @@ export default function AddContactModal({
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => updateEmail(index, e.target.value)}
+                    onChange={e => updateEmail(index, e.target.value)}
                     className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Email address"
                   />
@@ -382,7 +389,7 @@ export default function AddContactModal({
                         name="primaryEmail"
                         checked={formData.primaryEmail === index}
                         onChange={() => setFormData({ ...formData, primaryEmail: index })}
-                        className="text-purple-600"
+                        className="text-[var(--color-app-gradient-from)]"
                       />
                       <span className="text-gray-600 dark:text-gray-400">Primary</span>
                     </label>
@@ -401,7 +408,7 @@ export default function AddContactModal({
               <button
                 type="button"
                 onClick={addEmailField}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-[var(--color-app-gradient-from)] hover:text-[var(--color-app-gradient-from)] dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Email
@@ -416,7 +423,7 @@ export default function AddContactModal({
             <input
               type="text"
               value={formData.relationship}
-              onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
+              onChange={e => setFormData({ ...formData, relationship: e.target.value })}
               placeholder="e.g., Friend, Family, Colleague"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
             />

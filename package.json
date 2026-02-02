@@ -12,7 +12,10 @@
     "dev:acme": "cross-env NEXT_PUBLIC_THEME=acme next dev --webpack",
     "build:acme": "cross-env NEXT_PUBLIC_THEME=acme next build --webpack",
     "start:acme": "cross-env NEXT_PUBLIC_THEME=acme next start",
-    "build:all": "npm run build && npm run build:acme"
+    "dev:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next dev --webpack",
+    "build:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next build --webpack",
+    "start:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next start",
+    "build:all": "npm run build && npm run build:acme && npm run build:vibe"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",

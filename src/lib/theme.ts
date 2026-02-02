@@ -3,7 +3,7 @@
  * Automatically loads the correct theme based on NEXT_PUBLIC_THEME environment variable
  */
 
-const themeName = process.env.NEXT_PUBLIC_THEME || 'default';
+const themeName = process.env.NEXT_PUBLIC_THEME || "default";
 
 /**
  * Active theme configuration
@@ -12,11 +12,13 @@ const themeName = process.env.NEXT_PUBLIC_THEME || 'default';
 let themeConfig;
 
 // Import theme config dynamically at build time
-if (themeName === 'acme') {
-  themeConfig = (await import('@/themes/acme/config')).themeConfig;
+if (themeName === "acme") {
+  themeConfig = (await import("@/themes/acme/config")).themeConfig;
+} else if (themeName === "vibe") {
+  themeConfig = (await import("@/themes/vibe/config")).themeConfig;
 } else {
   // Default theme
-  themeConfig = (await import('@/themes/default/config')).themeConfig;
+  themeConfig = (await import("@/themes/default/config")).themeConfig;
 }
 
 export const theme = themeConfig;

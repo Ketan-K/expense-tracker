@@ -40,10 +40,12 @@ export default function LoanPaymentForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const paymentAmount = parseFloat(formData.amount);
     if (paymentAmount > outstandingAmount) {
-      alert(`Payment amount cannot exceed outstanding amount of ₹${outstandingAmount.toLocaleString("en-IN")}`);
+      alert(
+        `Payment amount cannot exceed outstanding amount of ₹${outstandingAmount.toLocaleString("en-IN")}`
+      );
       return;
     }
 
@@ -75,14 +77,14 @@ export default function LoanPaymentForm({
       {/* Payment Date */}
       <DatePicker
         value={formData.date}
-        onChange={(date) => setFormData({ ...formData, date })}
+        onChange={date => setFormData({ ...formData, date })}
         label="Payment Date"
       />
 
       {/* Payment Amount */}
       <AmountInput
         value={formData.amount}
-        onChange={(amount) => setFormData({ ...formData, amount })}
+        onChange={amount => setFormData({ ...formData, amount })}
         label="Payment Amount (₹)"
         quickAmounts={[500, 1000, 5000, 10000]}
       />
@@ -93,15 +95,15 @@ export default function LoanPaymentForm({
           <div className="text-sm text-gray-600 dark:text-gray-400">
             Remaining after this payment
           </div>
-          <div className={`text-xl font-semibold ${
-            remainingAfterPayment === 0
-              ? "text-green-600 dark:text-green-400"
-              : "text-gray-900 dark:text-white"
-          }`}>
+          <div
+            className={`text-xl font-semibold ${
+              remainingAfterPayment === 0
+                ? "text-green-600 dark:text-green-400"
+                : "text-gray-900 dark:text-white"
+            }`}
+          >
             ₹{remainingAfterPayment.toLocaleString("en-IN")}
-            {remainingAfterPayment === 0 && (
-              <span className="text-sm ml-2">✓ Fully Paid</span>
-            )}
+            {remainingAfterPayment === 0 && <span className="text-sm ml-2">✓ Fully Paid</span>}
           </div>
         </div>
       )}
@@ -109,11 +111,11 @@ export default function LoanPaymentForm({
       {/* Payment Method */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          <CreditCard className="w-4 h-4 inline mr-2 text-indigo-600" />
+          <CreditCard className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
           Payment Method
         </label>
         <div className="grid grid-cols-4 gap-2">
-          {["cash", "card", "upi", "bank_transfer"].map((method) => (
+          {["cash", "card", "upi", "bank_transfer"].map(method => (
             <button
               key={method}
               type="button"
@@ -133,13 +135,13 @@ export default function LoanPaymentForm({
       {/* Notes */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          <FileText className="w-4 h-4 inline mr-2 text-indigo-600" />
+          <FileText className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
           Notes (Optional)
         </label>
         <textarea
           placeholder="Add notes about this payment..."
           value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          onChange={e => setFormData({ ...formData, notes: e.target.value })}
           rows={2}
           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none dark:text-white transition-all"
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FileText, TrendingUp, Check } from "lucide-react";
 import { format } from "date-fns";
 import { DEFAULT_INCOME_SOURCES } from "@/lib/types";
@@ -53,20 +53,6 @@ export default function IncomeForm({
   const [customSource, setCustomSource] = useState("");
   const [showCustomSource, setShowCustomSource] = useState(false);
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        date: initialData.date || format(new Date(), "yyyy-MM-dd"),
-        amount: initialData.amount || "",
-        source: initialData.source || "",
-        category: initialData.category || "",
-        description: initialData.description || "",
-        taxable: initialData.taxable ?? true,
-        recurring: initialData.recurring ?? false,
-      });
-    }
-  }, [initialData]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
@@ -96,15 +82,12 @@ export default function IncomeForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
       {/* Date */}
-      <DatePicker
-        value={formData.date}
-        onChange={(date) => setFormData({ ...formData, date })}
-      />
+      <DatePicker value={formData.date} onChange={date => setFormData({ ...formData, date })} />
 
       {/* Amount */}
       <AmountInput
         value={formData.amount}
-        onChange={(amount) => setFormData({ ...formData, amount })}
+        onChange={amount => setFormData({ ...formData, amount })}
         quickAmounts={[1000, 5000, 10000, 50000]}
       />
 
@@ -115,7 +98,7 @@ export default function IncomeForm({
           Income Source
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {DEFAULT_INCOME_SOURCES.map((source) => {
+          {DEFAULT_INCOME_SOURCES.map(source => {
             const isSelected = formData.source === source;
             return (
               <button
@@ -151,7 +134,7 @@ export default function IncomeForm({
               type="text"
               placeholder="Enter custom income source..."
               value={customSource}
-              onChange={(e) => {
+              onChange={e => {
                 setCustomSource(e.target.value);
                 setFormData({ ...formData, source: e.target.value });
               }}
@@ -171,7 +154,7 @@ export default function IncomeForm({
           type="text"
           placeholder="e.g., Bonus, Commission, Dividend"
           value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          onChange={e => setFormData({ ...formData, category: e.target.value })}
           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent dark:text-white transition-all"
         />
       </div>
@@ -185,7 +168,7 @@ export default function IncomeForm({
         <textarea
           placeholder="Add notes about this income..."
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={e => setFormData({ ...formData, description: e.target.value })}
           rows={3}
           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none dark:text-white transition-all"
         />
@@ -197,7 +180,7 @@ export default function IncomeForm({
           <input
             type="checkbox"
             checked={formData.taxable}
-            onChange={(e) => setFormData({ ...formData, taxable: e.target.checked })}
+            onChange={e => setFormData({ ...formData, taxable: e.target.checked })}
             className="sr-only"
           />
           <div
@@ -218,7 +201,7 @@ export default function IncomeForm({
           <input
             type="checkbox"
             checked={formData.recurring}
-            onChange={(e) => setFormData({ ...formData, recurring: e.target.checked })}
+            onChange={e => setFormData({ ...formData, recurring: e.target.checked })}
             className="sr-only"
           />
           <div
@@ -245,7 +228,7 @@ export default function IncomeForm({
             className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
             disabled={isSubmitting}
           >
-            Cancel
+            {t.cancel}
           </button>
         )}
         <button

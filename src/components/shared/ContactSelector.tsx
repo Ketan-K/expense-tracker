@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, UserPlus, User, Phone, Mail, X } from "lucide-react";
-import { LocalContact, db } from "@/lib/db";
+import { db } from "@/lib/db";
 import { toast } from "sonner";
 import { generateObjectId } from "@/lib/idGenerator";
 import { processSyncQueue } from "@/lib/syncUtils";
@@ -18,7 +18,7 @@ interface ContactSelectorProps {
 }
 
 export default function ContactSelector({
-  value,
+  value: _value,
   contactName,
   onChange,
   userId,
@@ -37,18 +37,12 @@ export default function ContactSelector({
   });
 
   // Load contacts from IndexedDB
-  const contacts = useLiveQuery(
-    async () => {
-      if (!userId) return [];
-      return await db.contacts
-        .where("userId")
-        .equals(userId)
-        .sortBy("name");
-    },
-    [userId]
-  );
+  const contacts = useLiveQuery(async () => {
+    if (!userId) return [];
+    return await db.contacts.where("userId").equals(userId).sortBy("name");
+  }, [userId]);
 
-  const filteredContacts = contacts?.filter((contact) =>
+  const filteredContacts = contacts?.filter(contact =>
     contact.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -66,7 +60,7 @@ export default function ContactSelector({
 
     // Check if contact already exists
     const existing = contacts?.find(
-      (c) => c.name.toLowerCase() === newContact.name.trim().toLowerCase()
+      c => c.name.toLowerCase() === newContact.name.trim().toLowerCase()
     );
 
     if (existing) {
@@ -131,7 +125,7 @@ export default function ContactSelector({
   return (
     <div className="relative">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        <User className="w-4 h-4 inline mr-2 text-indigo-600" />
+        <User className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
         {label}
       </label>
 
@@ -140,7 +134,7 @@ export default function ContactSelector({
           type="text"
           placeholder="Search or select contact..."
           value={searchTerm}
-          onChange={(e) => {
+          onChange={e => {
             setSearchTerm(e.target.value);
             setShowDropdown(true);
             if (!e.target.value) {
@@ -157,10 +151,7 @@ export default function ContactSelector({
       {/* Dropdown */}
       {showDropdown && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setShowDropdown(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
           <div className="absolute z-20 mt-2 w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-64 overflow-y-auto">
             {/* Create new contact button */}
             <button
@@ -172,7 +163,7 @@ export default function ContactSelector({
               }}
               className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-b dark:border-gray-700"
             >
-              <UserPlus className="w-5 h-5 text-indigo-600" />
+              <UserPlus className="w-5 h-5 text-[var(--color-app-gradient-from)]" />
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 Create new contact {searchTerm && `"${searchTerm}"`}
               </span>
@@ -180,20 +171,18 @@ export default function ContactSelector({
 
             {/* Contact list */}
             {filteredContacts && filteredContacts.length > 0 ? (
-              filteredContacts.map((contact) => (
+              filteredContacts.map(contact => (
                 <button
                   key={contact._id}
                   type="button"
                   onClick={() => handleSelectContact(contact)}
                   className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-b last:border-b-0 dark:border-gray-700"
                 >
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <User className="w-5 h-5 text-indigo-600" />
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <User className="w-5 h-5 text-[var(--color-app-gradient-from)]" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {contact.name}
-                    </div>
+                    <div className="font-medium text-gray-900 dark:text-white">{contact.name}</div>
                     {contact.phone && (
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {contact.phone}
@@ -236,7 +225,7 @@ export default function ContactSelector({
                 <input
                   type="text"
                   value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                  onChange={e => setNewContact({ ...newContact, name: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   placeholder="Enter name"
                   autoFocus
@@ -251,7 +240,7 @@ export default function ContactSelector({
                 <input
                   type="tel"
                   value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                  onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   placeholder="Phone number"
                 />
@@ -265,7 +254,7 @@ export default function ContactSelector({
                 <input
                   type="email"
                   value={newContact.email}
-                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                  onChange={e => setNewContact({ ...newContact, email: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
                   placeholder="Email address"
                 />
@@ -277,7 +266,7 @@ export default function ContactSelector({
                 </label>
                 <select
                   value={newContact.relationship}
-                  onChange={(e) => setNewContact({ ...newContact, relationship: e.target.value })}
+                  onChange={e => setNewContact({ ...newContact, relationship: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
                 >
                   <option value="">Select...</option>
@@ -299,7 +288,7 @@ export default function ContactSelector({
                 <button
                   type="button"
                   onClick={handleCreateContact}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white rounded-lg hover:brightness-110 transition-all"
                 >
                   Create
                 </button>

@@ -27,13 +27,13 @@ export default function AmountInput({
       try {
         const numbers = inputValue
           .split("+")
-          .map((n) => parseFloat(n.trim()))
-          .filter((n) => !isNaN(n));
+          .map(n => parseFloat(n.trim()))
+          .filter(n => !isNaN(n));
         if (numbers.length > 0) {
           const sum = numbers.reduce((acc, curr) => acc + curr, 0);
           onChange(sum.toString());
         }
-      } catch (error) {
+      } catch (_error) {
         // Keep original value
       }
     }
@@ -56,14 +56,14 @@ export default function AmountInput({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        <DollarSign className="w-4 h-4 inline mr-2 text-indigo-600" />
+        <DollarSign className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
         {label}
       </label>
       <input
         type="text"
         placeholder={placeholder}
         value={value}
-        onChange={(e) => {
+        onChange={e => {
           const inputValue = e.target.value;
           if (inputValue === "" || /^[\d+.]+$/.test(inputValue)) {
             onChange(inputValue);
@@ -76,12 +76,12 @@ export default function AmountInput({
 
       {showQuickButtons && (
         <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-          {quickAmounts.map((amount) => (
+          {quickAmounts.map(amount => (
             <button
               key={amount}
               type="button"
               onClick={() => handleQuickAmount(amount)}
-              className="px-4 py-2 bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
+              className="px-4 py-2 bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end hover:brightness-95 dark:hover:brightness-110 text-[var(--color-app-budgets)] dark:text-pink-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
             >
               +₹{amount}
             </button>

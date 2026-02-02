@@ -1,0 +1,226 @@
+/* ============================================
+   VIBE FINANCE THEME
+   Money Moves Only 💸
+   ============================================ */
+
+/* Import Google Fonts - Space Grotesk (headings) and Inter (body) */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+
+@import "tailwindcss";
+
+@theme inline {
+  /* Font families - Gen Z modern fonts */
+  --font-family-sans: "Inter", var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-family-heading: "Space Grotesk", var(--font-geist-sans), system-ui, sans-serif;
+  --font-family-mono: var(--font-geist-mono);
+
+  /* ============================================
+     VIBE FINANCE COLORS - Purple to Pink Gradient
+     ============================================ */
+
+  /* Main gradient colors - Purple to Pink */
+  --color-app-gradient-from: #7c3aed; /* purple-600 */
+  --color-app-gradient-to: #db2777; /* pink-600 */
+  --color-app-gradient-via: #a855f7; /* purple-500 */
+  --color-app-gradient-light-from: #f3e8ff;
+  --color-app-gradient-light-to: #fce7f3;
+  --color-app-gradient-dark-from: rgb(124 58 237 / 0.2);
+  --color-app-gradient-dark-to: rgb(219 39 119 / 0.2);
+
+  /* Expenses - Orange/Fire theme */
+  --color-app-expenses: #f97316; /* orange-500 */
+  --color-app-expenses-end: #ea580c; /* orange-600 */
+  --color-app-expenses-light: #ffedd5; /* orange-100 */
+  --color-app-expenses-light-end: #fed7aa; /* orange-200 */
+
+  /* Income - Emerald/Green theme */
+  --color-app-income: #10b981; /* emerald-500 */
+  --color-app-income-end: #059669; /* emerald-600 */
+  --color-app-income-light: #d1fae5; /* emerald-100 */
+  --color-app-income-light-end: #a7f3d0; /* emerald-200 */
+
+  /* Loans - Cyan theme */
+  --color-app-loans: #06b6d4; /* cyan-500 */
+  --color-app-loans-end: #0891b2; /* cyan-600 */
+  --color-app-loans-light: #cffafe; /* cyan-100 */
+  --color-app-loans-light-end: #a5f3fc; /* cyan-200 */
+
+  /* Contacts - Purple theme */
+  --color-app-contacts: #8b5cf6; /* violet-500 */
+  --color-app-contacts-end: #7c3aed; /* violet-600 */
+  --color-app-contacts-light: #ede9fe; /* violet-100 */
+  --color-app-contacts-light-end: #ddd6fe; /* violet-200 */
+
+  /* Budgets - Pink theme */
+  --color-app-budgets: #ec4899; /* pink-500 */
+  --color-app-budgets-light: #fce7f3; /* pink-100 */
+  --color-app-budgets-light-end: #fbcfe8; /* pink-200 */
+
+  /* ============================================
+     STATUS COLORS
+     ============================================ */
+
+  --color-success: #10b981; /* emerald-500 */
+  --color-success-light: #d1fae5; /* emerald-100 */
+  --color-success-dark: #059669; /* emerald-600 */
+
+  --color-error: #ef4444; /* red-500 */
+  --color-error-light: #fee2e2; /* red-100 */
+  --color-error-dark: #dc2626; /* red-600 */
+
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning-light: #fef3c7; /* amber-100 */
+  --color-warning-dark: #d97706; /* amber-600 */
+
+  --color-info: #06b6d4; /* cyan-500 */
+  --color-info-light: #cffafe; /* cyan-100 */
+  --color-info-dark: #0891b2; /* cyan-600 */
+
+  /* ============================================
+     NEUTRAL/GRAYSCALE
+     ============================================ */
+
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+}
+
+/* ============================================
+   CUSTOM UTILITY CLASSES
+   ============================================ */
+
+/* Gradient text utilities - Vibe purple-pink gradient */
+.text-gradient-app {
+  @apply bg-gradient-to-r from-app-gradient-from via-app-gradient-via to-app-gradient-to bg-clip-text text-transparent;
+}
+
+/* Button utilities with Vibe gradient */
+.btn-app {
+  @apply bg-gradient-to-r from-app-gradient-from via-app-gradient-via to-app-gradient-to text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Card hover effects with more pronounced animation */
+.card-hover {
+  @apply hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 ease-out;
+}
+
+/* Gen Z vibe glow effect */
+.vibe-glow {
+  @apply shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-shadow duration-300;
+}
+
+/* ============================================
+   TYPOGRAPHY - Gen Z Modern
+   ============================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================
+   BASE STYLES & SCROLLBAR
+   ============================================ */
+
+* {
+  @apply border-gray-700;
+}
+
+html,
+body {
+  @apply bg-gray-900 text-gray-50;
+  font-family: var(--font-family-sans);
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
+}
+
+/* Custom Vibe scrollbar with purple accent */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #a855f7 transparent;
+}
+
+.dark * {
+  scrollbar-color: #7c3aed transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a855f7 0%, #ec4899 100%);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7c3aed 0%, #db2777 100%);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8b5cf6 0%, #f472b6 100%);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6d28d9 0%, #be185d 100%);
+}
+
+/* Custom Scrollbar Styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a855f7 0%, #ec4899 100%);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7c3aed 0%, #db2777 100%);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8b5cf6 0%, #f472b6 100%);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6d28d9 0%, #be185d 100%);
+}
+
+/* Firefox scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #a855f7 transparent;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: #7c3aed transparent;
+}

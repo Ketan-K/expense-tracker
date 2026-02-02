@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FileText, ArrowUpRight, ArrowDownRight, Percent } from "lucide-react";
 import { format } from "date-fns";
 import AmountInput from "@/components/shared/AmountInput";
@@ -54,21 +54,6 @@ export default function LoanForm({
     dueDate: initialData?.dueDate || "",
     description: initialData?.description || "",
   });
-
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        contactId: initialData.contactId || undefined,
-        contactName: initialData.contactName || "",
-        direction: (initialData.direction || "given") as "given" | "taken",
-        principalAmount: initialData.principalAmount || "",
-        interestRate: initialData.interestRate || "",
-        startDate: initialData.startDate || format(new Date(), "yyyy-MM-dd"),
-        dueDate: initialData.dueDate || "",
-        description: initialData.description || "",
-      });
-    }
-  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,9 +118,7 @@ export default function LoanForm({
       <ContactSelector
         value={formData.contactId}
         contactName={formData.contactName}
-        onChange={(contactId, contactName) =>
-          setFormData({ ...formData, contactId, contactName })
-        }
+        onChange={(contactId, contactName) => setFormData({ ...formData, contactId, contactName })}
         userId={userId}
         label={formData.direction === "given" ? "Lent To" : "Borrowed From"}
       />
@@ -143,7 +126,7 @@ export default function LoanForm({
       {/* Principal Amount */}
       <AmountInput
         value={formData.principalAmount}
-        onChange={(amount) => setFormData({ ...formData, principalAmount: amount })}
+        onChange={amount => setFormData({ ...formData, principalAmount: amount })}
         label="Principal Amount (₹)"
         quickAmounts={[1000, 5000, 10000, 50000]}
       />
@@ -151,7 +134,7 @@ export default function LoanForm({
       {/* Interest Rate (Optional) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          <Percent className="w-4 h-4 inline mr-2 text-indigo-600" />
+          <Percent className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
           Interest Rate (Optional)
         </label>
         <input
@@ -161,7 +144,7 @@ export default function LoanForm({
           max="100"
           placeholder="e.g., 5.5"
           value={formData.interestRate}
-          onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
+          onChange={e => setFormData({ ...formData, interestRate: e.target.value })}
           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white transition-all"
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -173,12 +156,12 @@ export default function LoanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <DatePicker
           value={formData.startDate}
-          onChange={(date) => setFormData({ ...formData, startDate: date })}
+          onChange={date => setFormData({ ...formData, startDate: date })}
           label="Start Date"
         />
         <DatePicker
           value={formData.dueDate}
-          onChange={(date) => setFormData({ ...formData, dueDate: date })}
+          onChange={date => setFormData({ ...formData, dueDate: date })}
           label="Due Date (Optional)"
           required={false}
         />
@@ -187,13 +170,13 @@ export default function LoanForm({
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          <FileText className="w-4 h-4 inline mr-2 text-indigo-600" />
+          <FileText className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
           Description (Optional)
         </label>
         <textarea
           placeholder="Add notes about this loan..."
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={e => setFormData({ ...formData, description: e.target.value })}
           rows={3}
           className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none dark:text-white transition-all"
         />

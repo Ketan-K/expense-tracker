@@ -48,7 +48,7 @@ export default function MonthSelector({ selectedMonth, onMonthChange }: MonthSel
         {!isCurrentMonth() && (
           <button
             onClick={handleToday}
-            className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-[var(--color-app-gradient-from)] dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
           >
             Today
           </button>

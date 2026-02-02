@@ -7,6 +7,10 @@ import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { generateObjectId } from "@/lib/idGenerator";
 import { motion, AnimatePresence } from "framer-motion";
+import { t } from "@/lib/terminology";
+import dynamic from "next/dynamic";
+
+const IncomeForm = dynamic(() => import("@/components/IncomeForm"), { ssr: false });
 
 interface AddIncomeModalProps {
   isOpen: boolean;
@@ -14,11 +18,7 @@ interface AddIncomeModalProps {
   userId: string;
 }
 
-export default function AddIncomeModal({
-  isOpen,
-  onClose,
-  userId,
-}: AddIncomeModalProps) {
+export default function AddIncomeModal({ isOpen, onClose, userId }: AddIncomeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (formData: {
@@ -79,19 +79,17 @@ export default function AddIncomeModal({
 
   if (!isOpen) return null;
 
-  const IncomeForm = require("@/components/IncomeForm").default;
-
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <motion.div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pt-4 pb-24 sm:pb-4 overflow-y-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div 
+          <motion.div
             className="bg-gradient-to-br from-app-income-light to-app-income-light-end dark:from-gray-800 dark:via-gray-800 dark:to-app-income-dark rounded-2xl max-w-md w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto my-auto shadow-2xl"
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -100,7 +98,7 @@ export default function AddIncomeModal({
           >
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Add Income
+                {t.add} {t.income}
               </h2>
               <motion.button
                 onClick={onClose}
@@ -113,11 +111,7 @@ export default function AddIncomeModal({
             </div>
 
             <div className="p-6">
-              <IncomeForm
-                onSubmit={handleSubmit}
-                onCancel={onClose}
-                isSubmitting={isSubmitting}
-              />
+              <IncomeForm onSubmit={handleSubmit} onCancel={onClose} isSubmitting={isSubmitting} />
             </div>
           </motion.div>
         </motion.div>

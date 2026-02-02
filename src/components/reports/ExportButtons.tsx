@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -19,7 +19,7 @@ export default function ExportButtons({ selectedMonth }: ExportButtonsProps) {
       const monthEnd = endOfMonth(selectedMonth);
 
       const url = `/api/export/${format}?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`;
-      
+
       const response = await fetch(url);
       if (!response.ok) throw new Error("Export failed");
 
@@ -49,7 +49,7 @@ export default function ExportButtons({ selectedMonth }: ExportButtonsProps) {
       <button
         onClick={() => handleExport("csv")}
         disabled={exporting !== null}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end text-indigo-700 dark:text-indigo-300 rounded-lg hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end text-[var(--color-app-budgets)] dark:text-pink-300 rounded-lg hover:brightness-95 dark:hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
       >
         <FileText className="w-3.5 h-3.5" />
         {exporting === "csv" ? "..." : "CSV"}

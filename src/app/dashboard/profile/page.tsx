@@ -4,18 +4,38 @@ import { useSession, signOut } from "next-auth/react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useConfirm } from "@/hooks/useConfirm";
-import { User, Mail, LogOut, Database, RefreshCw, Cloud, CheckCircle, XCircle, TrendingUp, Wallet, CreditCard } from "lucide-react";
+import {
+  User,
+  Mail,
+  LogOut,
+  Database,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Wallet,
+  CreditCard,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLiveQuery } from "dexie-react-hooks";
 import { processSyncQueue, pullFromServer } from "@/lib/syncUtils";
+import { t } from "@/lib/terminology";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
-  const [dbStats, setDbStats] = useState({ expenses: 0, categories: 0, budgets: 0, incomes: 0, loans: 0, contacts: 0 });
+  const [dbStats, setDbStats] = useState({
+    expenses: 0,
+    categories: 0,
+    budgets: 0,
+    incomes: 0,
+    loans: 0,
+    contacts: 0,
+  });
   const [syncing, setSyncing] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [showQueueDetails, setShowQueueDetails] = useState(false);
@@ -23,45 +43,42 @@ export default function ProfilePage() {
   const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
 
   // Get real-time sync queue status
-  const syncQueue = useLiveQuery(
-    async () => {
-      return await db.syncQueue.toArray();
-    },
-    []
-  );
+  const syncQueue = useLiveQuery(async () => {
+    return await db.syncQueue.toArray();
+  }, []);
 
   // Get unsynced items count
-  const unsyncedStats = useLiveQuery(
-    async () => {
-      if (!session?.user?.id) return { expenses: 0, budgets: 0, categories: 0 };
-      
-      const unsyncedExpenses = await db.expenses
-        .where("userId").equals(session.user.id)
-        .and(e => !e.synced)
-        .count();
-      
-      const unsyncedBudgets = await db.budgets
-        .where("userId").equals(session.user.id)
-        .and(b => !b.synced)
-        .count();
-      
-      const unsyncedCategories = await db.categories
-        .where("userId").equals(session.user.id)
-        .and(c => !c.synced)
-        .count();
-      
-      return {
-        expenses: unsyncedExpenses,
-        budgets: unsyncedBudgets,
-        categories: unsyncedCategories,
-      };
-    },
-    [session?.user?.id]
-  );
+  const unsyncedStats = useLiveQuery(async () => {
+    if (!session?.user?.id) return { expenses: 0, budgets: 0, categories: 0 };
+
+    const unsyncedExpenses = await db.expenses
+      .where("userId")
+      .equals(session.user.id)
+      .and(e => !e.synced)
+      .count();
+
+    const unsyncedBudgets = await db.budgets
+      .where("userId")
+      .equals(session.user.id)
+      .and(b => !b.synced)
+      .count();
+
+    const unsyncedCategories = await db.categories
+      .where("userId")
+      .equals(session.user.id)
+      .and(c => !c.synced)
+      .count();
+
+    return {
+      expenses: unsyncedExpenses,
+      budgets: unsyncedBudgets,
+      categories: unsyncedCategories,
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Get IndexedDB stats
     const getStats = async () => {
       if (session?.user?.id) {
@@ -71,24 +88,24 @@ export default function ProfilePage() {
         const incomeCount = await db.incomes.count();
         const loanCount = await db.loans.count();
         const contactCount = await db.contacts.count();
-        
+
         // Get last sync time from metadata
-        const metadata = await db.syncMetadata.where('key').equals('lastSync').first();
+        const metadata = await db.syncMetadata.where("key").equals("lastSync").first();
         if (metadata?.value) {
           setLastSyncTime(new Date(metadata.value));
         }
-        
-        setDbStats({ 
-          expenses: expenseCount, 
-          categories: categoryCount, 
+
+        setDbStats({
+          expenses: expenseCount,
+          categories: categoryCount,
           budgets: budgetCount,
           incomes: incomeCount,
           loans: loanCount,
-          contacts: contactCount
+          contacts: contactCount,
         });
       }
     };
-    
+
     getStats();
   }, [session]);
 
@@ -114,7 +131,7 @@ export default function ProfilePage() {
         await db.syncMetadata.clear();
         toast.success("Local data cleared");
         setDbStats({ expenses: 0, categories: 0, budgets: 0, incomes: 0, loans: 0, contacts: 0 });
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to clear data");
       }
     }
@@ -122,21 +139,21 @@ export default function ProfilePage() {
 
   const syncNow = async () => {
     if (!session?.user?.id) return;
-    
+
     setSyncing(true);
     try {
       await processSyncQueue(session.user.id);
-      
+
       // Save last sync time
       const now = new Date();
-      await db.syncMetadata.put({ key: 'lastSync', value: now.toISOString(), updatedAt: now });
+      await db.syncMetadata.put({ key: "lastSync", value: now.toISOString(), updatedAt: now });
       setLastSyncTime(now);
-      
-      toast.success('Sync completed successfully');
+
+      toast.success("Sync completed successfully");
       setShowSyncDialog(false);
     } catch (error) {
       console.error("Sync error:", error);
-      toast.error('Sync failed');
+      toast.error("Sync failed");
     } finally {
       setSyncing(false);
     }
@@ -155,15 +172,14 @@ export default function ProfilePage() {
       const incomeCount = await db.incomes.count();
       const loanCount = await db.loans.count();
       const contactCount = await db.contacts.count();
-      setDbStats({ 
-        expenses: expenseCount, 
-        categories: categoryCount, 
+      setDbStats({
+        expenses: expenseCount,
+        categories: categoryCount,
         budgets: budgetCount,
         incomes: incomeCount,
         loans: loanCount,
-        contacts: contactCount
+        contacts: contactCount,
       });
-      
     } catch (error) {
       console.error("Pull error:", error);
     }
@@ -194,7 +210,7 @@ export default function ProfilePage() {
           className="mb-8"
         >
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gradient-app">
-            Profile & Settings
+            {t.profile} & Settings
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
             Manage your account and preferences
@@ -203,7 +219,7 @@ export default function ProfilePage() {
 
         {/* Summary Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-          <motion.div 
+          <motion.div
             className="bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-2xl shadow-lg p-6 text-white"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -211,16 +227,14 @@ export default function ProfilePage() {
             whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium opacity-90">Total Expenses</h3>
+              <h3 className="text-sm font-medium opacity-90">{t.totalSpent}</h3>
               <TrendingUp className="w-5 h-5 opacity-90" />
             </div>
-            <p className="text-3xl font-bold mb-1">
-              {dbStats.expenses}
-            </p>
+            <p className="text-3xl font-bold mb-1">{dbStats.expenses}</p>
             <p className="text-xs opacity-75">Tracked transactions</p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="bg-gradient-to-br from-app-income to-app-income-end rounded-2xl shadow-lg p-6 text-white"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -228,16 +242,14 @@ export default function ProfilePage() {
             whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium opacity-90">Total Income</h3>
+              <h3 className="text-sm font-medium opacity-90">{t.totalIncome}</h3>
               <Wallet className="w-5 h-5 opacity-90" />
             </div>
-            <p className="text-3xl font-bold mb-1">
-              {dbStats.incomes}
-            </p>
+            <p className="text-3xl font-bold mb-1">{dbStats.incomes}</p>
             <p className="text-xs opacity-75">Income records</p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="bg-gradient-to-br from-app-loans to-app-loans-end rounded-2xl shadow-lg p-6 text-white"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -245,12 +257,10 @@ export default function ProfilePage() {
             whileHover={{ scale: 1.02 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium opacity-90">Active Loans</h3>
+              <h3 className="text-sm font-medium opacity-90">{t.activeLoans}</h3>
               <CreditCard className="w-5 h-5 opacity-90" />
             </div>
-            <p className="text-3xl font-bold mb-1">
-              {dbStats.loans}
-            </p>
+            <p className="text-3xl font-bold mb-1">{dbStats.loans}</p>
             <p className="text-xs opacity-75">{dbStats.contacts} contacts</p>
           </motion.div>
         </div>
@@ -288,42 +298,42 @@ export default function ProfilePage() {
             Local Storage Details
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4">
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-red-500 to-pink-600 p-3 sm:p-4 rounded-xl text-white"
               whileHover={{ scale: 1.03 }}
             >
               <div className="text-xs sm:text-sm opacity-90 mb-1">Expenses</div>
               <div className="text-xl sm:text-2xl font-bold">{dbStats.expenses}</div>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 sm:p-4 rounded-xl text-white"
               whileHover={{ scale: 1.03 }}
             >
               <div className="text-xs sm:text-sm opacity-90 mb-1">Incomes</div>
               <div className="text-xl sm:text-2xl font-bold">{dbStats.incomes}</div>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-orange-500 to-red-600 p-3 sm:p-4 rounded-xl text-white"
               whileHover={{ scale: 1.03 }}
             >
               <div className="text-xs sm:text-sm opacity-90 mb-1">Loans</div>
               <div className="text-xl sm:text-2xl font-bold">{dbStats.loans}</div>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 sm:p-4 rounded-xl text-white"
               whileHover={{ scale: 1.03 }}
             >
               <div className="text-xs sm:text-sm opacity-90 mb-1">Contacts</div>
               <div className="text-xl sm:text-2xl font-bold">{dbStats.contacts}</div>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-cyan-500 to-blue-600 p-3 sm:p-4 rounded-xl text-white"
               whileHover={{ scale: 1.03 }}
             >
               <div className="text-xs sm:text-sm opacity-90 mb-1">Categories</div>
               <div className="text-xl sm:text-2xl font-bold">{dbStats.categories}</div>
             </motion.div>
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-violet-500 to-purple-600 p-3 sm:p-4 rounded-xl text-white"
               whileHover={{ scale: 1.03 }}
             >
@@ -357,9 +367,11 @@ export default function ProfilePage() {
           <div className="space-y-3 sm:space-y-4">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700/30 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Connection Status</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Connection Status
+                </span>
                 <span className="text-sm font-semibold flex items-center gap-2">
-                  {typeof window !== 'undefined' && navigator.onLine ? (
+                  {typeof window !== "undefined" && navigator.onLine ? (
                     <>
                       <span className="relative flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -375,46 +387,55 @@ export default function ProfilePage() {
                   )}
                 </span>
               </div>
-              
+
               {lastSyncTime && (
                 <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
                   <span>Last sync:</span>
                   <span className="font-medium">
-                    {lastSyncTime.toLocaleString('en-IN', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
+                    {lastSyncTime.toLocaleString("en-IN", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </span>
                 </div>
               )}
             </div>
 
-            <div 
+            <div
               onClick={() => (syncQueue?.length || 0) > 0 && setShowQueueDetails(true)}
               className="bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 cursor-pointer hover:shadow-md transition-all"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sync Queue</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Sync Queue
+                </span>
                 <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                   {syncQueue?.length || 0}
                 </span>
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {(syncQueue?.length || 0) === 0 ? 'All changes synced' : 'Click to view details'}
+                {(syncQueue?.length || 0) === 0 ? "All changes synced" : "Click to view details"}
               </div>
             </div>
-            {unsyncedStats && (unsyncedStats.expenses > 0 || unsyncedStats.budgets > 0 || unsyncedStats.categories > 0) && (
-              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                <p className="text-sm text-orange-800 dark:text-orange-300 font-medium mb-2">Unsynced Data Found</p>
-                <div className="space-y-1 text-xs text-orange-700 dark:text-orange-400">
-                  {unsyncedStats.expenses > 0 && <div>• {unsyncedStats.expenses} expenses</div>}
-                  {unsyncedStats.budgets > 0 && <div>• {unsyncedStats.budgets} budgets</div>}
-                  {unsyncedStats.categories > 0 && <div>• {unsyncedStats.categories} categories</div>}
+            {unsyncedStats &&
+              (unsyncedStats.expenses > 0 ||
+                unsyncedStats.budgets > 0 ||
+                unsyncedStats.categories > 0) && (
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm text-orange-800 dark:text-orange-300 font-medium mb-2">
+                    Unsynced Data Found
+                  </p>
+                  <div className="space-y-1 text-xs text-orange-700 dark:text-orange-400">
+                    {unsyncedStats.expenses > 0 && <div>• {unsyncedStats.expenses} expenses</div>}
+                    {unsyncedStats.budgets > 0 && <div>• {unsyncedStats.budgets} budgets</div>}
+                    {unsyncedStats.categories > 0 && (
+                      <div>• {unsyncedStats.categories} categories</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             <button
               onClick={() => setShowSyncDialog(true)}
               className="w-full mt-4 py-3 sm:py-4 px-4 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl sm:rounded-2xl hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all font-medium text-sm sm:text-base active:scale-95 cursor-pointer flex items-center justify-center gap-2"
@@ -454,13 +475,13 @@ export default function ProfilePage() {
                 {syncQueue?.length || 0} pending operations
               </p>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-6">
               {syncQueue && syncQueue.length > 0 ? (
                 <div className="space-y-3">
                   {syncQueue.map((item, index) => (
-                    <div 
-                      key={item.id} 
+                    <div
+                      key={item.id}
                       className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600"
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -468,11 +489,15 @@ export default function ProfilePage() {
                           <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
                             #{index + 1}
                           </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            item.action === 'CREATE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                            item.action === 'UPDATE' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                            'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                          }`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              item.action === "CREATE"
+                                ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                : item.action === "UPDATE"
+                                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                                  : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                            }`}
+                          >
                             {item.action}
                           </span>
                           <span className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 font-medium">
@@ -480,53 +505,73 @@ export default function ProfilePage() {
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                        {item.collection === 'expenses' && item.data && (
+                        {item.collection === "expenses" && item.data && (
                           <>
-                            <div className="font-medium">{item.data.category || 'Uncategorized'}</div>
-                            <div className="text-gray-600 dark:text-gray-400">₹{item.data.amount?.toLocaleString('en-IN')}</div>
-                            {item.data.description && <div className="text-xs text-gray-500 dark:text-gray-500">{item.data.description}</div>}
-                          </>
-                        )}
-                        {item.collection === 'incomes' && item.data && (
-                          <>
-                            <div className="font-medium">{item.data.source || 'Income'}</div>
-                            <div className="text-gray-600 dark:text-gray-400">₹{item.data.amount?.toLocaleString('en-IN')}</div>
-                          </>
-                        )}
-                        {item.collection === 'categories' && item.data && (
-                          <div className="font-medium">{item.data.name}</div>
-                        )}
-                        {item.collection === 'budgets' && item.data && (
-                          <>
-                            <div className="font-medium">{item.data.category}</div>
-                            <div className="text-gray-600 dark:text-gray-400">Limit: ₹{item.data.limit?.toLocaleString('en-IN')}</div>
-                          </>
-                        )}
-                        {item.collection === 'contacts' && item.data && (
-                          <>
-                            <div className="font-medium">{item.data.name}</div>
-                            {item.data.primaryPhone !== undefined && item.data.phones?.[item.data.primaryPhone] && (
-                              <div className="text-xs text-gray-500 dark:text-gray-500">{item.data.phones[item.data.primaryPhone]}</div>
+                            <div className="font-medium">
+                              {item.data.category || "Uncategorized"}
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              ₹{item.data.amount?.toLocaleString("en-IN")}
+                            </div>
+                            {item.data.description && (
+                              <div className="text-xs text-gray-500 dark:text-gray-500">
+                                {item.data.description}
+                              </div>
                             )}
                           </>
                         )}
-                        {item.collection === 'loans' && item.data && (
+                        {item.collection === "incomes" && item.data && (
                           <>
-                            <div className="font-medium">{item.data.description || 'Loan'}</div>
-                            <div className="text-gray-600 dark:text-gray-400">₹{item.data.amount?.toLocaleString('en-IN')}</div>
+                            <div className="font-medium">{item.data.source || "Income"}</div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              ₹{item.data.amount?.toLocaleString("en-IN")}
+                            </div>
+                          </>
+                        )}
+                        {item.collection === "categories" && item.data && (
+                          <div className="font-medium">{item.data.name}</div>
+                        )}
+                        {item.collection === "budgets" && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.category}</div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              Limit: ₹{item.data.limit?.toLocaleString("en-IN")}
+                            </div>
+                          </>
+                        )}
+                        {item.collection === "contacts" && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.name}</div>
+                            {item.data.primaryPhone !== undefined &&
+                              item.data.phones?.[item.data.primaryPhone] && (
+                                <div className="text-xs text-gray-500 dark:text-gray-500">
+                                  {item.data.phones[item.data.primaryPhone]}
+                                </div>
+                              )}
+                          </>
+                        )}
+                        {item.collection === "loans" && item.data && (
+                          <>
+                            <div className="font-medium">{item.data.description || "Loan"}</div>
+                            <div className="text-gray-600 dark:text-gray-400">
+                              ₹{item.data.amount?.toLocaleString("en-IN")}
+                            </div>
                           </>
                         )}
                       </div>
-                      
+
                       <div className="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center gap-2">
-                        <span>Created: {new Date(item.timestamp).toLocaleString('en-IN', { 
-                          month: 'short', 
-                          day: 'numeric', 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}</span>
+                        <span>
+                          Created:{" "}
+                          {new Date(item.timestamp).toLocaleString("en-IN", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -535,11 +580,13 @@ export default function ProfilePage() {
                 <div className="text-center py-12">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                   <p className="text-gray-600 dark:text-gray-400 font-medium">All changes synced</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">No pending operations</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                    No pending operations
+                  </p>
                 </div>
               )}
             </div>
-            
+
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
               {syncQueue && syncQueue.length > 0 && (
                 <button
@@ -572,11 +619,13 @@ export default function ProfilePage() {
               <Cloud className="w-6 h-6 text-indigo-600" />
               Sync to Server
             </h3>
-            
+
             <div className="space-y-4 mb-6">
               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sync Queue</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Sync Queue
+                  </span>
                   <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
                     {syncQueue?.length || 0} items
                   </span>
@@ -605,14 +654,18 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {(syncQueue?.length || 0) === 0 && (!unsyncedStats || (unsyncedStats.expenses === 0 && unsyncedStats.budgets === 0 && unsyncedStats.categories === 0)) && (
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="text-sm font-medium">Everything is synced!</span>
+              {(syncQueue?.length || 0) === 0 &&
+                (!unsyncedStats ||
+                  (unsyncedStats.expenses === 0 &&
+                    unsyncedStats.budgets === 0 &&
+                    unsyncedStats.categories === 0)) && (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="text-sm font-medium">Everything is synced!</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             <div className="flex gap-3">
@@ -625,7 +678,14 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={syncNow}
-                disabled={syncing || ((syncQueue?.length || 0) === 0 && (!unsyncedStats || (unsyncedStats.expenses === 0 && unsyncedStats.budgets === 0 && unsyncedStats.categories === 0)))}
+                disabled={
+                  syncing ||
+                  ((syncQueue?.length || 0) === 0 &&
+                    (!unsyncedStats ||
+                      (unsyncedStats.expenses === 0 &&
+                        unsyncedStats.budgets === 0 &&
+                        unsyncedStats.categories === 0)))
+                }
                 className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {syncing ? (
