@@ -15,7 +15,8 @@
     "dev:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next dev --webpack",
     "build:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next build --webpack",
     "start:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next start",
-    "build:all": "npm run build && npm run build:acme && npm run build:vibe"
+    "build:all": "npm run build && npm run build:acme && npm run build:vibe",
+    "icons:generate": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",
@@ -53,6 +54,7 @@
     "eslint-config-next": "16.1.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "png-to-ico": "^3.0.1",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",

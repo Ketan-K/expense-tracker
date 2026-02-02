@@ -27,6 +27,8 @@ export const themeConfig: ThemeConfig = {
     logoText: "Vibe Finance",
     favicon: "/favicon-vibe.ico",
     appleTouchIcon: "/apple-touch-icon-vibe.png",
+    icon192: "/icon-192x192-vibe.png",
+    icon512: "/icon-512x512-vibe.png",
   },
 
   colors: {

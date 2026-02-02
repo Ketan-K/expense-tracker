@@ -18,7 +18,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: theme.meta.title,
   description: theme.meta.description,
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -28,6 +27,10 @@ export const metadata: Metadata = {
     title: theme.meta.title,
     description: theme.meta.description,
     siteName: theme.brand.name,
+  },
+  icons: {
+    icon: theme.assets.favicon,
+    apple: theme.assets.appleTouchIcon,
   },
 };
 
@@ -46,13 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href={theme.assets.favicon} />
-        <link rel="apple-touch-icon" href={theme.assets.appleTouchIcon} />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
           {children}
           <Toaster position="top-center" richColors />

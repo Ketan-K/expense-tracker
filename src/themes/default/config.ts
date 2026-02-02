@@ -21,6 +21,8 @@ export type ThemeConfig = {
     logoText: string;
     favicon: string;
     appleTouchIcon: string;
+    icon192: string;
+    icon512: string;
   };
   colors: {
     primary: string;
@@ -129,6 +131,8 @@ export const themeConfig: ThemeConfig = {
     logoText: "ExpenseTracker",
     favicon: "/favicon.ico",
     appleTouchIcon: "/apple-touch-icon.png",
+    icon192: "/icon-192x192.png",
+    icon512: "/icon-512x512.png",
   },
 
   colors: {

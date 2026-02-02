@@ -35,8 +35,7 @@ A modern, offline-first expense tracking Progressive Web App with comprehensive 
 - **[Quick Start Guide](docs/vibe-quickstart.md)** - Get started with Vibe Finance theme
 - **[Deployment Guide](docs/vibe-deployment.md)** - Deploy to Vercel or other platforms
 - **[Admin Setup](docs/admin.md)** - Configure admin access and tools
-- **[Development Guide](docs/linting.md)** - Code standards and linting setup
-- **[Vibe Finance Summary](docs/vibe-summary.md)** - Complete theme implementation details
+- **[Development Guide](docs/linting.md)** - Code standards and linting setup- **[Asset Generation](docs/asset-generation.md)** - Generate theme icons and favicons- **[Vibe Finance Summary](docs/vibe-summary.md)** - Complete theme implementation details
 
 ## �📋 Prerequisites
 
