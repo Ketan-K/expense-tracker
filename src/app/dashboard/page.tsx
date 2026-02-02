@@ -356,10 +356,6 @@ export default function DashboardPage() {
     }
   }, [session?.user?.id]);
 
-  if (!session) {
-    return null;
-  }
-
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -368,7 +364,7 @@ export default function DashboardPage() {
     return "Good Evening";
   };
 
-  const userName = session.user?.name?.split(' ')[0] || 'there';
+  const userName = session?.user?.name?.split(' ')[0] || 'there';
 
   // Calculate financial overview stats
   const financialStats = useMemo(() => {
@@ -403,6 +399,10 @@ export default function DashboardPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <DashboardLayout>
