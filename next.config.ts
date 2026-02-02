@@ -1,9 +1,20 @@
 import type { NextConfig } from "next";
 import withPWA from "next-pwa";
+import path from "path";
+
+const themeName = process.env.NEXT_PUBLIC_THEME || "default";
 
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: true,
+  webpack: (config) => {
+    // Add alias for active theme
+    config.resolve.alias["@/active-theme.css"] = path.resolve(
+      __dirname,
+      `src/themes/${themeName}/theme.css`
+    );
+    return config;
+  },
 };
 
 export default withPWA({

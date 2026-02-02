@@ -14,6 +14,8 @@ import MonthSelector from "@/components/reports/MonthSelector";
 import TransactionsList from "@/components/reports/TransactionsList";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
+import { motion } from "framer-motion";
+import { getCategoryColor } from "@/lib/colors";
 
 export default function ExpensesPage() {
   const { data: session, status } = useSession();
@@ -145,10 +147,15 @@ export default function ExpensesPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-red-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-red-900/10">
         <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <motion.div 
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-lg">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-xl">
                   <Receipt className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
                 Expenses
@@ -157,14 +164,16 @@ export default function ExpensesPage() {
                 Track your spending and manage budgets
               </p>
             </div>
-            <button
+            <motion.button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg shadow-red-500/50 hover:shadow-xl hover:shadow-red-500/60 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-app-expenses to-app-expenses-end text-white rounded-xl font-semibold shadow-lg shadow-red-500/50 hover:shadow-xl hover:shadow-red-500/60 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <Plus className="w-5 h-5" />
               Add Expense
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
           {/* Month Selector */}
           <div className="mb-8">
@@ -172,45 +181,59 @@ export default function ExpensesPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            <motion.div 
+              className="bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Spent</span>
-                <TrendingDown className="w-5 h-5 text-red-500" />
+                <h3 className="text-sm font-medium opacity-90">Total Spent</h3>
+                <TrendingDown className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="text-3xl font-bold mb-1">
                 {formatCurrency(totalExpenses)}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                This month
-              </p>
-            </div>
+              <p className="text-xs opacity-75">This month</p>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+            <motion.div 
+              className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Transactions</span>
-                <Receipt className="w-5 h-5 text-indigo-500" />
+                <h3 className="text-sm font-medium opacity-90">Transactions</h3>
+                <Receipt className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="text-3xl font-bold mb-1">
                 {expenseCount}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                This month
-              </p>
-            </div>
+              <p className="text-xs opacity-75">This month</p>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+            <motion.div 
+              className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Top Category</span>
-                <Tag className="w-5 h-5 text-purple-500" />
+                <h3 className="text-sm font-medium opacity-90">Top Category</h3>
+                <Tag className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white truncate">
+              <p className="text-xl font-bold mb-1 truncate">
                 {topCategory ? `${getCategoryIcon(topCategory[0])} ${topCategory[0]}` : "N/A"}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs opacity-75">
                 {topCategory ? formatCurrency(topCategory[1]) : "No expenses yet"}
               </p>
-            </div>
+            </motion.div>
           </div>
 
           {/* Expenses List */}

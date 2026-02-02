@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/Providers";
+import { theme } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,13 +16,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Expense Tracker - Track Your Daily Expenses",
-  description: "Track your daily expenses with insights and reports. Budget tracking made easy.",
+  title: theme.meta.title,
+  description: theme.meta.description,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Expense Tracker",
+    title: theme.brand.name,
+  },
+  openGraph: {
+    title: theme.meta.title,
+    description: theme.meta.description,
+    siteName: theme.brand.name,
   },
 };
 
@@ -30,7 +36,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#6366f1",
+  themeColor: theme.colors.primary,
 };
 
 export default function RootLayout({
@@ -41,8 +47,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="icon" href={theme.assets.favicon} />
+        <link rel="apple-touch-icon" href={theme.assets.appleTouchIcon} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

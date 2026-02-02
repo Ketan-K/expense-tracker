@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import MonthSelector from "@/components/reports/MonthSelector";
 import AddIncomeModal from "@/components/AddIncomeModal";
+import { motion } from "framer-motion";
 
 export default function IncomePage() {
   const { data: session, status } = useSession();
@@ -60,10 +61,15 @@ export default function IncomePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-green-900/10">
         <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <motion.div 
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-app-income to-app-income-end rounded-xl">
                   <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
                 Income
@@ -72,14 +78,16 @@ export default function IncomePage() {
                 Track your earnings and income sources
               </p>
             </div>
-            <button
+            <motion.button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-green-500/50 hover:shadow-xl hover:shadow-green-500/60 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-app-income to-app-income-end text-white rounded-xl font-semibold shadow-lg shadow-green-500/50 hover:shadow-xl hover:shadow-green-500/60 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <Plus className="w-5 h-5" />
               Add Income
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
           {/* Month Selector */}
           <div className="mb-8">
@@ -87,42 +95,57 @@ export default function IncomePage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-2">
-                <Wallet className="w-5 h-5 text-green-600" />
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Total Income
-                </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            <motion.div 
+              className="bg-gradient-to-br from-app-income to-app-income-end rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium opacity-90">Total Income</h3>
+                <Wallet className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="text-3xl font-bold mb-1">
                 ₹{totalIncome.toLocaleString("en-IN")}
               </p>
-            </div>
+              <p className="text-xs opacity-75">This month</p>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-2">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Taxable Income
-                </h3>
+            <motion.div 
+              className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium opacity-90">Taxable Income</h3>
+                <TrendingUp className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="text-3xl font-bold mb-1">
                 ₹{taxableIncome.toLocaleString("en-IN")}
               </p>
-            </div>
+              <p className="text-xs opacity-75">Subject to tax</p>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-3 mb-2">
-                <Calendar className="w-5 h-5 text-purple-600" />
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Recurring Income
-                </h3>
+            <motion.div 
+              className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium opacity-90">Recurring Income</h3>
+                <Calendar className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="text-3xl font-bold mb-1">
                 ₹{recurringIncome.toLocaleString("en-IN")}
               </p>
-            </div>
+              <p className="text-xs opacity-75">Monthly recurring</p>
+            </motion.div>
           </div>
 
           {/* Income List */}

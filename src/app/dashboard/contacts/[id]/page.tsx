@@ -157,56 +157,63 @@ export default function ContactDetailsPage() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-2">
-                    <TrendingUp className="w-5 h-5" />
-                    <span className="text-sm font-medium">I Gave</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                <motion.div 
+                  className="bg-gradient-to-br from-app-loans to-app-loans-end rounded-xl p-4 sm:p-5 text-white"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium opacity-90">I Gave</span>
+                    <TrendingUp className="w-5 h-5 opacity-90" />
                   </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-2xl font-bold mb-1">
                     {formatCurrency(totalGiven)}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-xs opacity-75">
                     {givenLoans.length} active {givenLoans.length === 1 ? "loan" : "loans"}
                   </p>
-                </div>
+                </motion.div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
-                    <TrendingDown className="w-5 h-5" />
-                    <span className="text-sm font-medium">I Took</span>
+                <motion.div 
+                  className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 sm:p-5 text-white"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium opacity-90">I Took</span>
+                    <TrendingDown className="w-5 h-5 opacity-90" />
                   </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-2xl font-bold mb-1">
                     {formatCurrency(totalTaken)}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-xs opacity-75">
                     {takenLoans.length} active {takenLoans.length === 1 ? "loan" : "loans"}
                   </p>
-                </div>
+                </motion.div>
 
-                <div className={`rounded-xl p-4 ${
-                  netPosition >= 0
-                    ? "bg-green-50 dark:bg-green-900/20"
-                    : "bg-red-50 dark:bg-red-900/20"
-                }`}>
-                  <div className={`flex items-center gap-2 mb-2 ${
+                <motion.div 
+                  className={`bg-gradient-to-br ${
                     netPosition >= 0
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}>
-                    <span className="text-sm font-medium">Net Position</span>
+                      ? "from-app-income to-app-income-end"
+                      : "from-app-expenses to-app-expenses-end"
+                  } rounded-xl p-4 sm:p-5 text-white`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium opacity-90">Net Position</span>
                   </div>
-                  <p className={`text-2xl font-bold ${
-                    netPosition >= 0
-                      ? "text-green-900 dark:text-green-100"
-                      : "text-red-900 dark:text-red-100"
-                  }`}>
+                  <p className="text-2xl font-bold mb-1">
                     {formatCurrency(Math.abs(netPosition))}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-xs opacity-75">
                     {netPosition >= 0 ? "to receive" : "to pay"}
                   </p>
-                </div>
+                </motion.div>
               </div>
             </div>
           </div>
@@ -217,7 +224,7 @@ export default function ContactDetailsPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Loan History</h2>
               <button
                 onClick={() => router.push("/dashboard/loans/add")}
-                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 New Loan
@@ -233,7 +240,7 @@ export default function ContactDetailsPage() {
                 </p>
                 <button
                   onClick={() => router.push("/dashboard/loans/add")}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-lg transition-all"
+                  className="px-6 py-3 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Create First Loan
                 </button>

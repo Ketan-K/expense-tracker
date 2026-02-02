@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import type { LucideIcon } from "lucide-react";
 import { 
   Apple, 
   Fuel, 
@@ -55,8 +56,7 @@ import {
   Snowflake,
   Sun,
   Moon,
-  Star,
-  LucideIcon 
+  Star
 } from "lucide-react";
 
 export interface User {
@@ -181,19 +181,22 @@ export interface Budget {
   updatedAt: Date;
 }
 
+// Import centralized color palette
+import { COLORS } from './colors';
+
 export const DEFAULT_CATEGORIES = [
-  { name: "Grocery", icon: "ShoppingCart", color: "#10b981", isDefault: true },
-  { name: "Snacks", icon: "Cookie", color: "#f59e0b", isDefault: true },
-  { name: "Fruits", icon: "Apple", color: "#fbbf24", isDefault: true },
-  { name: "Savings", icon: "PiggyBank", color: "#8b5cf6", isDefault: true },
-  { name: "Investments", icon: "TrendingUp", color: "#3b82f6", isDefault: true },
-  { name: "Transport", icon: "Car", color: "#06b6d4", isDefault: true },
-  { name: "Car Petrol", icon: "Fuel", color: "#f97316", isDefault: true },
-  { name: "Car Toll", icon: "Route", color: "#14b8a6", isDefault: true },
-  { name: "Entertainment", icon: "Film", color: "#ec4899", isDefault: true },
-  { name: "Bills", icon: "Receipt", color: "#ef4444", isDefault: true },
-  { name: "Health", icon: "Heart", color: "#22c55e", isDefault: true },
-  { name: "Other", icon: "PlusCircle", color: "#6b7280", isDefault: true },
+  { name: "Grocery", icon: "ShoppingCart", color: COLORS.categories[0], isDefault: true },
+  { name: "Snacks", icon: "Cookie", color: COLORS.categories[1], isDefault: true },
+  { name: "Fruits", icon: "Apple", color: COLORS.categories[2], isDefault: true },
+  { name: "Savings", icon: "PiggyBank", color: COLORS.categories[3], isDefault: true },
+  { name: "Investments", icon: "TrendingUp", color: COLORS.categories[4], isDefault: true },
+  { name: "Transport", icon: "Car", color: COLORS.categories[5], isDefault: true },
+  { name: "Car Petrol", icon: "Fuel", color: COLORS.categories[6], isDefault: true },
+  { name: "Car Toll", icon: "Route", color: COLORS.categories[7], isDefault: true },
+  { name: "Entertainment", icon: "Film", color: COLORS.categories[8], isDefault: true },
+  { name: "Bills", icon: "Receipt", color: COLORS.categories[9], isDefault: true },
+  { name: "Health", icon: "Heart", color: COLORS.categories[10], isDefault: true },
+  { name: "Other", icon: "PlusCircle", color: COLORS.categories[11], isDefault: true },
 ];
 
 export const DEFAULT_INCOME_SOURCES = [

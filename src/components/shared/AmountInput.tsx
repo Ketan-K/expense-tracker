@@ -81,7 +81,7 @@ export default function AmountInput({
               key={amount}
               type="button"
               onClick={() => handleQuickAmount(amount)}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
+              className="px-4 py-2 bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
             >
               +₹{amount}
             </button>

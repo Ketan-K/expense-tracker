@@ -9,6 +9,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Handshake, Plus, TrendingUp, TrendingDown, AlertCircle, Calendar, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import AddLoanModal from "@/components/AddLoanModal";
+import { motion } from "framer-motion";
 
 type StatusFilter = "all" | "active" | "paid" | "overdue";
 type DirectionFilter = "all" | "given" | "taken";
@@ -98,10 +99,15 @@ export default function LoansPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-orange-900/10">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
+          <motion.div 
+            className="mb-8 flex items-center justify-between"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-app-loans to-app-loans-end rounded-xl">
                   <Handshake className="w-7 h-7 text-white" />
                 </div>
                 Loans & Udhari
@@ -110,47 +116,67 @@ export default function LoansPage() {
                 Track money you've lent or borrowed
               </p>
             </div>
-            <button
+            <motion.button
               onClick={() => router.push("/dashboard/loans/add")}
-              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <Plus className="w-5 h-5" />
               New Loan
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            <motion.div 
+              className="bg-gradient-to-br from-app-loans to-app-loans-end rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">I Gave (Lent)</h3>
-                <TrendingUp className="w-5 h-5 text-orange-500" />
+                <h3 className="text-sm font-medium opacity-90">I Gave (Lent)</h3>
+                <TrendingUp className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalGiven)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{givenLoans.length} active loans</p>
-            </div>
+              <p className="text-3xl font-bold mb-1">{formatCurrency(totalGiven)}</p>
+              <p className="text-xs opacity-75">{givenLoans.length} active loans</p>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+            <motion.div 
+              className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">I Took (Borrowed)</h3>
-                <TrendingDown className="w-5 h-5 text-blue-500" />
+                <h3 className="text-sm font-medium opacity-90">I Took (Borrowed)</h3>
+                <TrendingDown className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalTaken)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{takenLoans.length} active loans</p>
-            </div>
+              <p className="text-3xl font-bold mb-1">{formatCurrency(totalTaken)}</p>
+              <p className="text-xs opacity-75">{takenLoans.length} active loans</p>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+            <motion.div 
+              className={`bg-gradient-to-br ${netPosition >= 0 ? 'from-app-income to-app-income-end' : 'from-app-expenses to-app-expenses-end'} rounded-2xl shadow-lg p-6 text-white`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Net Position</h3>
-                <DollarSign className="w-5 h-5 text-indigo-500" />
+                <h3 className="text-sm font-medium opacity-90">Net Position</h3>
+                <DollarSign className="w-5 h-5 opacity-90" />
               </div>
-              <p className={`text-3xl font-bold ${netPosition >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <p className="text-3xl font-bold mb-1">
                 {formatCurrency(Math.abs(netPosition))}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs opacity-75">
                 {netPosition >= 0 ? "More lent than borrowed" : "More borrowed than lent"}
               </p>
-            </div>
+            </motion.div>
           </div>
 
           {/* Filters */}
@@ -209,7 +235,7 @@ export default function LoansPage() {
               {statusFilter === "all" && directionFilter === "all" && (
                 <button
                   onClick={() => router.push("/dashboard/loans/add")}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-lg transition-all"
+                  className="px-6 py-3 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Create Your First Loan
                 </button>

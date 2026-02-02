@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { getIconComponent } from "@/lib/types";
 import { Pencil, Trash2, Receipt } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 interface Transaction {
   id: string;
@@ -50,10 +51,13 @@ export default function TransactionsList({ transactions, onEdit, onDelete }: Tra
         {transactions.map((transaction, index) => {
           const Icon = getIconComponent(transaction.categoryIcon || "HelpCircle");
           return (
-            <div
+            <motion.div
               key={transaction.id}
-              className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-700/30 rounded-lg hover:from-gray-100 hover:to-gray-200/50 dark:hover:from-gray-700 dark:hover:to-gray-600/50 transition-all duration-300 group hover:shadow-md hover:scale-[1.02] animate-in slide-in-from-right duration-300"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-700/30 rounded-lg hover:from-gray-100 hover:to-gray-200/50 dark:hover:from-gray-700 dark:hover:to-gray-600/50 transition-colors duration-300 group"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              whileHover={{ scale: 1.02, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div
@@ -104,7 +108,7 @@ export default function TransactionsList({ transactions, onEdit, onDelete }: Tra
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

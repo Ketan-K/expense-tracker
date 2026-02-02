@@ -38,9 +38,9 @@ export default function StatsCards({ totalSpent, dailyAverage, categoryCount }: 
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         const gradients = [
-          "from-indigo-500 via-purple-500 to-purple-600",
-          "from-pink-500 via-rose-500 to-rose-600",
-          "from-amber-500 via-orange-500 to-orange-600"
+          "from-app-gradient-from to-app-gradient-to",
+          "from-app-expenses to-app-expenses-end",
+          "from-app-loans to-app-loans-end"
         ];
         return (
           <div

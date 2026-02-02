@@ -155,7 +155,7 @@ export default function AdminPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+            <div className="p-3 bg-gradient-to-br from-app-contacts to-app-contacts-end rounded-2xl shadow-lg">
               <Shield className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -195,7 +195,7 @@ export default function AdminPage() {
         {activeTab === 'overview' && (
           <div className="grid gap-6">
             {/* System Statistics Section */}
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 shadow-lg border border-indigo-200 dark:border-indigo-800">
+            <div className="bg-gradient-to-br from-app-budgets-light to-app-budgets-light-end rounded-2xl p-6 shadow-lg border border-indigo-200 dark:border-indigo-800">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">

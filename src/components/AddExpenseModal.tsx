@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { generateObjectId } from "@/lib/idGenerator";
 import ExpenseForm from "./ExpenseForm";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -78,18 +79,34 @@ export default function AddExpenseModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pt-4 pb-24 sm:pb-4 animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-gradient-to-br from-white via-gray-50 to-red-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-red-900/20 rounded-2xl max-w-md w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom zoom-in duration-300 my-auto">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pt-4 pb-24 sm:pb-4 overflow-y-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div 
+            className="bg-gradient-to-br from-app-expenses-light to-app-expenses-light-end dark:from-gray-800 dark:via-gray-800 dark:to-app-expenses-dark rounded-2xl max-w-md w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto my-auto shadow-2xl"
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ duration: 0.3, type: "spring", damping: 25 }}
+          >
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Add Expense
           </h2>
-          <button
+          <motion.button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          </button>
+          </motion.button>
         </div>
 
         <div className="p-6">
@@ -103,7 +120,9 @@ export default function AddExpenseModal({
             userId={userId}
           />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

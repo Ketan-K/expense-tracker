@@ -8,6 +8,7 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Users, Plus, Search, Phone, Mail, Heart, TrendingUp, TrendingDown } from "lucide-react";
 import AddContactModal from "@/components/AddContactModal";
+import { motion } from "framer-motion";
 
 export default function ContactsPage() {
   const { data: session, status } = useSession();
@@ -72,10 +73,15 @@ export default function ContactsPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-900/10">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
+          <motion.div 
+            className="mb-8 flex items-center justify-between"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-app-contacts to-app-contacts-end rounded-xl">
                   <Users className="w-7 h-7 text-white" />
                 </div>
                 Contacts
@@ -84,13 +90,72 @@ export default function ContactsPage() {
                 Manage your loan contacts
               </p>
             </div>
-            <button
+            <motion.button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <Plus className="w-5 h-5" />
               New Contact
-            </button>
+            </motion.button>
+          </motion.div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            <motion.div 
+              className="bg-gradient-to-br from-app-contacts to-app-contacts-end rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium opacity-90">Total Contacts</h3>
+                <Users className="w-5 h-5 opacity-90" />
+              </div>
+              <p className="text-3xl font-bold mb-1">
+                {contacts?.length || 0}
+              </p>
+              <p className="text-xs opacity-75">Active contacts</p>
+            </motion.div>
+
+            <motion.div 
+              className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium opacity-90">With Active Loans</h3>
+                <Heart className="w-5 h-5 opacity-90" />
+              </div>
+              <p className="text-3xl font-bold mb-1">
+                {contacts?.filter(c => {
+                  const contactLoans = getContactLoans(c._id || "");
+                  return contactLoans.some(l => l.status === "active");
+                }).length || 0}
+              </p>
+              <p className="text-xs opacity-75">Currently lending/borrowing</p>
+            </motion.div>
+
+            <motion.div 
+              className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium opacity-90">Total Transactions</h3>
+                <TrendingUp className="w-5 h-5 opacity-90" />
+              </div>
+              <p className="text-3xl font-bold mb-1">
+                {loans?.length || 0}
+              </p>
+              <p className="text-xs opacity-75">All time loans</p>
+            </motion.div>
           </div>
 
           {/* Search Bar */}
@@ -122,7 +187,7 @@ export default function ContactsPage() {
               {!searchQuery && (
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all"
+                  className="px-6 py-3 bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Add Your First Contact
                 </button>
@@ -144,7 +209,7 @@ export default function ContactsPage() {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-3 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl">
+                        <div className="p-3 bg-gradient-to-br from-app-contacts-light to-app-contacts-light-end rounded-xl">
                           <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         <div>

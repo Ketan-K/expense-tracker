@@ -1,6 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { theme } from "@/lib/theme";
 
 interface CategoryData {
   name: string;
@@ -41,7 +42,7 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
             labelLine={false}
             label={false}
             outerRadius={80}
-            fill="#8884d8"
+            fill={theme.colors.primary}
             dataKey="value"
           >
             {data.map((entry, index) => (

@@ -249,7 +249,7 @@ export default function LoanDetailsPage() {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full transition-all"
+                    className="bg-gradient-to-r from-app-income to-app-income-end h-3 rounded-full transition-all"
                     style={{ width: `${Math.min(paymentProgress, 100)}%` }}
                   ></div>
                 </div>
@@ -277,7 +277,7 @@ export default function LoanDetailsPage() {
               {loan.status !== "paid" && (
                 <button
                   onClick={() => router.push(`/dashboard/loans/${loan._id}/payments/add`)}
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+                  className="px-4 py-2 bg-gradient-to-r from-app-income to-app-income-end text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
                   Add Payment
@@ -295,7 +295,7 @@ export default function LoanDetailsPage() {
                 {loan.status !== "paid" && (
                   <button
                     onClick={() => router.push(`/dashboard/loans/${loan._id}/payments/add`)}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all"
+                    className="px-6 py-3 bg-gradient-to-r from-app-income to-app-income-end text-white rounded-xl hover:shadow-lg transition-all"
                   >
                     Add First Payment
                   </button>

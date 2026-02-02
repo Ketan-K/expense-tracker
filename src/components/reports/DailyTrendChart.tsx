@@ -1,6 +1,7 @@
 "use client";
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { theme } from "@/lib/theme";
 
 interface DailyData {
   date: string;
@@ -48,9 +49,9 @@ export default function DailyTrendChart({ data }: DailyTrendChartProps) {
           <Line
             type="monotone"
             dataKey="amount"
-            stroke="#6366f1"
+            stroke={theme.colors.primary}
             strokeWidth={2}
-            dot={{ fill: '#6366f1', r: 4 }}
+            dot={{ fill: theme.colors.primary, r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>

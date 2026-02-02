@@ -175,11 +175,11 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
                     isActive ? 'scale-110' : 'group-active:scale-90'
                   }`}>
                     {isActive && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-xl blur-lg"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-app-gradient-from to-app-gradient-to opacity-20 rounded-xl blur-lg"></div>
                     )}
                     <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ${
                       isActive 
-                        ? 'bg-gradient-to-br from-indigo-500/10 to-purple-600/10 dark:from-indigo-500/20 dark:to-purple-600/20' 
+                        ? "bg-gradient-to-br from-app-gradient-from/10 to-app-gradient-to/10 dark:from-app-gradient-from/20 dark:to-app-gradient-to/20" 
                         : 'group-hover:bg-gray-100 dark:group-hover:bg-gray-800'
                     }`}>
                       <Icon className={`w-5 h-5 transition-all duration-300 ${
@@ -210,7 +210,7 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
       <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-xl">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
               <Wallet className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
@@ -257,7 +257,7 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30"
+                    ? "bg-gradient-to-br from-app-gradient-from to-app-gradient-to text-white shadow-lg shadow-indigo-500/30"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >

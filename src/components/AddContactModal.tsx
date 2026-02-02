@@ -281,7 +281,7 @@ export default function AddContactModal({
                 type="button"
                 onClick={handleImportContact}
                 disabled={isImporting || !navigator.onLine}
-                className="px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                 title={!navigator.onLine ? "Import requires internet connection" : "Import from phone contacts"}
               >
                 <Smartphone className="w-4 h-4" />
@@ -433,7 +433,7 @@ export default function AddContactModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
             >
               {isSubmitting ? "Adding..." : "Add Contact"}
             </button>

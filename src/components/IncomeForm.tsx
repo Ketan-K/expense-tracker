@@ -124,7 +124,7 @@ export default function IncomeForm({
                 onClick={() => handleSelectSource(source)}
                 className={`px-4 py-3 rounded-xl font-medium transition-all text-sm active:scale-95 ${
                   isSelected
-                    ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/50"
+                    ? "bg-gradient-to-r from-app-income to-app-income-end text-white shadow-lg shadow-green-500/50"
                     : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                 }`}
               >
@@ -137,7 +137,7 @@ export default function IncomeForm({
             onClick={() => handleSelectSource("custom")}
             className={`px-4 py-3 rounded-xl font-medium transition-all text-sm active:scale-95 ${
               showCustomSource
-                ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/50"
+                ? "bg-gradient-to-r from-app-income to-app-income-end text-white shadow-lg shadow-green-500/50"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
             }`}
           >
@@ -251,7 +251,7 @@ export default function IncomeForm({
         <button
           type="submit"
           disabled={isSubmitting || !formData.source || !formData.amount}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-green-500/50 hover:shadow-xl hover:shadow-green-500/60 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-app-income to-app-income-end text-white rounded-xl font-semibold shadow-lg shadow-green-500/50 hover:shadow-xl hover:shadow-green-500/60 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">

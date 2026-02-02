@@ -8,6 +8,8 @@ import { LocalExpense, db } from "@/lib/db";
 import { toast } from "sonner";
 import { generateObjectId } from "@/lib/idGenerator";
 import { processSyncQueue } from "@/lib/syncUtils";
+import { getCategoryColor, COLORS } from "@/lib/colors";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ExpenseFormProps {
   initialData?: {
@@ -54,10 +56,14 @@ export default function ExpenseForm({
   });
 
   const [showCustomCategory, setShowCustomCategory] = useState(false);
-  const [customCategory, setCustomCategory] = useState({
+  const [customCategory, setCustomCategory] = useState<{
+    name: string;
+    icon: string;
+    color: string;
+  }>({
     name: "",
     icon: "PlusCircle",
-    color: "#6b7280",
+    color: '#6b7280',
   });
   const [iconSearch, setIconSearch] = useState("");
 
@@ -248,7 +254,7 @@ export default function ExpenseForm({
                   }
                 }
               }}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
+              className="px-4 py-2 bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/50 dark:hover:to-purple-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
             >
               +₹{amount}
             </button>
@@ -278,7 +284,7 @@ export default function ExpenseForm({
               const isSelected = formData.category === category.name;
               const isOther = category.name === "Other";
               return (
-                <button
+                <motion.button
                   key={category._id}
                   type="button"
                   onClick={() => {
@@ -287,12 +293,13 @@ export default function ExpenseForm({
                     } else {
                       setFormData({ ...formData, category: category.name });
                     }
-                  }}
-                  className={`px-2 py-2.5 rounded-lg font-medium transition-all text-xs active:scale-95 flex flex-col items-center gap-1.5 ${
+                  }}                  className={`px-2 py-2.5 rounded-lg font-medium transition-all text-xs flex flex-col items-center gap-1.5 ${
                     isSelected
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
+                      ? "bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white shadow-lg shadow-indigo-500/50"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
                   }`}
+                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
                 >
                   <div
                     className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -310,7 +317,7 @@ export default function ExpenseForm({
                     />
                   </div>
                   <span className="truncate">{category.name}</span>
-                </button>
+                </motion.button>
               );
             })}
         </div>
@@ -349,7 +356,7 @@ export default function ExpenseForm({
               }
               className={`px-4 py-3 rounded-xl font-medium capitalize transition-all text-sm active:scale-95 ${
                 formData.paymentMethod === method
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
+                  ? "bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white shadow-lg shadow-indigo-500/50"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
               }`}
             >
@@ -372,7 +379,7 @@ export default function ExpenseForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-app-gradient-from to-app-gradient-to hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Saving..." : submitLabel}
           </button>
@@ -381,7 +388,7 @@ export default function ExpenseForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-app-gradient-from to-app-gradient-to hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Saving..." : submitLabel}
         </button>
@@ -480,19 +487,9 @@ export default function ExpenseForm({
               Select Color
             </label>
             <div className="grid grid-cols-6 gap-2 place-items-center">
-              {[
-                "#10b981", "#f59e0b", "#fbbf24", "#8b5cf6",
-                "#3b82f6", "#06b6d4", "#f97316", "#14b8a6",
-                "#ec4899", "#ef4444", "#22c55e", "#6b7280",
-                "#84cc16", "#f43f5e", "#a855f7", "#64748b",
-                "#0ea5e9", "#8b5cf6", "#d946ef", "#f97316",
-              ]
-              .filter((color, index, self) => 
-                self.indexOf(color) === index
-              )
-              .slice(0, 12)
+              {COLORS.categories
               .map((color) => (
-                <button
+                <motion.button
                   key={color}
                   type="button"
                   onClick={() =>
@@ -504,6 +501,8 @@ export default function ExpenseForm({
                       : "hover:scale-105"
                   }`}
                   style={{ backgroundColor: color }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                 />
               ))}
             </div>
@@ -511,23 +510,27 @@ export default function ExpenseForm({
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <button
+            <motion.button
               type="button"
               onClick={() => {
                 setShowCustomCategory(false);
                 setIconSearch("");
               }}
               className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               Cancel
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               type="button"
               onClick={handleCreateCustomCategory}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               Create
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>

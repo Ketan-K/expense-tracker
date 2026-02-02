@@ -118,7 +118,7 @@ export default function AddExpensePage() {
     <DashboardLayout>
       <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom duration-500">
         <div className="hidden sm:block mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gradient-app mb-2">
             Add Expense
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">

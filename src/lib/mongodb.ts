@@ -11,9 +11,9 @@ const options = {
     strict: true,
     deprecationErrors: true,
   },
-  serverSelectionTimeoutMS: 30000,
-  connectTimeoutMS: 30000,
-  socketTimeoutMS: 30000,
+  serverSelectionTimeoutMS: 5000, // Reduced timeout
+  connectTimeoutMS: 5000,
+  socketTimeoutMS: 5000,
 };
 
 let client: MongoClient;
@@ -27,13 +27,20 @@ if (process.env.NODE_ENV === "development") {
 
   if (!globalWithMongo._mongoClientPromise) {
     client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = client.connect();
+    // Wrap connection in error handler to prevent unhandled rejections
+    globalWithMongo._mongoClientPromise = client.connect().catch((error) => {
+      console.warn('MongoDB connection failed (offline mode):', error.code);
+      throw error;
+    });
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
   // In production mode, create a new client
   client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  clientPromise = client.connect().catch((error) => {
+    console.warn('MongoDB connection failed (offline mode):', error.code);
+    throw error;
+  });
 }
 
 export default clientPromise;

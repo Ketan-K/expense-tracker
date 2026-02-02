@@ -65,7 +65,7 @@ export default function LoanPaymentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
       {/* Outstanding Amount Display */}
-      <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl">
+      <div className="p-4 bg-gradient-to-r from-app-loans-light to-app-loans-light-end border-2 border-orange-200 dark:border-orange-800 rounded-xl">
         <div className="text-sm text-gray-600 dark:text-gray-400">Outstanding Amount</div>
         <div className="text-2xl font-bold text-gray-900 dark:text-white">
           ₹{outstandingAmount.toLocaleString("en-IN")}
@@ -120,7 +120,7 @@ export default function LoanPaymentForm({
               onClick={() => setFormData({ ...formData, paymentMethod: method })}
               className={`px-3 py-3 rounded-xl font-medium capitalize transition-all text-xs active:scale-95 ${
                 formData.paymentMethod === method
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
+                  ? "bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white shadow-lg shadow-indigo-500/50"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
               }`}
             >
@@ -160,7 +160,7 @@ export default function LoanPaymentForm({
         <button
           type="submit"
           disabled={isSubmitting || !formData.amount || parseFloat(formData.amount) <= 0}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/60 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/60 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">

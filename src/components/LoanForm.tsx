@@ -101,7 +101,7 @@ export default function LoanForm({
             onClick={() => setFormData({ ...formData, direction: "given" })}
             className={`px-4 py-4 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2 ${
               formData.direction === "given"
-                ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/50"
+                ? "bg-gradient-to-r from-app-loans to-app-loans-end text-white shadow-lg shadow-orange-500/50"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
@@ -116,7 +116,7 @@ export default function LoanForm({
             onClick={() => setFormData({ ...formData, direction: "taken" })}
             className={`px-4 py-4 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2 ${
               formData.direction === "taken"
-                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/50"
+                ? "bg-gradient-to-r from-app-contacts to-app-contacts-end text-white shadow-lg shadow-blue-500/50"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
@@ -216,8 +216,8 @@ export default function LoanForm({
           disabled={isSubmitting || !formData.contactName || !formData.principalAmount}
           className={`flex-1 px-6 py-3 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
             formData.direction === "given"
-              ? "bg-gradient-to-r from-orange-600 to-red-600 shadow-orange-500/50 hover:shadow-orange-500/60"
-              : "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/50 hover:shadow-blue-500/60"
+              ? "bg-gradient-to-r from-app-loans to-app-loans-end shadow-orange-500/50 hover:shadow-orange-500/60"
+              : "bg-gradient-to-r from-app-contacts to-app-contacts-end shadow-blue-500/50 hover:shadow-blue-500/60"
           }`}
         >
           {isSubmitting ? (

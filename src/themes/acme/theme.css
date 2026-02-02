@@ -1,0 +1,193 @@
+/* ============================================
+   ACME CORP BRAND THEME
+   Acme Finance - Financial Excellence
+   ============================================ */
+
+@import "tailwindcss";
+
+@theme inline {
+  /* Font families */
+  --font-family-sans: var(--font-geist-sans);
+  --font-family-mono: var(--font-geist-mono);
+  
+  /* ============================================
+     APP THEME COLORS - ACME BRAND (Blue/Cyan)
+     ============================================ */
+  
+  /* Main gradient colors */
+  --color-app-gradient-from: #0284c7;
+  --color-app-gradient-to: #0891b2;
+  --color-app-gradient-via: #06b6d4;
+  --color-app-gradient-light-from: #f0f9ff;
+  --color-app-gradient-light-to: #ecfeff;
+  --color-app-gradient-dark-from: rgb(7 89 133 / 0.2);
+  --color-app-gradient-dark-to: rgb(8 145 178 / 0.2);
+  
+  /* Expenses */
+  --color-app-expenses: #dc2626;
+  --color-app-expenses-end: #be123c;
+  --color-app-expenses-light: #fee2e2;
+  --color-app-expenses-light-end: #fecdd3;
+  
+  /* Income */
+  --color-app-income: #16a34a;
+  --color-app-income-end: #059669;
+  --color-app-income-light: #dcfce7;
+  --color-app-income-light-end: #d1fae5;
+  
+  /* Loans */
+  --color-app-loans: #ea580c;
+  --color-app-loans-end: #dc2626;
+  --color-app-loans-light: #ffedd5;
+  --color-app-loans-light-end: #fed7aa;
+  
+  /* Contacts */
+  --color-app-contacts: #3b82f6;
+  --color-app-contacts-end: #4f46e5;
+  --color-app-contacts-light: #dbeafe;
+  --color-app-contacts-light-end: #bfdbfe;
+  
+  /* Budgets */
+  --color-app-budgets: #8b5cf6;
+  --color-app-budgets-light: #ede9fe;
+  --color-app-budgets-light-end: #ddd6fe;
+  
+  /* ============================================
+     STATUS COLORS
+     ============================================ */
+  
+  --color-success: #22c55e;
+  --color-success-light: #dcfce7;
+  --color-success-dark: #16a34a;
+  
+  --color-error: #ef4444;
+  --color-error-light: #fee2e2;
+  --color-error-dark: #dc2626;
+  
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-warning-dark: #d97706;
+  
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+  --color-info-dark: #2563eb;
+  
+  /* ============================================
+     NEUTRAL/GRAYSCALE
+     ============================================ */
+  
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+}
+
+/* ============================================
+   CUSTOM UTILITY CLASSES
+   ============================================ */
+
+.text-gradient-app {
+  @apply bg-gradient-to-r from-app-gradient-from to-app-gradient-to bg-clip-text text-transparent;
+}
+
+.btn-app {
+  @apply bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.card-hover {
+  @apply hover:shadow-xl hover:scale-[1.02] transition-all duration-300;
+}
+
+/* ============================================
+   BASE STYLES & SCROLLBAR
+   ============================================ */
+
+* {
+  @apply border-gray-700;
+}
+
+html,
+body {
+  @apply bg-gray-900 text-gray-50;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.dark * {
+  scrollbar-color: #4b5563 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: #4b5563 transparent;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { db } from "@/lib/db";
+import { db, LocalExpense } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import DashboardLayout from "@/components/DashboardLayout";
 import ReportsClient from "@/components/reports/ReportsClient";
@@ -10,14 +10,15 @@ import BudgetCard from "@/components/budgets/BudgetCard";
 import BudgetFormModal from "@/components/budgets/BudgetFormModal";
 import EditExpenseModal from "@/components/EditExpenseModal";
 import FilterBar, { FilterState } from "@/components/filters/FilterBar";
-import ExportButtons from "@/components/reports/ExportButtons";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Plus, Target, TrendingUp, TrendingDown, Wallet, Handshake, DollarSign, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
-import { LocalExpense } from "@/lib/db";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { getCategoryColor } from "@/lib/colors";
+import { theme } from "@/lib/theme";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -190,7 +191,7 @@ export default function DashboardPage() {
     const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({
       name,
       value,
-      color: categoryMap.get(name)?.color || "#6366f1",
+      color: categoryMap.get(name)?.color || theme.colors.primary,
       icon: categoryMap.get(name)?.icon || "HelpCircle",
     }));
 
@@ -215,7 +216,7 @@ export default function DashboardPage() {
         id: expense._id?.toString() || "",
         amount: expense.amount,
         category: expense.category,
-        categoryColor: categoryMap.get(expense.category)?.color || "#6366f1",
+        categoryColor: categoryMap.get(expense.category)?.color || theme.colors.primary,
         categoryIcon: categoryMap.get(expense.category)?.icon || "HelpCircle",
         description: expense.description || "",
         date: typeof expense.date === 'string' ? expense.date : expense.date.toISOString(),
@@ -298,7 +299,7 @@ export default function DashboardPage() {
         categoryName: categoryName || "Unknown",
         spent: categorySpending[categoryName || "Unknown"] || 0,
         icon: category?.icon || "HelpCircle",
-        color: category?.color || "#6366f1",
+        color: category?.color || theme.colors.primary,
       };
     });
   }, [budgets, categories, expenses]);
@@ -409,7 +410,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
         {/* Greeting Section */}
         <div className="mb-6 animate-in slide-in-from-top duration-500">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gradient-app mb-2">
             {getGreeting()}, {userName}! 👋
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 italic">
@@ -420,9 +421,14 @@ export default function DashboardPage() {
         {/* Financial Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-in slide-in-from-bottom duration-700">
           {/* Income Card */}
-          <div 
+          <motion.div 
             onClick={() => router.push("/dashboard/income")}
-            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white cursor-pointer hover:shadow-xl transition-all group"
+            className="bg-gradient-to-br from-app-income to-app-income-end rounded-2xl shadow-lg p-6 text-white cursor-pointer group"
+            whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium opacity-90">Total Income</h3>
@@ -432,24 +438,38 @@ export default function DashboardPage() {
             <p className="text-xs opacity-75 flex items-center gap-1">
               This month <ArrowRight className="w-3 h-3" />
             </p>
-          </div>
+          </motion.div>
 
           {/* Expenses Card */}
-          <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-lg p-6 text-white">
+          <motion.div 
+            className="bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-2xl shadow-lg p-6 text-white"
+            whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium opacity-90">Total Expenses</h3>
               <TrendingDown className="w-5 h-5 opacity-90" />
             </div>
             <p className="text-3xl font-bold mb-1">{formatCurrency(financialStats.totalExpenses)}</p>
             <p className="text-xs opacity-75">This month</p>
-          </div>
+          </motion.div>
 
           {/* Net Cash Flow Card */}
-          <div className={`rounded-2xl shadow-lg p-6 text-white ${
+          <motion.div 
+            className={`rounded-2xl shadow-lg p-6 text-white ${
             financialStats.netCashFlow >= 0
               ? "bg-gradient-to-br from-blue-500 to-indigo-600"
               : "bg-gradient-to-br from-orange-500 to-red-600"
-          }`}>
+          }`}
+            whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+          >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium opacity-90">Net Cash Flow</h3>
               <Wallet className="w-5 h-5 opacity-90" />
@@ -461,16 +481,21 @@ export default function DashboardPage() {
             <p className="text-xs opacity-75">
               {financialStats.netCashFlow >= 0 ? "Surplus" : "Deficit"} this month
             </p>
-          </div>
+          </motion.div>
 
           {/* Loans Net Position Card */}
-          <div 
+          <motion.div 
             onClick={() => router.push("/dashboard/loans")}
-            className={`rounded-2xl shadow-lg p-6 text-white cursor-pointer hover:shadow-xl transition-all group ${
+            className={`rounded-2xl shadow-lg p-6 text-white cursor-pointer group ${
               financialStats.netLoanPosition >= 0
-                ? "bg-gradient-to-br from-orange-500 to-red-600"
+                ? "bg-gradient-to-br from-app-loans to-app-loans-end"
                 : "bg-gradient-to-br from-blue-500 to-indigo-600"
             }`}
+            whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 }}
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium opacity-90">Loans Net</h3>
@@ -480,7 +505,7 @@ export default function DashboardPage() {
             <p className="text-xs opacity-75 flex items-center gap-1">
               {financialStats.netLoanPosition >= 0 ? "To receive" : "To pay"} <ArrowRight className="w-3 h-3" />
             </p>
-          </div>
+          </motion.div>
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4 lg:gap-6 animate-in slide-in-from-top duration-700 delay-100">
@@ -527,10 +552,10 @@ export default function DashboardPage() {
 
         {/* Set Budget Button - Show when no budgets */}
         {budgetData.length === 0 && (
-          <div className="mb-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 rounded-2xl p-4 border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
+          <div className="mb-6 bg-gradient-to-br from-app-gradient-light-from via-purple-50 to-pink-50 dark:from-app-gradient-dark-from dark:via-purple-900/20 dark:to-pink-900/20 rounded-2xl p-4 border-2 border-indigo-200 dark:border-indigo-800 shadow-lg">
             <div className="flex items-start gap-3 mb-3">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-br from-app-gradient-from to-app-gradient-to rounded-xl flex items-center justify-center shadow-lg">
                   <Target className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -559,7 +584,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={() => setShowBudgetModal(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-95 text-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-app-gradient-from to-app-gradient-to hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all active:scale-95 text-sm"
             >
               <Plus className="w-4 h-4" />
               Set Your First Budget

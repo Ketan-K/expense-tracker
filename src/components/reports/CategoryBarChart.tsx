@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { theme } from "@/lib/theme";
 
 interface CategoryData {
   name: string;
@@ -48,7 +49,7 @@ export default function CategoryBarChart({ data }: CategoryBarChartProps) {
               color: 'white'
             }}
           />
-          <Bar dataKey="value" fill="#8b5cf6" />
+          <Bar dataKey="value" fill={theme.colors.budgets} />
         </BarChart>
       </ResponsiveContainer>
     </div>

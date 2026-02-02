@@ -49,7 +49,7 @@ export default function ExportButtons({ selectedMonth }: ExportButtonsProps) {
       <button
         onClick={() => handleExport("csv")}
         disabled={exporting !== null}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end text-indigo-700 dark:text-indigo-300 rounded-lg hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
       >
         <FileText className="w-3.5 h-3.5" />
         {exporting === "csv" ? "..." : "CSV"}
@@ -57,7 +57,7 @@ export default function ExportButtons({ selectedMonth }: ExportButtonsProps) {
       <button
         onClick={() => handleExport("excel")}
         disabled={exporting !== null}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 text-green-700 dark:text-green-300 rounded-lg hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-gradient-to-r from-app-income-light to-app-income-light-end text-green-700 dark:text-green-300 rounded-lg hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
       >
         <FileSpreadsheet className="w-3.5 h-3.5" />
         {exporting === "excel" ? "..." : "Excel"}

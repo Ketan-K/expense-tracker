@@ -4,9 +4,10 @@ import { useSession, signOut } from "next-auth/react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useConfirm } from "@/hooks/useConfirm";
-import { User, Mail, LogOut, Database, RefreshCw, Cloud, CheckCircle, XCircle } from "lucide-react";
+import { User, Mail, LogOut, Database, RefreshCw, Cloud, CheckCircle, XCircle, TrendingUp, Wallet, CreditCard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLiveQuery } from "dexie-react-hooks";
 import { processSyncQueue, pullFromServer } from "@/lib/syncUtils";
@@ -184,14 +185,74 @@ export default function ProfilePage() {
         cancelText={options.cancelText}
         variant={options.variant}
       />
-      <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
-        <div className="hidden sm:block">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+      <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-8"
+        >
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gradient-app">
             Profile & Settings
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
             Manage your account and preferences
           </p>
+        </motion.div>
+
+        {/* Summary Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <motion.div 
+            className="bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-2xl shadow-lg p-6 text-white"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Total Expenses</h3>
+              <TrendingUp className="w-5 h-5 opacity-90" />
+            </div>
+            <p className="text-3xl font-bold mb-1">
+              {dbStats.expenses}
+            </p>
+            <p className="text-xs opacity-75">Tracked transactions</p>
+          </motion.div>
+
+          <motion.div 
+            className="bg-gradient-to-br from-app-income to-app-income-end rounded-2xl shadow-lg p-6 text-white"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Total Income</h3>
+              <Wallet className="w-5 h-5 opacity-90" />
+            </div>
+            <p className="text-3xl font-bold mb-1">
+              {dbStats.incomes}
+            </p>
+            <p className="text-xs opacity-75">Income records</p>
+          </motion.div>
+
+          <motion.div 
+            className="bg-gradient-to-br from-app-loans to-app-loans-end rounded-2xl shadow-lg p-6 text-white"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium opacity-90">Active Loans</h3>
+              <CreditCard className="w-5 h-5 opacity-90" />
+            </div>
+            <p className="text-3xl font-bold mb-1">
+              {dbStats.loans}
+            </p>
+            <p className="text-xs opacity-75">{dbStats.contacts} contacts</p>
+          </motion.div>
         </div>
 
         {/* User Info */}
@@ -204,7 +265,7 @@ export default function ProfilePage() {
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-full ring-4 ring-indigo-100 dark:ring-indigo-900/30"
               />
             ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-app-gradient-from to-app-gradient-to rounded-full flex items-center justify-center shadow-lg">
                 <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
             )}
@@ -224,33 +285,51 @@ export default function ProfilePage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-5 flex items-center gap-2">
             <Database className="w-5 h-5 text-indigo-600" />
-            Local Storage
+            Local Storage Details
           </h3>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800">
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Expenses</div>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.expenses}</div>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-3 sm:p-4 rounded-xl border border-green-200 dark:border-green-800">
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Incomes</div>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.incomes}</div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-3 sm:p-4 rounded-xl border border-purple-200 dark:border-purple-800">
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Loans</div>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.loans}</div>
-            </div>
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-3 sm:p-4 rounded-xl border border-orange-200 dark:border-orange-800">
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Contacts</div>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.contacts}</div>
-            </div>
-            <div className="bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 p-3 sm:p-4 rounded-xl border border-cyan-200 dark:border-cyan-800">
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Categories</div>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.categories}</div>
-            </div>
-            <div className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 p-3 sm:p-4 rounded-xl border border-rose-200 dark:border-rose-800">
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Budgets</div>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{dbStats.budgets}</div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4">
+            <motion.div 
+              className="bg-gradient-to-br from-red-500 to-pink-600 p-3 sm:p-4 rounded-xl text-white"
+              whileHover={{ scale: 1.03 }}
+            >
+              <div className="text-xs sm:text-sm opacity-90 mb-1">Expenses</div>
+              <div className="text-xl sm:text-2xl font-bold">{dbStats.expenses}</div>
+            </motion.div>
+            <motion.div 
+              className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 sm:p-4 rounded-xl text-white"
+              whileHover={{ scale: 1.03 }}
+            >
+              <div className="text-xs sm:text-sm opacity-90 mb-1">Incomes</div>
+              <div className="text-xl sm:text-2xl font-bold">{dbStats.incomes}</div>
+            </motion.div>
+            <motion.div 
+              className="bg-gradient-to-br from-orange-500 to-red-600 p-3 sm:p-4 rounded-xl text-white"
+              whileHover={{ scale: 1.03 }}
+            >
+              <div className="text-xs sm:text-sm opacity-90 mb-1">Loans</div>
+              <div className="text-xl sm:text-2xl font-bold">{dbStats.loans}</div>
+            </motion.div>
+            <motion.div 
+              className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 sm:p-4 rounded-xl text-white"
+              whileHover={{ scale: 1.03 }}
+            >
+              <div className="text-xs sm:text-sm opacity-90 mb-1">Contacts</div>
+              <div className="text-xl sm:text-2xl font-bold">{dbStats.contacts}</div>
+            </motion.div>
+            <motion.div 
+              className="bg-gradient-to-br from-cyan-500 to-blue-600 p-3 sm:p-4 rounded-xl text-white"
+              whileHover={{ scale: 1.03 }}
+            >
+              <div className="text-xs sm:text-sm opacity-90 mb-1">Categories</div>
+              <div className="text-xl sm:text-2xl font-bold">{dbStats.categories}</div>
+            </motion.div>
+            <motion.div 
+              className="bg-gradient-to-br from-violet-500 to-purple-600 p-3 sm:p-4 rounded-xl text-white"
+              whileHover={{ scale: 1.03 }}
+            >
+              <div className="text-xs sm:text-sm opacity-90 mb-1">Budgets</div>
+              <div className="text-xl sm:text-2xl font-bold">{dbStats.budgets}</div>
+            </motion.div>
           </div>
           <div className="space-y-2">
             <button
@@ -314,7 +393,7 @@ export default function ProfilePage() {
 
             <div 
               onClick={() => (syncQueue?.length || 0) > 0 && setShowQueueDetails(true)}
-              className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 cursor-pointer hover:shadow-md transition-all"
+              className="bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 cursor-pointer hover:shadow-md transition-all"
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sync Queue</span>
