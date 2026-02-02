@@ -161,8 +161,18 @@ export async function ensureIndexes(): Promise<{
     const client = await clientPromise;
     const db = client.db();
 
+    // Get list of existing collections
+    const collections = await db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
+
     for (const { collection, indexSpec, options } of INDEX_DEFINITIONS) {
       try {
+        // Skip if collection doesn't exist yet
+        if (!collectionNames.includes(collection)) {
+          // Silently skip - collection will be created when first document is inserted
+          continue;
+        }
+
         // Get existing indexes for this collection
         const existingIndexes = await db.collection(collection).indexes();
         const indexExists = existingIndexes.some(idx => idx.name === options.name);

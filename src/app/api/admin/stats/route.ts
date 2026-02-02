@@ -19,8 +19,13 @@ export async function GET() {
     const accountsCollection = db.collection("accounts");
     
     const totalUsers = await usersCollection.countDocuments();
-    const usersWithAccounts = await accountsCollection.distinct("userId");
-    const activeUsers = usersWithAccounts.length;
+    
+    // Use aggregate instead of distinct for API v1 compatibility
+    const usersWithAccountsAgg = await accountsCollection.aggregate([
+      { $group: { _id: "$userId" } },
+      { $count: "total" }
+    ]).toArray();
+    const activeUsers = usersWithAccountsAgg[0]?.total || 0;
 
     // Get data statistics
     const expensesCollection = db.collection("expenses");
@@ -37,7 +42,6 @@ export async function GET() {
       totalContacts,
       totalCategories,
       totalBudgets,
-      activeUsersWithData
     ] = await Promise.all([
       expensesCollection.countDocuments(),
       incomesCollection.countDocuments(),
@@ -45,8 +49,14 @@ export async function GET() {
       contactsCollection.countDocuments(),
       categoriesCollection.countDocuments(),
       budgetsCollection.countDocuments(),
-      expensesCollection.distinct("userId")
     ]);
+
+    // Get unique user count with data using aggregate
+    const activeUsersWithDataAgg = await expensesCollection.aggregate([
+      { $group: { _id: "$userId" } },
+      { $count: "total" }
+    ]).toArray();
+    const activeUsersWithData = activeUsersWithDataAgg[0]?.total || 0;
 
     // Get recent activity (last 7 days)
     const sevenDaysAgo = new Date();
@@ -89,7 +99,7 @@ export async function GET() {
         users: {
           total: totalUsers,
           active: activeUsers,
-          withData: activeUsersWithData.length,
+          withData: activeUsersWithData,
         },
         data: {
           expenses: {
