@@ -2,10 +2,11 @@
 
 import { signIn } from "next-auth/react";
 import { Wallet, TrendingUp, PieChart, BarChart3 } from "lucide-react";
+import { theme } from "@/lib/theme";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-app-gradient-from via-app-gradient-via to-app-gradient-to flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl border border-white/20 hover:shadow-3xl transition-all">
           <div className="text-center mb-6 sm:mb-8">
@@ -13,11 +14,9 @@ export default function SignInPage() {
               <Wallet className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2">
-              Expense Tracker
+              {theme.brand.name}
             </h1>
-            <p className="text-sm sm:text-base text-white/80">
-              Track expenses, manage budgets, get insights
-            </p>
+            <p className="text-sm sm:text-base text-white/80">{theme.brand.tagline}</p>
           </div>
 
           <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
