@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { X, Plus, Trash2, Smartphone } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Plus, Trash2, Smartphone, RefreshCw, Users } from "lucide-react";
 import { db, LocalContact } from "@/lib/db";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { generateObjectId } from "@/lib/idGenerator";
 import {
   isContactsAPISupported,
+  isCapacitor,
   pickContacts,
   convertPickerContactToSchema,
   isPotentialDuplicate,
+  requestContactsPermission,
+  syncAllDeviceContacts,
 } from "@/lib/contactsApi";
 import { ContactDuplicateDialog, DuplicateContact } from "./ContactDuplicateDialog";
 import { t } from "@/lib/terminology";
@@ -36,8 +39,86 @@ export default function AddContactModal({ isOpen, onClose, userId }: AddContactM
     duplicate: DuplicateContact | null;
   }>({ open: false, duplicate: null });
   const [isImporting, setIsImporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
 
   const contactsSupported = typeof window !== "undefined" && isContactsAPISupported();
+  const isNativeApp = typeof window !== "undefined" && isCapacitor();
+
+  // Auto-sync contacts on first launch (native app only)
+  useEffect(() => {
+    if (!isNativeApp || !isOpen) return;
+
+    const checkAutoSync = async () => {
+      const lastSync = localStorage.getItem("contactsLastSynced");
+      const shouldAutoSync = !lastSync || Date.now() - parseInt(lastSync) > 7 * 24 * 60 * 60 * 1000; // 7 days
+
+      if (shouldAutoSync && !lastSync) {
+        // First time - show welcome message
+        setTimeout(() => {
+          void handleSyncAllContacts();
+        }, 500);
+      } else if (shouldAutoSync) {
+        // Weekly sync - do it in background
+        void handleSyncAllContacts(true);
+      }
+    };
+
+    void checkAutoSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNativeApp, isOpen]);
+
+  const handleSyncAllContacts = async (silent = false) => {
+    if (!isNativeApp) {
+      toast.error("Contact sync is only available in the mobile app");
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncProgress({ current: 0, total: 0 });
+
+    try {
+      // Request permission
+      const hasPermission = await requestContactsPermission();
+      if (!hasPermission) {
+        toast.error("Contacts permission denied. Enable it in Settings to sync contacts.");
+        return;
+      }
+
+      if (!silent) {
+        toast.info("Syncing contacts from your device...");
+      }
+
+      // Fetch existing contacts
+      const existingContacts = await db.contacts.where("userId").equals(userId).toArray();
+
+      // Sync all device contacts
+      const result = await syncAllDeviceContacts(userId, db, existingContacts, (current, total) => {
+        setSyncProgress({ current, total });
+      });
+
+      // Store sync timestamp
+      localStorage.setItem("contactsLastSynced", Date.now().toString());
+
+      // Show success message
+      const message = `✓ ${result.synced} contacts synced, ${result.updated} updated${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`;
+      toast.success(message);
+
+      // Trigger background sync to server
+      if (navigator.onLine) {
+        processSyncQueue(userId);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to sync contacts";
+      console.error("Contact sync error:", error);
+      if (!silent) {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress({ current: 0, total: 0 });
+    }
+  };
 
   const handleImportContact = async () => {
     setIsImporting(true);
@@ -77,13 +158,14 @@ export default function AddContactModal({ isOpen, onClose, userId }: AddContactM
         });
         toast.success("Contact imported! Review and save.");
       }
-    } catch (error: any) {
-      if (error.message.includes("cancelled")) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "";
+      if (errorMessage.includes("cancelled")) {
         toast.info("Import cancelled");
-      } else if (error.message.includes("not supported")) {
+      } else if (errorMessage.includes("not supported")) {
         toast.error("Contact import only works on Chrome/Edge for Android");
-      } else if (error.message.includes("internet connection")) {
-        toast.error(error.message);
+      } else if (errorMessage.includes("internet connection")) {
+        toast.error(errorMessage);
       } else {
         toast.error("Failed to import contact");
         console.error(error);
@@ -279,7 +361,30 @@ export default function AddContactModal({ isOpen, onClose, userId }: AddContactM
             {t.add} {t.contacts}
           </h2>
           <div className="flex items-center gap-2">
-            {contactsSupported && (
+            {isNativeApp && (
+              <button
+                type="button"
+                onClick={() => handleSyncAllContacts(false)}
+                disabled={isSyncing}
+                className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                title="Sync all contacts from device"
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    {syncProgress.total > 0
+                      ? `${syncProgress.current}/${syncProgress.total}`
+                      : "Syncing..."}
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-4 h-4" />
+                    Sync All
+                  </>
+                )}
+              </button>
+            )}
+            {!isNativeApp && contactsSupported && (
               <button
                 type="button"
                 onClick={handleImportContact}
@@ -303,6 +408,27 @@ export default function AddContactModal({ isOpen, onClose, userId }: AddContactM
             </button>
           </div>
         </div>
+
+        {isSyncing && syncProgress.total > 0 && (
+          <div className="px-6 pb-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-blue-700 dark:text-blue-300 font-medium">
+                  Syncing contacts...
+                </span>
+                <span className="text-blue-600 dark:text-blue-400">
+                  {syncProgress.current} / {syncProgress.total}
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-app-contacts to-app-contacts-end h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(syncProgress.current / syncProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>

@@ -33,10 +33,21 @@
     "dev:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next dev --webpack",
     "build:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next build --webpack",
     "start:vibe": "cross-env NEXT_PUBLIC_THEME=vibe next start",
-    "build:all": "npm run build && npm run build:acme && npm run build:vibe"
+    "build:all": "npm run build && npm run build:acme && npm run build:vibe",
+    "cap:init": "npx cap init",
+    "cap:sync": "npx cap sync",
+    "cap:sync:vibe": "npx cap sync -c capacitor.vibe.config.ts",
+    "cap:open:android": "npx cap open android",
+    "cap:open:android:vibe": "npx cap open android -c capacitor.vibe.config.ts"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",
+    "@capacitor-community/contacts": "^7.1.0",
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^7.4.5",
+    "@capacitor/core": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0",
     "@next/third-parties": "^16.1.6",
     "bson": "^6.10.4",
     "date-fns": "^4.1.0",
