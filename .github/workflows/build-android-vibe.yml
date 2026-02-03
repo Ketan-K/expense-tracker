@@ -86,9 +86,14 @@ jobs:
         run: |
           echo "=== Secret Verification (Vibe Finance) ==="
           echo "KEYSTORE_BASE64_VIBE: ${KEYSTORE_BASE64:+SET (${#KEYSTORE_BASE64} chars)}"
-          echo "KEYSTORE_PASSWORD_VIBE: '$KEYSTORE_PASSWORD'"
-          echo "KEY_ALIAS_VIBE: '$KEY_ALIAS'"
-          echo "KEY_PASSWORD_VIBE: '$KEY_PASSWORD'"
+          echo "KEYSTORE_PASSWORD_VIBE (base64): $(echo -n "$KEYSTORE_PASSWORD" | base64)"
+          echo "KEY_ALIAS_VIBE (base64): $(echo -n "$KEY_ALIAS" | base64)"
+          echo "KEY_PASSWORD_VIBE (base64): $(echo -n "$KEY_PASSWORD" | base64)"
+          echo ""
+          echo "Expected from KEYSTORE_CREDENTIALS.txt:"
+          echo "KEYSTORE_PASSWORD_VIBE should be: ExpenseTracker2026"
+          echo "KEY_ALIAS_VIBE should be: vibe-finance (12 chars)"
+          echo "KEY_PASSWORD_VIBE should be: TrackerKey2026"
           
           # Check if they're the same (common mistake)
           if [ "$KEYSTORE_PASSWORD" = "$KEY_PASSWORD" ]; then

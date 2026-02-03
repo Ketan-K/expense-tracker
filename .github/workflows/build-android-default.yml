@@ -58,9 +58,14 @@ jobs:
         run: |
           echo "=== Secret Verification (Default Theme) ==="
           echo "KEYSTORE_BASE64: ${KEYSTORE_BASE64:+SET (${#KEYSTORE_BASE64} chars)}"
-          echo "KEYSTORE_PASSWORD: '$KEYSTORE_PASSWORD'"
-          echo "KEY_ALIAS: '$KEY_ALIAS'"
-          echo "KEY_PASSWORD: '$KEY_PASSWORD'"
+          echo "KEYSTORE_PASSWORD (base64): $(echo -n "$KEYSTORE_PASSWORD" | base64)"
+          echo "KEY_ALIAS (base64): $(echo -n "$KEY_ALIAS" | base64)"
+          echo "KEY_PASSWORD (base64): $(echo -n "$KEY_PASSWORD" | base64)"
+          echo ""
+          echo "Expected from KEYSTORE_CREDENTIALS.txt:"
+          echo "KEYSTORE_PASSWORD should be: ExpenseTracker2026"
+          echo "KEY_ALIAS should be: expense-tracker (15 chars)"
+          echo "KEY_PASSWORD should be: TrackerKey2026"
           
           # Check if they're the same (common mistake)
           if [ "$KEYSTORE_PASSWORD" = "$KEY_PASSWORD" ]; then
