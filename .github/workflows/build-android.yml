@@ -48,6 +48,28 @@ jobs:
       - name: Create required directories
         run: mkdir -p android/app/src/main/assets
 
+      - name: Debug - Verify Secrets Are Set (Default)
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "=== Secret Verification (Default Theme) ==="
+          echo "KEYSTORE_BASE64: ${KEYSTORE_BASE64:+SET (${#KEYSTORE_BASE64} chars, first 10: ${KEYSTORE_BASE64:0:10}..., last 10: ...${KEYSTORE_BASE64: -10})}"
+          echo "KEYSTORE_PASSWORD: ${KEYSTORE_PASSWORD:+SET (${#KEYSTORE_PASSWORD} chars, first 4: ${KEYSTORE_PASSWORD:0:4}..., last 4: ...${KEYSTORE_PASSWORD: -4})}"
+          echo "KEY_ALIAS: ${KEY_ALIAS:-NOT SET}"
+          echo "KEY_PASSWORD: ${KEY_PASSWORD:+SET (${#KEY_PASSWORD} chars, first 4: ${KEY_PASSWORD:0:4}..., last 4: ...${KEY_PASSWORD: -4})}"
+          
+          # Check if they're the same (common mistake)
+          if [ "$KEYSTORE_PASSWORD" = "$KEY_PASSWORD" ]; then
+            echo "⚠️  WARNING: KEYSTORE_PASSWORD and KEY_PASSWORD are IDENTICAL!"
+            echo "    This is unusual - they should usually be different."
+          else
+            echo "✓ KEYSTORE_PASSWORD and KEY_PASSWORD are different (good)"
+          fi
+
       - name: Setup and Validate Keystore (Default)
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         env:
@@ -239,6 +261,28 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug --stacktrace
+
+      - name: Debug - Verify Secrets Are Set (Vibe)
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE }}
+        run: |
+          echo "=== Secret Verification (Vibe Finance) ==="
+          echo "KEYSTORE_BASE64_VIBE: ${KEYSTORE_BASE64:+SET (${#KEYSTORE_BASE64} chars, first 10: ${KEYSTORE_BASE64:0:10}..., last 10: ...${KEYSTORE_BASE64: -10})}"
+          echo "KEYSTORE_PASSWORD_VIBE: ${KEYSTORE_PASSWORD:+SET (${#KEYSTORE_PASSWORD} chars, first 4: ${KEYSTORE_PASSWORD:0:4}..., last 4: ...${KEYSTORE_PASSWORD: -4})}"
+          echo "KEY_ALIAS_VIBE: ${KEY_ALIAS:-NOT SET}"
+          echo "KEY_PASSWORD_VIBE: ${KEY_PASSWORD:+SET (${#KEY_PASSWORD} chars, first 4: ${KEY_PASSWORD:0:4}..., last 4: ...${KEY_PASSWORD: -4})}"
+          
+          # Check if they're the same (common mistake)
+          if [ "$KEYSTORE_PASSWORD" = "$KEY_PASSWORD" ]; then
+            echo "⚠️  WARNING: KEYSTORE_PASSWORD_VIBE and KEY_PASSWORD_VIBE are IDENTICAL!"
+            echo "    This is unusual - they should usually be different."
+          else
+            echo "✓ KEYSTORE_PASSWORD_VIBE and KEY_PASSWORD_VIBE are different (good)"
+          fi
 
       - name: Setup and Validate Keystore (Vibe)
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
