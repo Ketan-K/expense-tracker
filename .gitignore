@@ -45,3 +45,10 @@ public/sw.js
 public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
+
+# Android keystores and credentials (NEVER commit these!)
+android-keystores/
+*.keystore
+*.jks
+KEYSTORE_CREDENTIALS.txt
+android/app/release.keystore

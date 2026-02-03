@@ -47,7 +47,17 @@ jobs:
 
       - name: Create required directories
         run: mkdir -p android/app/src/main/assets
-
+      - name: Decode and setup keystore
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            echo "Keystore decoded successfully"
+          else
+            echo "Warning: KEYSTORE_BASE64 secret not found. Release build will fail."
+          fi
       - name: Sync Capacitor
         run: npm run cap:sync
 
@@ -60,8 +70,25 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      - name: Build Release APK (unsigned)
+      - name: Decode and setup keystore (Default)
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            echo "Keystore decoded successfully"
+          else
+            echo "Warning: KEYSTORE_BASE64 secret not found. Release build will fail."
+          fi
+
+      - name: Build Release APK
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
           ./gradlew assembleRelease --stacktrace
@@ -139,8 +166,28 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      - name: Build Release APK (unsigned)
+      - name: Decode and setup keystore (Vibe)
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            echo "Keystore decoded successfully"
+          else
+            echo "Warning: KEYSTORE_BASE64_VIBE secret not found. Using default keystore."
+            if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+              echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+            fi
+          fi
+
+      - name: Build Release APK
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE || secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE || secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE || secrets.KEY_PASSWORD }}
         run: |
           cd android
           ./gradlew assembleRelease --stacktrace
