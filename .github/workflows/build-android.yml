@@ -88,20 +88,29 @@ jobs:
             exit 1
           fi
           
-          # CRITICAL: Test actual private key access by exporting certificate
-          # This is what Gradle does internally when signing
-          echo "Testing private key access (this is what Gradle will do)..."
-          if keytool -exportcert -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" -file /tmp/test_cert.der > /tmp/keytool_export.txt 2>&1; then
-            echo "✓ Private key accessible - KEY_PASSWORD is correct!"
-            rm -f /tmp/test_cert.der
-            echo "Certificate details:"
-            keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | head -20
+          # CRITICAL: Test actual private key access using jarsigner (what Gradle uses)
+          # This is the EXACT operation that will fail during build
+          echo "Testing KEY_PASSWORD with jarsigner (exact Gradle operation)..."
+          echo "TEST JAR" > /tmp/test.txt
+          jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
+          
+          # Try to sign with the passwords - this will fail if KEY_PASSWORD is wrong
+          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test.txt 2>&1; then
+            echo "✓ jarsigner SUCCESS - KEY_PASSWORD is definitely correct!"
+            rm -f /tmp/test.jar /tmp/test.txt
           else
-            echo "ERROR: Cannot access private key - KEY_PASSWORD is WRONG!"
-            cat /tmp/keytool_export.txt
+            echo "❌ CRITICAL ERROR: jarsigner FAILED - KEY_PASSWORD is WRONG!"
+            cat /tmp/jarsigner_test.txt
             echo ""
-            echo "The KEY_PASSWORD secret does not match the keystore!"
-            echo "Gradle will fail with the same 'padding' error."
+            echo "==================================================================="
+            echo "The KEY_PASSWORD secret in GitHub is INCORRECT!"
+            echo "Gradle will fail with 'Given final block not properly padded'"
+            echo "==================================================================="
+            echo ""
+            echo "To fix this:"
+            echo "1. Check your KEYSTORE_CREDENTIALS.txt file for the correct KEY_PASSWORD"
+            echo "2. Update the KEY_PASSWORD secret in GitHub Actions settings"
+            echo "3. Make sure you're using the password for the KEY, not the STORE"
             exit 1
           fi
           
@@ -231,22 +240,6 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      - name: Verify Keystore Before Build (Vibe)
-        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
-        run: |
-          echo "=== Pre-Build Keystore Verification (Vibe) ==="
-          ls -lh android/app/release.keystore
-          echo "SHA256: $(sha256sum android/app/release.keystore | cut -d' ' -f1)"
-          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "✓ Keystore still valid before build"
-          else
-            echo "ERROR: Keystore corrupted after Capacitor sync!"
-            exit 1
-          fi
-
       - name: Setup and Validate Keystore (Vibe)
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         env:
@@ -294,24 +287,49 @@ jobs:
             exit 1
           fi
           
-          # CRITICAL: Test actual private key access by exporting certificate
-          # This is what Gradle does internally when signing
-          echo "Testing private key access (this is what Gradle will do)..."
-          if keytool -exportcert -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" -file /tmp/test_cert.der > /tmp/keytool_export.txt 2>&1; then
-            echo "✓ Private key accessible - KEY_PASSWORD is correct!"
-            rm -f /tmp/test_cert.der
-            echo "Certificate details:"
-            keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | head -20
+          # CRITICAL: Test actual private key access using jarsigner (what Gradle uses)
+          # This is the EXACT operation that will fail during build
+          echo "Testing KEY_PASSWORD with jarsigner (exact Gradle operation)..."
+          echo "TEST JAR" > /tmp/test.txt
+          jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
+          
+          # Try to sign with the passwords - this will fail if KEY_PASSWORD is wrong
+          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test.txt 2>&1; then
+            echo "✓ jarsigner SUCCESS - KEY_PASSWORD_VIBE is definitely correct!"
+            rm -f /tmp/test.jar /tmp/test.txt
           else
-            echo "ERROR: Cannot access private key - KEY_PASSWORD_VIBE is WRONG!"
-            cat /tmp/keytool_export.txt
+            echo "❌ CRITICAL ERROR: jarsigner FAILED - KEY_PASSWORD_VIBE is WRONG!"
+            cat /tmp/jarsigner_test.txt
             echo ""
-            echo "The KEY_PASSWORD_VIBE secret does not match the keystore!"
-            echo "Gradle will fail with the same 'padding' error."
+            echo "==================================================================="
+            echo "The KEY_PASSWORD_VIBE secret in GitHub is INCORRECT!"
+            echo "Gradle will fail with 'Given final block not properly padded'"
+            echo "==================================================================="
+            echo ""
+            echo "To fix this:"
+            echo "1. Check your KEYSTORE_CREDENTIALS.txt file for the correct KEY_PASSWORD_VIBE"
+            echo "2. Update the KEY_PASSWORD_VIBE secret in GitHub Actions settings"
+            echo "3. Make sure you're using the password for the KEY, not the STORE"
             exit 1
           fi
           
           echo "=== Keystore Validation Complete ==="
+
+      - name: Verify Keystore Before Build (Vibe)
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
+        run: |
+          echo "=== Pre-Build Keystore Verification (Vibe) ==="
+          ls -lh android/app/release.keystore
+          echo "SHA256: $(sha256sum android/app/release.keystore | cut -d' ' -f1)"
+          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "✓ Keystore still valid before build"
+          else
+            echo "ERROR: Keystore corrupted after Capacitor sync!"
+            exit 1
+          fi
 
       - name: Build Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
