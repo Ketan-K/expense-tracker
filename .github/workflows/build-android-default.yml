@@ -128,24 +128,41 @@ jobs:
           echo "TEST JAR" > /tmp/test.txt
           jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
           
-          # Try to sign with the passwords - this will fail if KEY_PASSWORD is wrong
-          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test.txt 2>&1; then
-            echo "✓ jarsigner SUCCESS - KEY_PASSWORD is definitely correct!"
+          # Try to sign with the passwords AS PROVIDED
+          echo "Test 1: Using secrets as configured..."
+          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test1.txt 2>&1; then
+            echo "✓ jarsigner SUCCESS - Passwords are correct as configured!"
             rm -f /tmp/test.jar /tmp/test.txt
           else
-            echo "❌ CRITICAL ERROR: jarsigner FAILED - KEY_PASSWORD is WRONG!"
-            cat /tmp/jarsigner_test.txt
+            echo "❌ Test 1 FAILED"
+            cat /tmp/jarsigner_test1.txt
+            
+            # Try SWAPPED passwords (common mistake)
             echo ""
-            echo "==================================================================="
-            echo "The KEY_PASSWORD secret in GitHub is INCORRECT!"
-            echo "Gradle will fail with 'Given final block not properly padded'"
-            echo "==================================================================="
-            echo ""
-            echo "To fix this:"
-            echo "1. Check your KEYSTORE_CREDENTIALS.txt file for the correct KEY_PASSWORD"
-            echo "2. Update the KEY_PASSWORD secret in GitHub Actions settings"
-            echo "3. Make sure you're using the password for the KEY, not the STORE"
-            exit 1
+            echo "Test 2: Trying SWAPPED passwords (KEYSTORE_PASSWORD ↔ KEY_PASSWORD)..."
+            echo "TEST JAR" > /tmp/test.txt
+            jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
+            
+            if jarsigner -keystore android/app/release.keystore -storepass "$KEY_PASSWORD" -keypass "$KEYSTORE_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test2.txt 2>&1; then
+              echo "✓✓✓ SUCCESS WITH SWAPPED PASSWORDS! ✓✓✓"
+              echo ""
+              echo "==================================================================="
+              echo "FOUND THE PROBLEM: Your passwords are SWAPPED in GitHub secrets!"
+              echo "==================================================================="
+              echo "Fix: Swap the values of KEYSTORE_PASSWORD and KEY_PASSWORD"
+              echo "  - KEYSTORE_PASSWORD should have what's currently in KEY_PASSWORD"
+              echo "  - KEY_PASSWORD should have what's currently in KEYSTORE_PASSWORD"
+              rm -f /tmp/test.jar /tmp/test.txt
+              exit 1
+            else
+              echo "❌ Test 2 also FAILED"
+              cat /tmp/jarsigner_test2.txt
+              echo ""
+              echo "==================================================================="
+              echo "Both password combinations failed - check KEYSTORE_CREDENTIALS.txt"
+              echo "==================================================================="
+              exit 1
+            fi
           fi
           
           echo "=== Keystore Validation Complete ==="
