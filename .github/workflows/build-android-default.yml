@@ -125,43 +125,67 @@ jobs:
           
           # CRITICAL: Test actual private key access using jarsigner (what Gradle uses)
           echo "=== Testing KEY_PASSWORD with jarsigner (exact Gradle operation) ==="
+          
+          # Write passwords to files to bypass any env var masking issues
+          echo -n "$KEYSTORE_PASSWORD" > /tmp/store_pass.txt
+          echo -n "$KEY_PASSWORD" > /tmp/key_pass.txt
+          echo -n "$KEY_ALIAS" > /tmp/alias.txt
+          
+          STORE_PASS_FILE=$(cat /tmp/store_pass.txt)
+          KEY_PASS_FILE=$(cat /tmp/key_pass.txt)
+          ALIAS_FILE=$(cat /tmp/alias.txt)
+          
+          echo "DEBUG: Lengths:"
+          echo "  From env - KEYSTORE_PASSWORD: ${#KEYSTORE_PASSWORD}"
+          echo "  From file - KEYSTORE_PASSWORD: ${#STORE_PASS_FILE}"
+          echo "  From env - KEY_PASSWORD: ${#KEY_PASSWORD}"
+          echo "  From file - KEY_PASSWORD: ${#KEY_PASS_FILE}"
+          echo "  From env - KEY_ALIAS: ${#KEY_ALIAS}"
+          echo "  From file - KEY_ALIAS: ${#ALIAS_FILE}"
+          
           echo "TEST JAR" > /tmp/test.txt
           jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
           
-          # Try to sign with the passwords AS PROVIDED
-          echo "Test 1: Using secrets as configured..."
+          # Test 1: Using environment variables directly
+          echo "Test 1: Using environment variables directly..."
           if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test1.txt 2>&1; then
-            echo "✓ jarsigner SUCCESS - Passwords are correct as configured!"
-            rm -f /tmp/test.jar /tmp/test.txt
+            echo "✓ SUCCESS with environment variables!"
+            rm -f /tmp/test.jar /tmp/test.txt /tmp/store_pass.txt /tmp/key_pass.txt /tmp/alias.txt
           else
-            echo "❌ Test 1 FAILED"
+            echo "❌ FAILED with environment variables"
             cat /tmp/jarsigner_test1.txt
             
-            # Try SWAPPED passwords (common mistake)
+            # Test 2: Using file-based values
             echo ""
-            echo "Test 2: Trying SWAPPED passwords (KEYSTORE_PASSWORD ↔ KEY_PASSWORD)..."
+            echo "Test 2: Using values read from files (bypass env var masking)..."
             echo "TEST JAR" > /tmp/test.txt
             jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
             
-            if jarsigner -keystore android/app/release.keystore -storepass "$KEY_PASSWORD" -keypass "$KEYSTORE_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test2.txt 2>&1; then
-              echo "✓✓✓ SUCCESS WITH SWAPPED PASSWORDS! ✓✓✓"
-              echo ""
-              echo "==================================================================="
-              echo "FOUND THE PROBLEM: Your passwords are SWAPPED in GitHub secrets!"
-              echo "==================================================================="
-              echo "Fix: Swap the values of KEYSTORE_PASSWORD and KEY_PASSWORD"
-              echo "  - KEYSTORE_PASSWORD should have what's currently in KEY_PASSWORD"
-              echo "  - KEY_PASSWORD should have what's currently in KEYSTORE_PASSWORD"
-              rm -f /tmp/test.jar /tmp/test.txt
-              exit 1
+            if jarsigner -keystore android/app/release.keystore -storepass "$STORE_PASS_FILE" -keypass "$KEY_PASS_FILE" /tmp/test.jar "$ALIAS_FILE" > /tmp/jarsigner_test2.txt 2>&1; then
+              echo "✓ SUCCESS with file-based values!"
+              echo "This means GitHub's masking was interfering with env vars"
+              rm -f /tmp/test.jar /tmp/test.txt /tmp/store_pass.txt /tmp/key_pass.txt /tmp/alias.txt
             else
-              echo "❌ Test 2 also FAILED"
+              echo "❌ FAILED with file-based values too"
               cat /tmp/jarsigner_test2.txt
+              
+              # Test 3: Try swapped
               echo ""
-              echo "==================================================================="
-              echo "Both password combinations failed - check KEYSTORE_CREDENTIALS.txt"
-              echo "==================================================================="
-              exit 1
+              echo "Test 3: Trying swapped passwords..."
+              echo "TEST JAR" > /tmp/test.txt
+              jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
+              
+              if jarsigner -keystore android/app/release.keystore -storepass "$KEY_PASS_FILE" -keypass "$STORE_PASS_FILE" /tmp/test.jar "$ALIAS_FILE" > /tmp/jarsigner_test3.txt 2>&1; then
+                echo "✓ SUCCESS WITH SWAPPED PASSWORDS!"
+                echo "Your KEYSTORE_PASSWORD and KEY_PASSWORD secrets are swapped!"
+                rm -f /tmp/test.jar /tmp/test.txt /tmp/store_pass.txt /tmp/key_pass.txt /tmp/alias.txt
+                exit 1
+              else
+                echo "❌ All tests failed"
+                cat /tmp/jarsigner_test3.txt
+                rm -f /tmp/store_pass.txt /tmp/key_pass.txt /tmp/alias.txt
+                exit 1
+              fi
             fi
           fi
           
