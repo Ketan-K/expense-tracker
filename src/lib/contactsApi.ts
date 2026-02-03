@@ -13,15 +13,15 @@ import { Contacts } from "@capacitor-community/contacts";
 export interface CapacitorContact {
   contactId: string;
   name?: {
-    display?: string;
-    given?: string;
-    family?: string;
+    display?: string | null;
+    given?: string | null;
+    family?: string | null;
   };
   phones?: Array<{
-    number?: string;
+    number?: string | null;
   }>;
   emails?: Array<{
-    address?: string;
+    address?: string | null;
   }>;
 }
 
