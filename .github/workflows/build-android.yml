@@ -124,7 +124,11 @@ jobs:
           sed -i 's/<string name="custom_url_scheme">com.expensetracker.app<\/string>/<string name="custom_url_scheme">com.vibefinance.app<\/string>/g' android/app/src/main/res/values/strings.xml
 
       - name: Sync Capacitor with Vibe config
-        run: npm run cap:sync:vibe
+        run: |
+          # Temporarily use Vibe config as default
+          cp capacitor.vibe.config.ts capacitor.config.ts
+          npx cap sync
+          git checkout capacitor.config.ts
 
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew

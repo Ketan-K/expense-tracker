@@ -36,9 +36,7 @@
     "build:all": "npm run build && npm run build:acme && npm run build:vibe",
     "cap:init": "npx cap init",
     "cap:sync": "npx cap sync",
-    "cap:sync:vibe": "npx cap sync -c capacitor.vibe.config.ts",
-    "cap:open:android": "npx cap open android",
-    "cap:open:android:vibe": "npx cap open android -c capacitor.vibe.config.ts"
+    "cap:open:android": "npx cap open android"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",
