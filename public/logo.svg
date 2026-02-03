@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="128" fill="url(#gradient)"/>
+  
+  <!-- Wallet Icon -->
+  <path d="M160 192C160 174.327 174.327 160 192 160H352C369.673 160 384 174.327 384 192V256H432C440.837 256 448 263.163 448 272V336C448 344.837 440.837 352 432 352H384V384C384 401.673 369.673 416 352 416H192C174.327 416 160 401.673 160 384V192Z" fill="white" fill-opacity="0.95"/>
+  
+  <!-- Card Slot -->
+  <rect x="192" y="224" width="160" height="32" rx="8" fill="url(#cardGradient)"/>
+  
+  <!-- Dollar Sign -->
+  <circle cx="400" cy="304" r="24" fill="url(#dollarGradient)"/>
+  <text x="400" y="320" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white" text-anchor="middle">$</text>
+  
+  <!-- Decorative Lines -->
+  <line x1="192" y1="288" x2="352" y2="288" stroke="url(#lineGradient)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="192" y1="320" x2="320" y2="320" stroke="url(#lineGradient)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="192" y1="352" x2="280" y2="352" stroke="url(#lineGradient)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="cardGradient" x1="192" y1="224" x2="352" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <linearGradient id="dollarGradient" x1="376" y1="280" x2="424" y2="328" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="lineGradient" x1="192" y1="0" x2="352" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+</svg>

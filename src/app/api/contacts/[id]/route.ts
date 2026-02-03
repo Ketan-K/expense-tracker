@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { Contact } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
@@ -12,10 +12,7 @@ export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -31,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const contact = await db.collection<Contact>("contacts").findOne({
@@ -47,17 +44,11 @@ export async function GET(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching contact:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -83,7 +74,7 @@ export async function PUT(
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const updateData = {
@@ -91,11 +82,13 @@ export async function PUT(
       updatedAt: new Date(),
     };
 
-    const result = await db.collection<Contact>("contacts").findOneAndUpdate(
-      { _id: new ObjectId(id), userId: session.user.id },
-      { $set: updateData },
-      { returnDocument: "after" }
-    );
+    const result = await db
+      .collection<Contact>("contacts")
+      .findOneAndUpdate(
+        { _id: new ObjectId(id), userId: session.user.id },
+        { $set: updateData },
+        { returnDocument: "after" }
+      );
 
     if (!result) {
       return NextResponse.json({ error: "Contact not found" }, { status: 404 });
@@ -105,17 +98,11 @@ export async function PUT(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating contact:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -131,7 +118,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     // Check if contact is used in any loans
@@ -160,9 +147,6 @@ export async function DELETE(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error deleting contact:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

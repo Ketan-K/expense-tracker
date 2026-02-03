@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { LoanPayment, Loan } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
@@ -12,10 +12,7 @@ export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -31,7 +28,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid payment ID" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     // Get the payment to be deleted
@@ -74,9 +71,6 @@ export async function DELETE(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error deleting loan payment:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

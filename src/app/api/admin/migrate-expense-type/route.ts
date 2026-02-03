@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-utils";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     const { dryRun } = await req.json();
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
     const expenses = db.collection("expenses");
 
@@ -65,10 +65,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error migrating expenses:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: "Failed to migrate expenses",
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

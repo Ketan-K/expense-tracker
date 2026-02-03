@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import type { Contact } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateContact, sanitizeString } from "@/lib/validation";
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const query: any = { userId: session.user.id };
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     // Check for duplicate contact name for this user

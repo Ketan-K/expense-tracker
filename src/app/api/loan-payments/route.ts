@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import type { LoanPayment, Loan } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const loanId = searchParams.get("loanId");
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const query: any = { userId: session.user.id };
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     // Verify the loan exists and belongs to the user

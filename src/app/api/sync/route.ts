@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import type { Expense, Category, Budget, Income, Loan, LoanPayment, Contact } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid request format" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const results = [];
@@ -175,17 +175,15 @@ export async function POST(request: Request) {
               updatedAt: new Date(),
             };
 
-            const result = await db
-              .collection<Budget>("budgets")
-              .findOneAndUpdate(
-                {
-                  userId: session.user.id,
-                  categoryId: validation.sanitized!.categoryId,
-                  month: validation.sanitized!.month,
-                },
-                { $set: budget },
-                { upsert: true, returnDocument: "after" }
-              );
+            const result = await db.collection<Budget>("budgets").findOneAndUpdate(
+              {
+                userId: session.user.id,
+                categoryId: validation.sanitized!.categoryId,
+                month: validation.sanitized!.month,
+              },
+              { $set: budget },
+              { upsert: true, returnDocument: "after" }
+            );
 
             results.push({
               localId,

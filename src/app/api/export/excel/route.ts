@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { Expense, Category } from "@/lib/types";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
@@ -20,7 +20,11 @@ export async function GET(request: Request) {
     }
 
     // Apply rate limiting (export has stricter limits)
-    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.export);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id,
+      getIP(request),
+      rateLimiters.export
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
@@ -36,7 +40,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const query: any = { userId: session.user.id };
@@ -62,7 +66,7 @@ export async function GET(request: Request) {
     const workbook = XLSX.utils.book_new();
 
     // Expenses sheet
-    const expensesData = expenses.map((expense) => ({
+    const expensesData = expenses.map(expense => ({
       Date: new Date(expense.date).toLocaleDateString(),
       Category: expense.category,
       Amount: expense.amount,
@@ -74,7 +78,7 @@ export async function GET(request: Request) {
     XLSX.utils.book_append_sheet(workbook, expensesSheet, "Expenses");
 
     // Categories sheet
-    const categoriesData = categories.map((cat) => ({
+    const categoriesData = categories.map(cat => ({
       Name: cat.name,
       Icon: cat.icon,
       Color: cat.color,
@@ -85,13 +89,16 @@ export async function GET(request: Request) {
     XLSX.utils.book_append_sheet(workbook, categoriesSheet, "Categories");
 
     // Summary sheet
-    const categoryTotals = expenses.reduce((acc, expense) => {
-      if (!acc[expense.category]) {
-        acc[expense.category] = 0;
-      }
-      acc[expense.category] += expense.amount;
-      return acc;
-    }, {} as Record<string, number>);
+    const categoryTotals = expenses.reduce(
+      (acc, expense) => {
+        if (!acc[expense.category]) {
+          acc[expense.category] = 0;
+        }
+        acc[expense.category] += expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     const summaryData = Object.entries(categoryTotals).map(([category, total]) => ({
       Category: category,
@@ -114,9 +121,6 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error exporting Excel:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

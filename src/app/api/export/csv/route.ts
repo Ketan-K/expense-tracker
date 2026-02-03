@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { Expense } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateQueryParams } from "@/lib/validation";
@@ -19,7 +19,11 @@ export async function GET(request: Request) {
     }
 
     // Apply rate limiting (export has stricter limits)
-    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.export);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id,
+      getIP(request),
+      rateLimiters.export
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const query: any = { userId: session.user.id };
@@ -54,7 +58,7 @@ export async function GET(request: Request) {
 
     // Convert to CSV
     const headers = ["Date", "Category", "Amount", "Description", "Payment Method"];
-    const rows = expenses.map((expense) => [
+    const rows = expenses.map(expense => [
       new Date(expense.date).toLocaleDateString(),
       expense.category,
       expense.amount.toString(),
@@ -64,7 +68,7 @@ export async function GET(request: Request) {
 
     const csv = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
     ].join("\n");
 
     const response = new NextResponse(csv, {
@@ -76,9 +80,6 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error exporting CSV:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

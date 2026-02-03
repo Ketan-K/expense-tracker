@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth-utils";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
 /**
@@ -12,17 +12,14 @@ export async function POST(request: Request) {
     const session = await requireAdmin();
     console.log(`[ADMIN ACTION] Contacts migration initiated by ${session.user.email}`);
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
     const contacts = db.collection("contacts");
 
     // Find all contacts that have phone or email as strings (not arrays)
     const contactsToMigrate = await contacts
       .find({
-        $or: [
-          { phone: { $type: "string" } },
-          { email: { $type: "string" } },
-        ],
+        $or: [{ phone: { $type: "string" } }, { email: { $type: "string" } }],
       })
       .toArray();
 
@@ -66,10 +63,7 @@ export async function POST(request: Request) {
 
     // Verify migration
     const remainingStrings = await contacts.countDocuments({
-      $or: [
-        { phone: { $type: "string" } },
-        { email: { $type: "string" } },
-      ],
+      $or: [{ phone: { $type: "string" } }, { email: { $type: "string" } }],
     });
 
     return NextResponse.json({

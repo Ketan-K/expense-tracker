@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import type { Budget } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateBudget, sanitizeString } from "@/lib/validation";
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const query: any = { userId: session.user.id };
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const { categoryId, month, amount } = validation.sanitized!;

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { Income } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
@@ -12,10 +12,7 @@ export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -31,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid income ID" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const income = await db.collection<Income>("incomes").findOne({
@@ -47,17 +44,11 @@ export async function GET(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching income:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -83,7 +74,7 @@ export async function PUT(
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const updateData = {
@@ -91,11 +82,13 @@ export async function PUT(
       updatedAt: new Date(),
     };
 
-    const result = await db.collection<Income>("incomes").findOneAndUpdate(
-      { _id: new ObjectId(id), userId: session.user.id },
-      { $set: updateData },
-      { returnDocument: "after" }
-    );
+    const result = await db
+      .collection<Income>("incomes")
+      .findOneAndUpdate(
+        { _id: new ObjectId(id), userId: session.user.id },
+        { $set: updateData },
+        { returnDocument: "after" }
+      );
 
     if (!result) {
       return NextResponse.json({ error: "Income not found" }, { status: 404 });
@@ -105,17 +98,11 @@ export async function PUT(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating income:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -131,7 +118,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid income ID" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const result = await db.collection<Income>("incomes").findOneAndDelete({
@@ -147,9 +134,6 @@ export async function DELETE(
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error deleting income:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

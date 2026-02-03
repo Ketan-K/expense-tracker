@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import clientPromise from "@/lib/mongodb";
+import { getConnectedClient } from "@/lib/mongodb";
 import { type Category, DEFAULT_CATEGORIES } from "@/lib/types";
 import { NextResponse } from "next/server";
 import { validateCategory, sanitizeString } from "@/lib/validation";
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
     if (rateLimitResult) return rateLimitResult;
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     const categories = await db
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const client = await clientPromise;
+    const client = await getConnectedClient();
     const db = client.db();
 
     // Check if category with this name already exists for this user
