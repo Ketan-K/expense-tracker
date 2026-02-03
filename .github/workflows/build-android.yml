@@ -66,24 +66,41 @@ jobs:
           if [ -z "$KEY_PASSWORD" ]; then echo "ERROR: KEY_PASSWORD missing"; exit 1; fi
           echo "✓ All secrets present"
           
-          # Decode
-          echo "Base64 length: ${#KEYSTORE_BASE64}"
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          # Decode using printf (consistent with Vibe build)
+          echo "Base64 string length: ${#KEYSTORE_BASE64}"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
           
-          # Verify
+          # Verify file creation
           if [ ! -f android/app/release.keystore ]; then echo "ERROR: File not created"; exit 1; fi
           FILE_SIZE=$(stat -c%s android/app/release.keystore)
           echo "✓ Keystore created: $FILE_SIZE bytes"
+          ls -lh android/app/release.keystore
+          file android/app/release.keystore
           
-          # Test with keytool
-          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "✓ Keystore valid"
-            keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | head -20
+          # Validate keystore and storepass
+          echo "Validating keystore..."
+          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool_output.txt 2>&1; then
+            echo "✓ Keystore and storepass valid"
           else
             echo "ERROR: Keystore validation failed"
-            keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" || true
+            cat /tmp/keytool_output.txt
             exit 1
           fi
+          
+          # Verify key password by accessing the certificate details
+          echo "Validating key password..."
+          if keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /tmp/keytool_detail.txt 2>&1; then
+            echo "✓ Key password valid"
+            echo "Certificate details:"
+            grep -A 5 "Alias name:" /tmp/keytool_detail.txt || true
+            grep -A 3 "Valid from:" /tmp/keytool_detail.txt || true
+          else
+            echo "ERROR: Key password validation failed"
+            cat /tmp/keytool_detail.txt
+            exit 1
+          fi
+          
+          echo "=== Keystore Validation Complete ==="
           
       - name: Sync Capacitor
         run: npm run cap:sync
@@ -96,20 +113,6 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug --stacktrace
-
-      - name: Decode and setup keystore (Default)
-        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
-            ls -lh android/app/release.keystore
-            file android/app/release.keystore
-            echo "Keystore decoded successfully"
-          else
-            echo "Warning: KEYSTORE_BASE64 secret not found. Release build will fail."
-          fi
 
       - name: Build Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
@@ -243,16 +246,26 @@ jobs:
           ls -lh android/app/release.keystore
           file android/app/release.keystore
           
-          # Validate keystore using keytool
+          # Validate keystore and storepass
           echo "Validating keystore with keytool..."
-          if keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool_output.txt 2>&1; then
-            echo "✓ Keystore validation successful"
-            echo "Certificate details:"
-            grep -A 5 "Alias name:" /tmp/keytool_output.txt || true
-            grep -A 3 "Valid from:" /tmp/keytool_output.txt || true
+          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool_output.txt 2>&1; then
+            echo "✓ Keystore and storepass valid"
           else
             echo "ERROR: Keystore validation failed"
             cat /tmp/keytool_output.txt
+            exit 1
+          fi
+          
+          # Verify key password by accessing the certificate details
+          echo "Validating key password..."
+          if keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /tmp/keytool_detail.txt 2>&1; then
+            echo "✓ Key password valid"
+            echo "Certificate details:"
+            grep -A 5 "Alias name:" /tmp/keytool_detail.txt || true
+            grep -A 3 "Valid from:" /tmp/keytool_detail.txt || true
+          else
+            echo "ERROR: Key password validation failed"
+            cat /tmp/keytool_detail.txt
             exit 1
           fi
           
