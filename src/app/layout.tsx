@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@/lib/theme-styles"; // Load active theme CSS
 import { Toaster } from "sonner";
 import { Providers } from "@/components/Providers";
 import { theme } from "@/lib/theme";
