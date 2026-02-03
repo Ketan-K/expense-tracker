@@ -59,59 +59,32 @@ jobs:
           set -e
           echo "=== Keystore Setup and Validation ==="
           
-          # Check if all secrets are present
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "ERROR: KEYSTORE_BASE64 secret not found"
-            exit 1
-          fi
-          if [ -z "$KEYSTORE_PASSWORD" ]; then
-            echo "ERROR: KEYSTORE_PASSWORD secret not found"
-            exit 1
-          fi
-          if [ -z "$KEY_ALIAS" ]; then
-            echo "ERROR: KEY_ALIAS secret not found"
-            exit 1
-          fi
-          if [ -z "$KEY_PASSWORD" ]; then
-            echo "ERROR: KEY_PASSWORD secret not found"
-            exit 1
-          fi
+          # Check all secrets
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "ERROR: KEYSTORE_BASE64 missing"; exit 1; fi
+          if [ -z "$KEYSTORE_PASSWORD" ]; then echo "ERROR: KEYSTORE_PASSWORD missing"; exit 1; fi
+          if [ -z "$KEY_ALIAS" ]; then echo "ERROR: KEY_ALIAS missing"; exit 1; fi
+          if [ -z "$KEY_PASSWORD" ]; then echo "ERROR: KEY_PASSWORD missing"; exit 1; fi
+          echo "✓ All secrets present"
           
-          echo "✓ All keystore secrets are present"
-          
-          # Show Base64 string length (for debugging)
-          echo "Base64 string length: ${#KEYSTORE_BASE64}"
-          
-          # Decode keystore
-          echo "Decoding keystore..."
+          # Decode
+          echo "Base64 length: ${#KEYSTORE_BASE64}"
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
           
-          # Verify file was created and check size
-          if [ ! -f android/app/release.keystore ]; then
-            echo "ERROR: Keystore file was not created"
-            exit 1
-          fi
-          
+          # Verify
+          if [ ! -f android/app/release.keystore ]; then echo "ERROR: File not created"; exit 1; fi
           FILE_SIZE=$(stat -c%s android/app/release.keystore)
-          echo "✓ Keystore file created: $FILE_SIZE bytes"
+          echo "✓ Keystore created: $FILE_SIZE bytes"
           
-          # Verify it's a valid keystore using keytool
-          echo "Verifying keystore validity..."
+          # Test with keytool
           if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "✓ Keystore is valid and password is correct"
+            echo "✓ Keystore valid"
+            keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | head -20
           else
-            echo "ERROR: Failed to verify keystore. Either the file is corrupted or the password is incorrect"
-            echo "Attempting to list keystore contents..."
+            echo "ERROR: Keystore validation failed"
             keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" || true
             exit 1
           fi
           
-          # Show keystore info
-          echo "=== Keystore Information ==="
-          keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | head -20
-          
-          echo "=== Keystore setup completed successfully ==="
-
       - name: Sync Capacitor
         run: npm run cap:sync
 
@@ -123,6 +96,20 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug --stacktrace
+
+      - name: Decode and setup keystore (Default)
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            ls -lh android/app/release.keystore
+            file android/app/release.keystore
+            echo "Keystore decoded successfully"
+          else
+            echo "Warning: KEYSTORE_BASE64 secret not found. Release build will fail."
+          fi
 
       - name: Build Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
@@ -208,83 +195,82 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      - name: Decode and setup keystore (Vibe)
+      - name: Setup and Validate Keystore (Vibe)
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
-            ls -lh android/app/release.keystore
-            file android/app/release.keystore
-            echo "Keystore decoded successfully"
-          else
-            echo "Warning: KEYSTORE_BASE64_VIBE secret not found. Using default keystore."
-            if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-              printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
-              Setup and Validate Keystore (Vibe)
-        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE || secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE || secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE || secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE || secrets.KEY_PASSWORD }}
-        run: |
-          set -e
-          echo "=== Keystore Setup and Validation (Vibe) ==="
+          echo "=== Keystore Validation Start ==="
           
-          # Check if all secrets are present
+          # Check if all required secrets exist
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "ERROR: KEYSTORE_BASE64_VIBE secret not found"
+            echo "ERROR: KEYSTORE_BASE64_VIBE secret is missing"
             exit 1
           fi
           if [ -z "$KEYSTORE_PASSWORD" ]; then
-            echo "ERROR: KEYSTORE_PASSWORD_VIBE secret not found"
+            echo "ERROR: KEYSTORE_PASSWORD_VIBE secret is missing"
             exit 1
           fi
           if [ -z "$KEY_ALIAS" ]; then
-            echo "ERROR: KEY_ALIAS_VIBE secret not found"
+            echo "ERROR: KEY_ALIAS_VIBE secret is missing"
             exit 1
           fi
           if [ -z "$KEY_PASSWORD" ]; then
-            echo "ERROR: KEY_PASSWORD_VIBE secret not found"
+            echo "ERROR: KEY_PASSWORD_VIBE secret is missing"
             exit 1
           fi
           
-          echo "✓ All keystore secrets are present"
+          echo "✓ All secrets present"
           
-          # Show Base64 string length (for debugging)
+          # Debug: Show Base64 string length
           echo "Base64 string length: ${#KEYSTORE_BASE64}"
           
           # Decode keystore
           echo "Decoding keystore..."
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
           
-          # Verify file was created and check size
+          # Check if file was created
           if [ ! -f android/app/release.keystore ]; then
             echo "ERROR: Keystore file was not created"
             exit 1
           fi
           
-          FILE_SIZE=$(stat -c%s android/app/release.keystore)
-          echo "✓ Keystore file created: $FILE_SIZE bytes"
+          # Show file details
+          echo "Keystore file details:"
+          ls -lh android/app/release.keystore
+          file android/app/release.keystore
           
-          # Verify it's a valid keystore using keytool
-          echo "Verifying keystore validity..."
-          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "✓ Keystore is valid and password is correct"
+          # Validate keystore using keytool
+          echo "Validating keystore with keytool..."
+          if keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool_output.txt 2>&1; then
+            echo "✓ Keystore validation successful"
+            echo "Certificate details:"
+            grep -A 5 "Alias name:" /tmp/keytool_output.txt || true
+            grep -A 3 "Valid from:" /tmp/keytool_output.txt || true
           else
-            echo "ERROR: Failed to verify keystore. Either the file is corrupted or the password is incorrect"
-            echo "Attempting to list keystore contents..."
-            keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" || true
+            echo "ERROR: Keystore validation failed"
+            cat /tmp/keytool_output.txt
             exit 1
           fi
           
-          # Show keystore info
-          echo "=== Keystore Information ==="
-          keytool -list -v -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | head -20
-          
-          echo "=== Keystore setup completed successfully ==="github.event.inputs.build_type != 'release' && !startsWith(github.ref, 'refs/tags/')
+          echo "=== Keystore Validation Complete ==="
+
+      - name: Build Release APK
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE || secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE || secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE || secrets.KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Upload Debug APK
+        if: github.event.inputs.build_type != 'release' && !startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: vibe-finance-debug
