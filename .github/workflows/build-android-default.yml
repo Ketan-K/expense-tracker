@@ -98,13 +98,33 @@ jobs:
           echo "TEST" > /tmp/test.txt
           jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null
           
-          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /dev/null 2>&1; then
+          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner.log 2>&1; then
             echo "✓ Signing test successful"
-            rm -f /tmp/test.jar /tmp/test.txt
+            rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log
           else
-            echo "ERROR: Failed to sign test JAR with provided credentials"
-            rm -f /tmp/test.jar /tmp/test.txt
-            exit 1
+            echo "ERROR: Failed to sign with KEY_PASSWORD"
+            cat /tmp/jarsigner.log
+            
+            # Test if passwords should be the same
+            echo ""
+            echo "Attempting with same password for both store and key..."
+            echo "TEST" > /tmp/test.txt
+            jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null
+            
+            if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /dev/null 2>&1; then
+              echo "✓ SUCCESS using KEYSTORE_PASSWORD for both!"
+              echo ""
+              echo "======================================================================"
+              echo "SOLUTION: Update your KEY_PASSWORD secret to match KEYSTORE_PASSWORD"
+              echo "Your keystore was generated with the same password for both."
+              echo "======================================================================"
+              rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log
+              exit 1
+            else
+              echo "ERROR: Both password configurations failed"
+              rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log
+              exit 1
+            fi
           fi
           
           echo "✓ Keystore validation complete"
