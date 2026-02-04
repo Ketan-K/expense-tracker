@@ -19,6 +19,8 @@ export const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Disable PKCE for mobile apps - use state-only verification
+      checks: ["state"],
       authorization: {
         params: {
           prompt: "consent",
