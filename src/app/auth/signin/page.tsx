@@ -50,7 +50,7 @@ export default function SignInPage() {
     // If running in Capacitor (native app), use in-app browser
     if (Capacitor.isNativePlatform()) {
       const callbackUrl = `${window.location.origin}/dashboard`;
-      const signInUrl = `/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      const signInUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
       if (debugMode) {
         addLog("🔐 Starting OAuth flow...");
