@@ -9,14 +9,18 @@ import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useConfirm } from "@/hooks/useConfirm";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function SignInPage() {
   const { data: session, status } = useSession();
+  const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [tapCount, setTapCount] = useState(0);
   const [tapTimeout, setTapTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -111,11 +115,34 @@ export default function SignInPage() {
     }
 
     if (Capacitor.isNativePlatform()) {
-      // For native apps, open OAuth in in-app browser
-      // The HTTPS deep link (https://expense-tracker-io.vercel.app/api/auth/callback/google)
-      // will be intercepted by Android App Links and captured by the appUrlOpen listener
+      // If user hasn't interacted yet (app opened directly), use native flow automatically
+      // Otherwise, ask for preference
+      let useNativeFlow = !hasUserInteracted;
+
+      if (hasUserInteracted) {
+        // Ask user preference
+        useNativeFlow = await confirm({
+          title: "Choose Authentication Method",
+          message:
+            "Native OAuth opens in-app browser with automatic redirect (recommended).\n\nSystem browser uses traditional flow.",
+          confirmText: "Native OAuth",
+          cancelText: "System Browser",
+          variant: "info",
+        });
+      }
+
+      if (!useNativeFlow) {
+        // Use regular web flow (opens system browser)
+        if (debugMode) addLog("🌐 Using system browser flow");
+        signIn("google", { callbackUrl: "/dashboard" });
+        return;
+      }
+
+      // Native OAuth flow with deep links
+      // The HTTPS deep link will be intercepted by Android App Links
       const callbackUrl = `${window.location.origin}/api/auth/callback/google`;
-      const oauthUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      // Fix: NextAuth uses /api/auth/signin with provider as query param, not path
+      const oauthUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
       if (debugMode) {
         addLog("Opening in-app browser...");
@@ -143,6 +170,9 @@ export default function SignInPage() {
       if (debugMode) addLog("🌐 Using web OAuth flow");
       signIn("google", { callbackUrl: "/dashboard" });
     }
+
+    // Mark that user has interacted
+    setHasUserInteracted(true);
   };
 
   return (
@@ -286,6 +316,18 @@ export default function SignInPage() {
           </div>
         )}
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
+      />
     </div>
   );
 }

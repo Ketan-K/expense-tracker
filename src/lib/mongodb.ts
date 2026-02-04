@@ -53,25 +53,34 @@ async function connectWithRetry(
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
+let isConnecting = false;
 
 if (process.env.NODE_ENV === "development") {
   // In development mode, use a global variable to preserve the value across module reloads
   const globalWithMongo = global as typeof globalThis & {
     _mongoClientPromise?: Promise<MongoClient>;
     _mongoClient?: MongoClient;
+    _isConnecting?: boolean;
   };
 
   if (!globalWithMongo._mongoClientPromise) {
     client = new MongoClient(uri, options);
     globalWithMongo._mongoClient = client;
-    globalWithMongo._mongoClientPromise = connectWithRetry(client);
+    globalWithMongo._isConnecting = true;
+    globalWithMongo._mongoClientPromise = connectWithRetry(client).finally(() => {
+      globalWithMongo._isConnecting = false;
+    });
   }
   clientPromise = globalWithMongo._mongoClientPromise;
   client = globalWithMongo._mongoClient!;
+  isConnecting = globalWithMongo._isConnecting || false;
 } else {
   // In production mode, create a new client
   client = new MongoClient(uri, options);
-  clientPromise = connectWithRetry(client);
+  isConnecting = true;
+  clientPromise = connectWithRetry(client).finally(() => {
+    isConnecting = false;
+  });
 }
 
 // Helper function to get a connected client with retry on failure
@@ -79,21 +88,49 @@ export async function getConnectedClient(): Promise<MongoClient> {
   try {
     return await clientPromise;
   } catch (error) {
-    console.log("Retrying MongoDB connection...");
-    // Reset the promise and try again
-    const newClient = new MongoClient(uri, options);
-    const newPromise = connectWithRetry(newClient, 2, 500); // Fewer retries on re-attempt
-
+    // Check if a connection attempt is already in progress
     if (process.env.NODE_ENV === "development") {
       const globalWithMongo = global as typeof globalThis & {
         _mongoClientPromise?: Promise<MongoClient>;
         _mongoClient?: MongoClient;
+        _isConnecting?: boolean;
       };
+
+      // If already connecting, wait for that attempt to finish
+      if (globalWithMongo._isConnecting) {
+        console.log("Connection attempt already in progress, waiting...");
+        return await globalWithMongo._mongoClientPromise!;
+      }
+
+      // Otherwise, start a new connection attempt
+      console.log("Retrying MongoDB connection...");
+      const newClient = new MongoClient(uri, options);
+      globalWithMongo._isConnecting = true;
+      const newPromise = connectWithRetry(newClient, 2, 500).finally(() => {
+        globalWithMongo._isConnecting = false;
+      });
+
       globalWithMongo._mongoClientPromise = newPromise;
       globalWithMongo._mongoClient = newClient;
-    }
 
-    return await newPromise;
+      return await newPromise;
+    } else {
+      // Production mode - if already connecting, wait for it
+      if (isConnecting) {
+        console.log("Connection attempt already in progress, waiting...");
+        return await clientPromise;
+      }
+
+      // Otherwise, retry
+      console.log("Retrying MongoDB connection...");
+      const newClient = new MongoClient(uri, options);
+      isConnecting = true;
+      clientPromise = connectWithRetry(newClient, 2, 500).finally(() => {
+        isConnecting = false;
+      });
+
+      return await clientPromise;
+    }
   }
 }
 
