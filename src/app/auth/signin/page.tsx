@@ -147,8 +147,7 @@ export default function SignInPage() {
     if (Capacitor.isNativePlatform()) {
       // Native OAuth flow with deep links (in-app browser by default)
       const callbackUrl = `${window.location.origin}/api/auth/callback/google`;
-      // NextAuth uses path-based routing: /api/auth/signin/{provider}
-      const oauthUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      const oauthUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
       if (debugMode) {
         addLog("🔐 Using native in-app browser flow");
