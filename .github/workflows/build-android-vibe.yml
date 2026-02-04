@@ -87,19 +87,6 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      - name: Verify Secrets Are Set
-        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
-        run: |
-          echo "=== Verifying Secrets ==="
-          if [ -z "$KEYSTORE_BASE64" ]; then echo "ERROR: KEYSTORE_BASE64_VIBE missing"; exit 1; fi
-          if [ -z "$KEYSTORE_PASSWORD" ]; then echo "ERROR: KEYSTORE_PASSWORD_VIBE missing"; exit 1; fi
-          if [ -z "$KEY_ALIAS" ]; then echo "ERROR: KEY_ALIAS_VIBE missing"; exit 1; fi
-          echo "✓ All required secrets are configured"
-
       - name: Setup and Validate Keystore
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         env:
@@ -109,6 +96,12 @@ jobs:
         run: |
           set -e
           echo "=== Decoding and Validating Keystore ==="
+          
+          # Check all secrets exist
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "ERROR: KEYSTORE_BASE64_VIBE missing"; exit 1; fi
+          if [ -z "$KEYSTORE_PASSWORD" ]; then echo "ERROR: KEYSTORE_PASSWORD_VIBE missing"; exit 1; fi
+          if [ -z "$KEY_ALIAS" ]; then echo "ERROR: KEY_ALIAS_VIBE missing"; exit 1; fi
+          echo "✓ All required secrets are configured"
           
           # Decode keystore from base64
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
@@ -145,20 +138,6 @@ jobs:
           
           echo "✓ Keystore validation complete"
 
-      - name: Verify Keystore Before Build
-        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
-        run: |
-          echo "=== Pre-Build Verification ==="
-          if [ -f android/app/release.keystore ]; then
-            echo "✓ Keystore file exists"
-          else
-            echo "ERROR: Keystore file missing after Capacitor sync"
-            exit 1
-          fi
-
       - name: Build Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         env:
@@ -185,7 +164,7 @@ jobs:
         if: github.event.inputs.build_type != 'release' && !startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: vibe-finance-${{ steps.version.outputs.version }}-debug
+          name: vibe-finance-debug
           path: android/app/build/outputs/apk/debug/vibe-finance-${{ steps.version.outputs.version }}-debug.apk
           retention-days: 30
 
@@ -193,18 +172,18 @@ jobs:
         id: build_info_release
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         run: |
-          echo "apk_path=android/app/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_OUTPUT
+          echo "apk_path=android/app/build/outputs/apk/release/app-release.apk" >> $GITHUB_OUTPUT
 
       - name: Rename Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         run: |
-          cp android/app/build/outputs/apk/release/app-release-unsigned.apk \
+          cp android/app/build/outputs/apk/release/app-release.apk \
              android/app/build/outputs/apk/release/vibe-finance-${{ steps.version.outputs.version }}-release.apk
 
       - name: Upload Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: vibe-finance-${{ steps.version.outputs.version }}-release
+          name: vibe-finance-release
           path: android/app/build/outputs/apk/release/vibe-finance-${{ steps.version.outputs.version }}-release.apk
           retention-days: 90
