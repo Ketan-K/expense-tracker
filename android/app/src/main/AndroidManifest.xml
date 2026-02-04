@@ -23,21 +23,23 @@
             </intent-filter>
 
             <!-- Deep link for OAuth callback - Default Theme -->
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" 
-                      android:host="expense-tracker-io.vercel.app" />
+                      android:host="expense-tracker-io.vercel.app"
+                      android:pathPrefix="/api/auth/callback" />
             </intent-filter>
 
             <!-- Deep link for OAuth callback - Vibe Finance -->
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" 
-                      android:host="vibe-finance-io.vercel.app" />
+                      android:host="vibe-finance-io.vercel.app"
+                      android:pathPrefix="/api/auth/callback" />
             </intent-filter>
 
         </activity>
