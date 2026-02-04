@@ -9,19 +9,14 @@ import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useConfirm } from "@/hooks/useConfirm";
-import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function SignInPage() {
   const { data: session, status, update: updateSession } = useSession();
-  const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [tapCount, setTapCount] = useState(0);
   const [tapTimeout, setTapTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -35,7 +30,7 @@ export default function SignInPage() {
     let listenerHandle: { remove: () => void } | null = null;
 
     const setupListener = async () => {
-      listenerHandle = await App.addListener("appUrlOpen", data => {
+      listenerHandle = await App.addListener("appUrlOpen", async data => {
         const url = data.url;
         if (debugMode) addLog(`📱 Deep link received: ${url}`);
 
@@ -55,33 +50,23 @@ export default function SignInPage() {
           // Check if this is an OAuth callback
           if (urlObj.pathname.includes("/api/auth/callback/google")) {
             if (debugMode) addLog("✅ OAuth callback detected");
+            const code = urlObj.searchParams.get("code");
+            if (debugMode) addLog(`📝 Code parameter: ${code ? "present" : "missing"}`);
+
             setIsAuthenticating(true);
 
-            // Trigger session refresh to pick up new authentication
-            if (debugMode) addLog("🔄 Refreshing session...");
-            updateSession();
-
-            // Clear any existing polling interval
-            if (pollInterval) {
-              clearInterval(pollInterval);
+            // Close the in-app browser
+            try {
+              await Browser.close();
+              if (debugMode) addLog("🗑️ In-app browser closed");
+            } catch (e) {
+              // Browser might already be closed
+              if (debugMode) addLog("⚠️ Browser close attempt (may already be closed)");
             }
 
-            // Start polling for session
-            const startTime = Date.now();
-            const interval = setInterval(() => {
-              const elapsed = Date.now() - startTime;
-
-              if (elapsed > 10000) {
-                // Timeout after 10 seconds
-                clearInterval(interval);
-                setPollInterval(null);
-                setIsAuthenticating(false);
-                toast.error("Authentication timeout. Please try again.");
-                if (debugMode) addLog("❌ Authentication timeout");
-              }
-            }, 500);
-
-            setPollInterval(interval);
+            // Navigate WebView to callback URL so NextAuth can process code exchange
+            if (debugMode) addLog("🔄 Navigating to callback URL for code exchange...");
+            window.location.href = url;
           }
         } catch (error) {
           console.error("Failed to parse deep link URL:", error);
@@ -100,25 +85,16 @@ export default function SignInPage() {
         listenerHandle.remove();
         if (debugMode) addLog("🗑️ App URL listener removed");
       }
-      // Clear any active polling interval
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
     };
-  }, [debugMode, pollInterval, updateSession]);
+  }, [debugMode, updateSession]);
 
   // Monitor session changes for successful authentication
   useEffect(() => {
     if (isAuthenticating && status === "authenticated" && session?.user?.id) {
-      // Clear polling interval on success
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
-
       // Redirect to dashboard - this will unmount the component and cleanup state
       window.location.href = "/dashboard";
     }
-  }, [session, status, isAuthenticating, pollInterval, debugMode]);
+  }, [session, status, isAuthenticating, debugMode]);
 
   const handleLogoTap = () => {
     const newCount = tapCount + 1;
@@ -154,37 +130,12 @@ export default function SignInPage() {
     }
 
     if (Capacitor.isNativePlatform()) {
-      // If user hasn't interacted yet (app opened directly), use native flow automatically
-      // Otherwise, ask for preference
-      let useNativeFlow = !hasUserInteracted;
-
-      if (hasUserInteracted) {
-        // Ask user preference
-        useNativeFlow = await confirm({
-          title: "Choose Authentication Method",
-          message:
-            "Native OAuth opens in-app browser with automatic redirect (recommended).\n\nSystem browser uses traditional flow.",
-          confirmText: "Native OAuth",
-          cancelText: "System Browser",
-          variant: "info",
-        });
-      }
-
-      if (!useNativeFlow) {
-        // Use regular web flow (opens system browser)
-        if (debugMode) addLog("🌐 Using system browser flow");
-        signIn("google", { callbackUrl: "/dashboard" });
-        return;
-      }
-
-      // Native OAuth flow with deep links
-      // The HTTPS deep link will be intercepted by Android App Links
+      // Native OAuth flow with deep links (in-app browser by default)
       const callbackUrl = `${window.location.origin}/api/auth/callback/google`;
-      // Fix: NextAuth uses /api/auth/signin with provider as query param, not path
       const oauthUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
       if (debugMode) {
-        addLog("Opening in-app browser...");
+        addLog("🔐 Using native in-app browser flow");
         addLog(`OAuth URL: ${oauthUrl}`);
         addLog(`Callback will be: ${callbackUrl}`);
       }
@@ -196,7 +147,7 @@ export default function SignInPage() {
           windowName: "_self",
         });
 
-        if (debugMode) addLog("✅ Browser opened - waiting for callback...");
+        if (debugMode) addLog("✅ In-app browser opened - waiting for callback...");
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         setIsAuthenticating(false);
@@ -209,9 +160,6 @@ export default function SignInPage() {
       if (debugMode) addLog("🌐 Using web OAuth flow");
       signIn("google", { callbackUrl: "/dashboard" });
     }
-
-    // Mark that user has interacted
-    setHasUserInteracted(true);
   };
 
   return (
@@ -355,18 +303,6 @@ export default function SignInPage() {
           </div>
         )}
       </div>
-
-      {/* Confirm Dialog */}
-      <ConfirmDialog
-        isOpen={isOpen}
-        onClose={handleCancel}
-        onConfirm={handleConfirm}
-        title={options.title}
-        message={options.message}
-        confirmText={options.confirmText}
-        cancelText={options.cancelText}
-        variant={options.variant}
-      />
     </div>
   );
 }
