@@ -18,13 +18,15 @@ keytool -genkey -v -keystore expense-tracker-release.keystore -alias expense-tra
 When prompted, provide:
 
 - **Keystore password**: Choose a strong password (save this!)
-- **Key password**: Can be same as keystore password or different (save this!)
+- **Key password**: **Use the same password as keystore** (standard practice)
 - **Name**: Your name or company name
 - **Organizational Unit**: Your team/department
 - **Organization**: Your company name
 - **City/Locality**: Your city
 - **State/Province**: Your state
 - **Country Code**: Two-letter country code (e.g., US, IN, UK)
+
+**Important**: When prompted for key password, use the **same password** as the keystore password. This simplifies management and is the recommended approach for Android app signing.
 
 ### For Vibe Finance Theme (Optional - use separate keystore)
 
@@ -61,13 +63,10 @@ Add the following secrets:
    - Value: Paste the base64 string from Step 2
 
 2. **KEYSTORE_PASSWORD**
-   - Value: The keystore password you entered
+   - Value: The password you entered (used for both keystore and key)
 
 3. **KEY_ALIAS**
    - Value: `expense-tracker` (or whatever alias you used)
-
-4. **KEY_PASSWORD**
-   - Value: The key password you entered
 
 ### For Vibe Finance Theme (if using separate keystore)
 
@@ -75,15 +74,14 @@ Add the following secrets:
    - Value: Base64 of vibe-finance-release.keystore
 
 2. **KEYSTORE_PASSWORD_VIBE**
-   - Value: Vibe Finance keystore password
+   - Value: Vibe Finance password (used for both keystore and key)
 
 3. **KEY_ALIAS_VIBE**
    - Value: `vibe-finance`
 
-4. **KEY_PASSWORD_VIBE**
-   - Value: Vibe Finance key password
+**Total: 6 secrets** (3 for each theme)
 
-**Note**: If you're using the same keystore for both apps, you don't need the `_VIBE` variants. The workflow will fall back to the default secrets.
+**Note**: The same password is used for both keystore access and key access. This is configured in `build.gradle` and follows Android best practices.
 
 ## Step 4: Secure Your Keystore
 

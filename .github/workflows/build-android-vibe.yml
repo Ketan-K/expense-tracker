@@ -22,10 +22,20 @@ jobs:
   build-vibe-theme:
     name: Build Vibe Finance App
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      apk_path: ${{ steps.build_info.outputs.apk_path }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -38,6 +48,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -76,32 +87,18 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      - name: Debug - Verify Secrets Are Set
+      - name: Verify Secrets Are Set
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE }}
         run: |
-          echo "=== Secret Verification (Vibe Finance) ==="
-          echo "KEYSTORE_BASE64_VIBE: ${KEYSTORE_BASE64:+SET (${#KEYSTORE_BASE64} chars)}"
-          echo "KEYSTORE_PASSWORD_VIBE (base64): $(echo -n "$KEYSTORE_PASSWORD" | base64)"
-          echo "KEY_ALIAS_VIBE (base64): $(echo -n "$KEY_ALIAS" | base64)"
-          echo "KEY_PASSWORD_VIBE (base64): $(echo -n "$KEY_PASSWORD" | base64)"
-          echo ""
-          echo "Expected from KEYSTORE_CREDENTIALS.txt:"
-          echo "KEYSTORE_PASSWORD_VIBE should be: ExpenseTracker2026"
-          echo "KEY_ALIAS_VIBE should be: vibe-finance (12 chars)"
-          echo "KEY_PASSWORD_VIBE should be: TrackerKey2026"
-          
-          # Check if they're the same (common mistake)
-          if [ "$KEYSTORE_PASSWORD" = "$KEY_PASSWORD" ]; then
-            echo "⚠️  WARNING: KEYSTORE_PASSWORD_VIBE and KEY_PASSWORD_VIBE are IDENTICAL!"
-            echo "    This is unusual - they should usually be different."
-          else
-            echo "✓ KEYSTORE_PASSWORD_VIBE and KEY_PASSWORD_VIBE are different (good)"
-          fi
+          echo "=== Verifying Secrets ==="
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "ERROR: KEYSTORE_BASE64_VIBE missing"; exit 1; fi
+          if [ -z "$KEYSTORE_PASSWORD" ]; then echo "ERROR: KEYSTORE_PASSWORD_VIBE missing"; exit 1; fi
+          if [ -z "$KEY_ALIAS" ]; then echo "ERROR: KEY_ALIAS_VIBE missing"; exit 1; fi
+          echo "✓ All required secrets are configured"
 
       - name: Setup and Validate Keystore
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
@@ -109,81 +106,44 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64_VIBE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE }}
         run: |
-          echo "=== Keystore Validation Start ==="
+          set -e
+          echo "=== Decoding and Validating Keystore ==="
           
-          # Check if all required secrets exist
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "ERROR: KEYSTORE_BASE64_VIBE secret is missing"
-            exit 1
-          fi
-          if [ -z "$KEYSTORE_PASSWORD" ]; then
-            echo "ERROR: KEYSTORE_PASSWORD_VIBE secret is missing"
-            exit 1
-          fi
-          if [ -z "$KEY_ALIAS" ]; then
-            echo "ERROR: KEY_ALIAS_VIBE secret is missing"
-            exit 1
-          fi
-          if [ -z "$KEY_PASSWORD" ]; then
-            echo "ERROR: KEY_PASSWORD_VIBE secret is missing"
-            exit 1
-          fi
-          
-          echo "✓ All secrets present"
-          
-          # Debug: Show Base64 string length
-          echo "Base64 string length: ${#KEYSTORE_BASE64}"
-          
-          # Decode keystore
-          echo "Decoding keystore..."
+          # Decode keystore from base64
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
           
-          # Check if file was created
-          echo "SHA256: $(sha256sum android/app/release.keystore | cut -d' ' -f1)"
-          
-          # List all aliases in keystore
-          echo "Aliases in keystore:"
-          keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" 2>&1 | grep -i "alias\|entry" || echo "Could not list aliases"
-          
-          # Verify specific alias exists
-          echo "Checking for alias: '$KEY_ALIAS' (length: ${#KEY_ALIAS})"
-          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool_output.txt 2>&1; then
-            echo "✓ Keystore and storepass valid, alias found"
-            cat /tmp/keytool_output.txt
-          else
-            echo "ERROR: Keystore validation failed - alias not found or wrong password"
-            cat /tmp/keytool_output.txt
+          # Verify file was created
+          if [ ! -f android/app/release.keystore ]; then
+            echo "ERROR: Keystore file not created"
             exit 1
           fi
           
-          # CRITICAL: Test actual private key access using jarsigner (what Gradle uses)
-          echo "=== Testing KEY_PASSWORD with jarsigner (exact Gradle operation) ==="
-          echo "TEST JAR" > /tmp/test.txt
-          jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null || true
+          FILE_SIZE=$(stat -c%s android/app/release.keystore)
+          echo "✓ Keystore decoded: $FILE_SIZE bytes"
           
-          # Try to sign with the passwords - this will fail if KEY_PASSWORD is wrong
-          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner_test.txt 2>&1; then
-            echo "✓ jarsigner SUCCESS - KEY_PASSWORD_VIBE is definitely correct!"
+          # Validate keystore password and alias
+          if ! keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "ERROR: Failed to validate keystore with provided credentials"
+            exit 1
+          fi
+          echo "✓ Keystore password and alias verified"
+          
+          # Test signing capability with jarsigner
+          echo "Testing signing capability..."
+          echo "TEST" > /tmp/test.txt
+          jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null
+          
+          if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "✓ Signing test successful"
             rm -f /tmp/test.jar /tmp/test.txt
           else
-            echo "❌ CRITICAL ERROR: jarsigner FAILED - KEY_PASSWORD_VIBE is WRONG!"
-            cat /tmp/jarsigner_test.txt
-            echo ""
-            echo "==================================================================="
-            echo "The KEY_PASSWORD_VIBE secret in GitHub is INCORRECT!"
-            echo "Gradle will fail with 'Given final block not properly padded'"
-            echo "==================================================================="
-            echo ""
-            echo "To fix this:"
-            echo "1. Check your KEYSTORE_CREDENTIALS.txt file for the correct KEY_PASSWORD_VIBE"
-            echo "2. Update the KEY_PASSWORD_VIBE secret in GitHub Actions settings"
-            echo "3. Make sure you're using the password for the KEY, not the STORE"
+            echo "ERROR: Failed to sign test JAR with provided credentials"
+            rm -f /tmp/test.jar /tmp/test.txt
             exit 1
           fi
           
-          echo "=== Keystore Validation Complete ==="
+          echo "✓ Keystore validation complete"
 
       - name: Verify Keystore Before Build
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
@@ -191,13 +151,11 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
         run: |
-          echo "=== Pre-Build Keystore Verification (Vibe) ==="
-          ls -lh android/app/release.keystore
-          echo "SHA256: $(sha256sum android/app/release.keystore | cut -d' ' -f1)"
-          if keytool -list -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "✓ Keystore still valid before build"
+          echo "=== Pre-Build Verification ==="
+          if [ -f android/app/release.keystore ]; then
+            echo "✓ Keystore file exists"
           else
-            echo "ERROR: Keystore corrupted after Capacitor sync!"
+            echo "ERROR: Keystore file missing after Capacitor sync"
             exit 1
           fi
 
@@ -207,35 +165,46 @@ jobs:
           KEYSTORE_FILE: ${{ github.workspace }}/android/app/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD_VIBE }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS_VIBE }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD_VIBE }}
         run: |
-          echo "=== Build Configuration (Vibe) ==="
-          echo "KEYSTORE_FILE=$KEYSTORE_FILE"
-          echo "KEY_ALIAS=$KEY_ALIAS"
-          echo "Passwords set: KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:+YES}, KEY_PASSWORD=${KEY_PASSWORD:+YES}"
-          ls -lh "$KEYSTORE_FILE"
-          
           cd android
-          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee build.log
-          
-          # Check for signing errors in log
-          if grep -i "signing\|keystore\|password" build.log | grep -i "error\|fail"; then
-            echo "=== Signing errors detected ==="
-            grep -i "signing\|keystore\|password" build.log
-          fi
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Set build info
+        id: build_info
+        if: github.event.inputs.build_type != 'release' && !startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "apk_path=android/app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_OUTPUT
+
+      - name: Rename Debug APK
+        if: github.event.inputs.build_type != 'release' && !startsWith(github.ref, 'refs/tags/')
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             android/app/build/outputs/apk/debug/vibe-finance-${{ steps.version.outputs.version }}-debug.apk
 
       - name: Upload Debug APK
         if: github.event.inputs.build_type != 'release' && !startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: vibe-finance-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: vibe-finance-${{ steps.version.outputs.version }}-debug
+          path: android/app/build/outputs/apk/debug/vibe-finance-${{ steps.version.outputs.version }}-debug.apk
           retention-days: 30
+
+      - name: Set build info
+        id: build_info_release
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "apk_path=android/app/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_OUTPUT
+
+      - name: Rename Release APK
+        if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk \
+             android/app/build/outputs/apk/release/vibe-finance-${{ steps.version.outputs.version }}-release.apk
 
       - name: Upload Release APK
         if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: vibe-finance-release
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          name: vibe-finance-${{ steps.version.outputs.version }}-release
+          path: android/app/build/outputs/apk/release/vibe-finance-${{ steps.version.outputs.version }}-release.apk
           retention-days: 90

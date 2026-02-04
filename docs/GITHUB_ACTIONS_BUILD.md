@@ -8,46 +8,50 @@ This guide explains how to build Android APKs using GitHub Actions without insta
 
 ```bash
 git add .
-git commit -m "Add Android build workflow"
-git push origin main
+git commit -m "Add Android build workflows"
+git push origin master
 ```
 
 ### 2. Trigger Build
 
 **Option A: Automatic (on every push)**
 
-- Builds automatically when you push to `main` or `develop` branch
+- Builds automatically when you push to `master` or `develop` branch
 - Go to **Actions** tab in GitHub to see progress
 
 **Option B: Manual Trigger**
 
 1. Go to your GitHub repository
 2. Click **Actions** tab
-3. Select **Build Android Apps** workflow
+3. Select **Build Android - Default Theme** or **Build Android - Vibe Finance** workflow
 4. Click **Run workflow**
 5. Choose build type: `debug` or `release`
 6. Click **Run workflow** button
 
 ### 3. Download APKs
 
-1. Wait for workflow to complete (~5-10 minutes)
+1. Wait for workflow to complete (~3-5 minutes with caching)
 2. Go to the completed workflow run
 3. Scroll down to **Artifacts** section
 4. Download:
-   - `expense-tracker-default-debug` - Default theme APK
-   - `vibe-finance-debug` - Vibe Finance theme APK
+   - `expense-tracker-{version}-debug` - Default theme APK (e.g., `expense-tracker-1.0.0-debug`)
+   - `vibe-finance-{version}-debug` - Vibe Finance theme APK (e.g., `vibe-finance-1.0.0-debug`)
+
+**Note**: Artifacts are now named with the version from `package.json`
 
 ## 📦 What Gets Built
 
-### Every Push to Main/Develop
+### Every Push to Master/Develop
 
-- ✅ Default Theme (Debug APK)
-- ✅ Vibe Finance (Debug APK)
+- ✅ Default Theme (Debug APK) - via **Build Android - Default Theme** workflow
+- ✅ Vibe Finance (Debug APK) - via **Build Android - Vibe Finance** workflow
 - Artifacts available for 30 days
+- APK names include version from package.json
 
 ### Manual Workflow (Run workflow button)
 
 - Choose `debug` or `release` build type
+- Select which theme to build (Default or Vibe)
 - Downloads available as artifacts
 
 ### Git Tags (Releases)
@@ -62,38 +66,56 @@ git push origin v1.0.0
 Automatically:
 
 - ✅ Builds release APKs for both themes
-- ✅ Creates GitHub Release
-- ✅ Attaches APKs to the release
+- ✅ Creates GitHub Release with **Create Release** workflow
+- ✅ Attaches both APKs to the release (e.g., `expense-tracker-1.0.0.apk`)
 - Artifacts available for 90 days
 
 ## 🔧 Workflow Configuration
 
-The workflow file is at: `.github/workflows/build-android.yml`
+The workflow files are at:
 
-### What it does:
+- `.github/workflows/build-android-default.yml` - Default theme builds
+- `.github/workflows/build-android-vibe.yml` - Vibe Finance builds
+- `.github/workflows/create-release.yml` - Automatic release creation
+- `.github/workflows/generate-keystores.yml` - Keystore generation
+
+### Build Workflows (Default & Vibe):
 
 1. **Sets up environment**
-   - Node.js 18
-   - Java JDK 17
+   - Node.js 20
+   - Java JDK 21 (with Gradle caching for faster builds)
    - Android SDK
 
-2. **Builds Default Theme**
-   - Runs `npm run cap:sync`
-   - Builds APK with `gradlew assembleDebug`
-   - Uploads as artifact
+2. **Extracts version**
+   - Reads version from `package.json`
+   - Uses version in artifact naming
 
-3. **Builds Vibe Finance**
-   - Updates Android config files automatically
+3. **Validates keystore** (release builds only)
+   - Decodes keystore from Base64
+   - Verifies password and alias
+   - Tests signing capability with jarsigner
+
+4. **Builds APK**
+   - Vibe workflow updates Android config automatically
    - Changes package name to `com.vibefinance.app`
    - Changes app name to "Vibe Finance"
-   - Runs `npm run cap:sync:vibe`
-   - Builds APK
-   - Uploads as artifact
+   - Runs `npm run cap:sync` (or `cap:sync:vibe` for Vibe)
+   - Builds with Gradle
 
-4. **Creates Release** (on tags only)
-   - Downloads all artifacts
-   - Creates GitHub release
-   - Attaches both APKs
+5. **Uploads artifact**
+   - Names include version (e.g., `expense-tracker-1.0.0-debug.apk`)
+   - Debug builds: 30 day retention
+   - Release builds: 90 day retention
+
+### Create Release Workflow:
+
+1. **Triggers on version tags** (e.g., `v1.0.0`)
+2. **Waits for both build workflows** to complete
+3. **Downloads release APKs** from both workflows
+4. **Creates GitHub Release** with:
+   - Release notes
+   - Both APKs attached
+   - Proper naming (e.g., `expense-tracker-1.0.0.apk`)
 
 ## 📱 Installing on Phone
 
@@ -132,100 +154,118 @@ adb install app-debug.apk
 ### Automatic Release on Tag
 
 ```bash
-# Create and push a version tag
-git tag v1.0.0
-git push origin v1.0.0
+# Update version in package.json first
+# "version": "1.0.1"
+
+# Then create and push a version tag
+git tag v1.0.1
+git push origin v1.0.1
 
 # GitHub Actions will automatically:
-# 1. Build both apps
-# 2. Create a GitHub Release
-# 3. Attach APKs to the release
+# 1. Build both apps (via separate workflows)
+# 2. Create a GitHub Release (via create-release.yml)
+# 3. Attach both APKs to the release
 ```
 
-### Manual Release Creation
+### Manual Release Build
 
-1. Go to **Releases** in GitHub
-2. Click **Draft a new release**
-3. Choose or create a tag (e.g., `v1.0.1`)
-4. Workflow will build APKs automatically
-5. APKs will be attached to the release
+To manually build a release APK without creating a tag:
+
+1. Go to **Actions** tab
+2. Select **Build Android - Default Theme** or **Build Android - Vibe Finance**
+3. Click **Run workflow**
+4. Choose **release** as build type
+5. Click **Run workflow**
+6. Download the release APK from artifacts
+
+**Note**: Release builds require keystore secrets to be configured (see [android-keystores-github.md](android-keystores-github.md))
 
 ## 🔐 Building Signed APKs (for Play Store)
 
-To build signed release APKs in GitHub Actions:
+Release APKs are automatically signed when you have the keystore secrets configured.
 
-### 1. Generate Signing Key Locally
+### Quick Setup
 
-```bash
-keytool -genkey -v -keystore expense-tracker-release.keystore -alias expense-tracker -keyalg RSA -keysize 2048 -validity 10000
-```
+Use the automated keystore generation workflow (recommended):
 
-### 2. Encode Keystore to Base64
+1. Go to **Actions** tab
+2. Select **Generate Android Keystores** workflow
+3. Click **Run workflow**
+4. Download the generated keystores
+5. Follow instructions in [android-keystores-github.md](android-keystores-github.md) to add secrets
 
-**Windows (PowerShell):**
+**Required Secrets (6 total):**
 
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("expense-tracker-release.keystore")) | Out-File keystore.txt
-```
+- `KEYSTORE_BASE64` - Base64 encoded keystore file
+- `KEYSTORE_PASSWORD` - Password (used for both keystore and key)
+- `KEY_ALIAS` - Alias name (e.g., `expense-tracker`)
+- `KEYSTORE_BASE64_VIBE` - Base64 encoded Vibe keystore
+- `KEYSTORE_PASSWORD_VIBE` - Vibe password
+- `KEY_ALIAS_VIBE` - Vibe alias (e.g., `vibe-finance`)
 
-**macOS/Linux:**
+See detailed setup guides:
 
-```bash
-base64 -i expense-tracker-release.keystore -o keystore.txt
-```
+- [Generate Keystores via GitHub Actions](android-keystores-github.md) (no Java required)
+- [Manual Keystore Setup](android-signing-setup.md) (if you have Java installed)
 
-### 3. Add GitHub Secrets
-
-Go to **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
-
-Add these secrets:
-
-- `KEYSTORE_BASE64` - Content of `keystore.txt`
-- `KEYSTORE_PASSWORD` - Your keystore password
-- `KEY_ALIAS` - `expense-tracker`
-- `KEY_PASSWORD` - Your key password
-
-### 4. Update Workflow
-
-Add this step before the "Build Release APK" step:
-
-```yaml
-- name: Decode Keystore
-  if: github.event.inputs.build_type == 'release' || startsWith(github.ref, 'refs/tags/')
-  run: |
-    echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/expense-tracker-release.keystore
-    echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/keystore.properties
-    echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/keystore.properties
-    echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/keystore.properties
-    echo "storeFile=expense-tracker-release.keystore" >> android/keystore.properties
-```
-
-And update build.gradle to use the keystore (see main android-build.md).
-
-Then the workflow will produce signed APKs ready for Play Store!
+Once secrets are configured, release builds will automatically sign APKs!
 
 ## 🎯 Workflow Triggers
 
-The workflow runs on:
+We have **4 separate workflows**:
 
-1. **Push to main/develop** - Builds debug APKs
-2. **Pull Request** - Validates build works
-3. **Manual trigger** - Run anytime from Actions tab
-4. **Git tags (v\*)** - Builds release APKs and creates GitHub Release
+### 1. Build Android - Default Theme
+
+- **File**: `.github/workflows/build-android-default.yml`
+- **Triggers**:
+  - Push to `master` or `develop` branch
+  - Pull requests to `master`
+  - Git tags starting with `v*`
+  - Manual dispatch
+- **Builds**: Default theme (Expense Tracker) only
+
+### 2. Build Android - Vibe Finance
+
+- **File**: `.github/workflows/build-android-vibe.yml`
+- **Triggers**: Same as Default Theme
+- **Builds**: Vibe Finance theme only
+
+### 3. Create Release
+
+- **File**: `.github/workflows/create-release.yml`
+- **Triggers**: Git tags starting with `v*` only
+- **Actions**:
+  - Waits for both build workflows to complete
+  - Downloads release APKs
+  - Creates GitHub Release with both APKs attached
+
+### 4. Generate Android Keystores
+
+- **File**: `.github/workflows/generate-keystores.yml`
+- **Triggers**: Manual dispatch only
+- **Actions**: Generates signing keystores without local Java installation
 
 ## 📊 Monitoring Builds
 
 ### View Build Status
 
 1. Go to **Actions** tab
-2. See all workflow runs
+2. See all workflow runs (separated by workflow)
 3. Click on a run to see details
 4. View logs for each step
 
 ### Build Time
 
-- First build: ~10-15 minutes (downloads dependencies)
-- Subsequent builds: ~5-8 minutes (uses cache)
+- **First build**: ~8-10 minutes (downloads dependencies)
+- **Subsequent builds**: ~3-5 minutes (uses Gradle cache)
+- **Both themes in parallel**: ~3-5 minutes (workflows run simultaneously)
+
+### Performance Optimizations
+
+✅ **Gradle caching** - Dependencies cached between builds  
+✅ **Node modules caching** - npm dependencies cached  
+✅ **Parallel builds** - Both themes build simultaneously  
+✅ **Incremental builds** - Only changed code is recompiled
 
 ### Troubleshooting
 

@@ -31,31 +31,31 @@ The credentials file contains all the values you need. Copy them to GitHub:
 - **Name**: `KEYSTORE_BASE64`  
   **Value**: Copy the entire Base64 string from credentials file
 - **Name**: `KEYSTORE_PASSWORD`  
-  **Value**: Copy the password from credentials file
+  **Value**: Copy the password from credentials file (used for both keystore and key)
 - **Name**: `KEY_ALIAS`  
   **Value**: `expense-tracker`
-- **Name**: `KEY_PASSWORD`  
-  **Value**: Copy the key password from credentials file
 
 ### For Vibe Finance Theme
 
 - **Name**: `KEYSTORE_BASE64_VIBE`  
   **Value**: Copy the entire Base64 string from credentials file
 - **Name**: `KEYSTORE_PASSWORD_VIBE`  
-  **Value**: Copy the password from credentials file
+  **Value**: Copy the password from credentials file (used for both keystore and key)
 - **Name**: `KEY_ALIAS_VIBE`  
   **Value**: `vibe-finance`
-- **Name**: `KEY_PASSWORD_VIBE`  
-  **Value**: Copy the key password from credentials file
+
+**Total: 6 secrets required**
+
+**Note**: The keystores use the same password for both keystore access and key access. This is standard practice for Android release signing.
 
 ## Test the Signing
 
 1. Go to **Actions** tab
-2. Select **Build Android Apps** workflow
+2. Select **Build Android - Default Theme** or **Build Android - Vibe Finance** workflow
 3. Click **Run workflow**
 4. Choose **release** as build type
 5. Click **Run workflow**
-6. Download the signed APKs from artifacts
+6. Download the signed APKs from artifacts (named with version, e.g., `expense-tracker-1.0.0-release.apk`)
 
 ## Security Notes
 
@@ -80,12 +80,13 @@ If you need to regenerate (e.g., you lost the download):
 
 ## Custom Passwords (Optional)
 
-When running the workflow, you can optionally provide your own passwords:
+When running the workflow, you can optionally provide your own password:
 
 - Click **Run workflow**
-- Enter **Keystore Password** (optional)
-- Enter **Key Password** (optional)
-- If left empty, secure random passwords are generated automatically
+- Enter **Keystore Password** (optional - will be used for both keystore and key)
+- If left empty, a secure random password is generated automatically
+
+**Note**: The same password is used for both keystore access and key access, following Android best practices.
 
 ## Keystore Details
 

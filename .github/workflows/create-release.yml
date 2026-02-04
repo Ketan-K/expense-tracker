@@ -1,0 +1,139 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Wait for Default Theme Build
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Build Expense Tracker (Default Theme)
+          ref: ${{ github.sha }}
+          timeoutSeconds: 1800
+          intervalSeconds: 30
+
+      - name: Wait for Vibe Finance Build
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Build Vibe Finance App
+          ref: ${{ github.sha }}
+          timeoutSeconds: 1800
+          intervalSeconds: 30
+
+      - name: Download Default Theme APK
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-android-default.yml
+          name: expense-tracker-${{ steps.version.outputs.version }}-release
+          path: ./apks/default
+          search_artifacts: true
+          workflow_conclusion: success
+          check_artifacts: true
+          if_no_artifact_found: fail
+
+      - name: Download Vibe Finance APK
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-android-vibe.yml
+          name: vibe-finance-${{ steps.version.outputs.version }}-release
+          path: ./apks/vibe
+          search_artifacts: true
+          workflow_conclusion: success
+          check_artifacts: true
+          if_no_artifact_found: fail
+
+      - name: Prepare APKs for Release
+        run: |
+          mkdir -p ./release-apks
+          
+          # Copy Default Theme APK
+          if [ -f ./apks/default/expense-tracker-${{ steps.version.outputs.version }}-release.apk ]; then
+            cp ./apks/default/expense-tracker-${{ steps.version.outputs.version }}-release.apk \
+               ./release-apks/expense-tracker-${{ steps.version.outputs.version }}.apk
+            echo "✓ Default Theme APK ready"
+          else
+            echo "ERROR: Default Theme APK not found"
+            exit 1
+          fi
+          
+          # Copy Vibe Finance APK
+          if [ -f ./apks/vibe/vibe-finance-${{ steps.version.outputs.version }}-release.apk ]; then
+            cp ./apks/vibe/vibe-finance-${{ steps.version.outputs.version }}-release.apk \
+               ./release-apks/vibe-finance-${{ steps.version.outputs.version }}.apk
+            echo "✓ Vibe Finance APK ready"
+          else
+            echo "ERROR: Vibe Finance APK not found"
+            exit 1
+          fi
+          
+          # List files
+          echo "Release APKs:"
+          ls -lh ./release-apks/
+
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## 📱 Expense Tracker ${{ steps.version.outputs.tag }}
+          
+          ### Downloads
+          
+          - **Expense Tracker (Default Theme)**: `expense-tracker-${{ steps.version.outputs.version }}.apk`
+          - **Vibe Finance Theme**: `vibe-finance-${{ steps.version.outputs.version }}.apk`
+          
+          ### Installation
+          
+          1. Download the APK for your preferred theme
+          2. Enable "Install from Unknown Sources" on your Android device
+          3. Install the APK
+          
+          ### What's New
+          
+          See commit history for detailed changes in this release.
+          
+          ---
+          
+          **Note**: These are unsigned APKs for development/testing. For production use, sign the APKs with your release keystore.
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.version.outputs.tag }}
+          body_path: release_notes.md
+          files: |
+            ./release-apks/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "## ✅ Release ${{ steps.version.outputs.tag }} Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 APKs Included" >> $GITHUB_STEP_SUMMARY
+          echo "- Expense Tracker (Default Theme)" >> $GITHUB_STEP_SUMMARY
+          echo "- Vibe Finance Theme" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View the release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
