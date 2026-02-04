@@ -144,60 +144,53 @@ export default function SignInPage() {
       addLog(`Platform: ${Capacitor.isNativePlatform() ? "Native" : "Web"}`);
     }
 
+    setIsAuthenticating(true);
+
     if (Capacitor.isNativePlatform()) {
-      // Native OAuth flow - construct Google OAuth URL directly
-      const redirectUri = `${window.location.origin}/api/auth/callback/google`;
-      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-
-      if (!clientId) {
-        toast.error("Google Client ID not configured");
-        if (debugMode) addLog("❌ NEXT_PUBLIC_GOOGLE_CLIENT_ID not found");
-        return;
-      }
-
-      // Generate random state for CSRF protection
-      const state =
-        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem("oauth_state", state);
-
-      // Construct Google OAuth URL directly
-      const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        response_type: "code",
-        scope: "openid email profile",
-        state: state,
-        prompt: "consent",
-        access_type: "offline",
-      });
-
-      const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-
-      if (debugMode) {
-        addLog("🔐 Using native in-app browser flow");
-        addLog(`Redirect URI: ${redirectUri}`);
-        addLog(`State: ${state}`);
-      }
-
+      // Mobile: Get OAuth URL from API and open in in-app browser
       try {
-        setIsAuthenticating(true);
+        if (debugMode) addLog("📱 Fetching OAuth URL from server...");
+
+        const response = await fetch("/api/auth/oauth-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: "google" }),
+        });
+
+        const data = await response.json();
+
+        if (!data.url) {
+          throw new Error("No OAuth URL returned");
+        }
+
+        if (debugMode) addLog(`🔗 Got URL: ${data.url}`);
+
+        // Open in in-app browser
         await Browser.open({
-          url: oauthUrl,
+          url: data.url,
           windowName: "_self",
         });
 
-        if (debugMode) addLog("✅ In-app browser opened - waiting for callback...");
+        if (debugMode) addLog("✅ In-app browser opened");
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         setIsAuthenticating(false);
-        toast.error("Failed to open authentication browser");
+        toast.error("Failed to start authentication");
         if (debugMode) addLog(`❌ Error: ${errorMsg}`);
-        console.error("Browser open failed:", error);
+        console.error("Mobile OAuth failed:", error);
       }
     } else {
-      // Web browser - use regular NextAuth flow
-      if (debugMode) addLog("🌐 Using web OAuth flow");
-      signIn("google", { callbackUrl: "/dashboard" });
+      // Web: Use NextAuth's client signIn
+      try {
+        if (debugMode) addLog("🌐 Web: using NextAuth flow");
+        await signIn("google", { callbackUrl: "/dashboard" });
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setIsAuthenticating(false);
+        toast.error("Failed to start authentication");
+        if (debugMode) addLog(`❌ Error: ${errorMsg}`);
+        console.error("SignIn failed:", error);
+      }
     }
   };
 
