@@ -37,7 +37,7 @@ export const authConfig: NextAuthConfig = {
     signIn: "/auth/signin",
   },
   trustHost: true,
-  useSecureCookies: false, // Disable for Capacitor WebView compatibility
+  useSecureCookies: true, // Enable for HTTPS deployment (Vercel)
   cookies: {
     sessionToken: {
       name: "next-auth.session-token",
@@ -45,7 +45,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: false,
+        secure: true,
       },
     },
     callbackUrl: {
@@ -54,7 +54,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: false,
+        secure: true,
       },
     },
     csrfToken: {
@@ -63,7 +63,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: false,
+        secure: true,
       },
     },
     pkceCodeVerifier: {
@@ -72,7 +72,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: false,
+        secure: true,
         maxAge: 60 * 15, // 15 minutes
       },
     },
@@ -80,9 +80,9 @@ export const authConfig: NextAuthConfig = {
       name: "next-auth.state",
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none", // Required for mobile app cross-context compatibility
         path: "/",
-        secure: false,
+        secure: true, // REQUIRED with sameSite: "none"
         maxAge: 60 * 15,
       },
     },
@@ -92,7 +92,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: false,
+        secure: true,
       },
     },
   },
