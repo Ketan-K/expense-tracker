@@ -145,14 +145,38 @@ export default function SignInPage() {
     }
 
     if (Capacitor.isNativePlatform()) {
-      // Native OAuth flow with deep links (in-app browser by default)
-      const callbackUrl = `${window.location.origin}/api/auth/callback/google`;
-      const oauthUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      // Native OAuth flow - construct Google OAuth URL directly
+      const redirectUri = `${window.location.origin}/api/auth/callback/google`;
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+      if (!clientId) {
+        toast.error("Google Client ID not configured");
+        if (debugMode) addLog("❌ NEXT_PUBLIC_GOOGLE_CLIENT_ID not found");
+        return;
+      }
+
+      // Generate random state for CSRF protection
+      const state =
+        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      sessionStorage.setItem("oauth_state", state);
+
+      // Construct Google OAuth URL directly
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope: "openid email profile",
+        state: state,
+        prompt: "consent",
+        access_type: "offline",
+      });
+
+      const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
       if (debugMode) {
         addLog("🔐 Using native in-app browser flow");
-        addLog(`OAuth URL: ${oauthUrl}`);
-        addLog(`Callback will be: ${callbackUrl}`);
+        addLog(`Redirect URI: ${redirectUri}`);
+        addLog(`State: ${state}`);
       }
 
       try {
