@@ -1,0 +1,23 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.expensetracker.app",
+      "sha256_cert_fingerprints": [
+        "8C:96:2F:1B:0F:DA:84:80:49:D5:63:09:36:34:D2:20:F5:AA:BF:42:71:3D:CB:23:B0:EA:93:78:C5:C3:5E:35"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.vibefinance.app",
+      "sha256_cert_fingerprints": [
+        "TODO: Add SHA-256 fingerprint from vibe-finance-release.keystore",
+        "TODO: Add SHA-256 fingerprint from debug keystore if testing locally"
+      ]
+    }
+  }
+]

@@ -1,23 +1,81 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { TrendingUp, PieChart, BarChart3, Terminal, X } from "lucide-react";
 import { theme } from "@/lib/theme";
 import Image from "next/image";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { App } from "@capacitor/app";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function SignInPage() {
+  const { data: session, status } = useSession();
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [tapCount, setTapCount] = useState(0);
   const [tapTimeout, setTapTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setDebugLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
+
+  // App URL listener for HTTPS deep links (OAuth callbacks)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let listenerHandle: { remove: () => void } | null = null;
+
+    const setupListener = async () => {
+      listenerHandle = await App.addListener("appUrlOpen", data => {
+        const url = data.url;
+        if (debugMode) addLog(`📱 Deep link received: ${url}`);
+
+        // Check if this is an OAuth callback
+        if (url.includes("/api/auth/callback/google")) {
+          if (debugMode) addLog("✅ OAuth callback detected");
+          setIsAuthenticating(true);
+
+          // Start polling for session
+          const startTime = Date.now();
+          const pollInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+
+            if (elapsed > 10000) {
+              // Timeout after 10 seconds
+              clearInterval(pollInterval);
+              setIsAuthenticating(false);
+              toast.error("Authentication timeout. Please try again.");
+              if (debugMode) addLog("❌ Authentication timeout");
+            }
+          }, 500);
+        }
+      });
+
+      if (debugMode) addLog("👂 App URL listener registered");
+    };
+
+    setupListener();
+
+    // Cleanup listener on unmount
+    return () => {
+      if (listenerHandle) {
+        listenerHandle.remove();
+        if (debugMode) addLog("🗑️ App URL listener removed");
+      }
+    };
+  }, [debugMode]);
+
+  // Monitor session changes for successful authentication
+  useEffect(() => {
+    if (isAuthenticating && status === "authenticated" && session?.user?.id) {
+      // Redirect to dashboard - this will unmount the component
+      window.location.href = "/dashboard";
+    }
+  }, [session, status, isAuthenticating]);
 
   const handleLogoTap = () => {
     const newCount = tapCount + 1;
@@ -47,36 +105,42 @@ export default function SignInPage() {
   };
 
   const handleSignIn = async () => {
-    // If running in Capacitor (native app), use in-app browser
+    if (debugMode) {
+      addLog("🔐 Starting OAuth flow...");
+      addLog(`Platform: ${Capacitor.isNativePlatform() ? "Native" : "Web"}`);
+    }
+
     if (Capacitor.isNativePlatform()) {
-      const callbackUrl = `${window.location.origin}/dashboard`;
-      const signInUrl = `${window.location.origin}/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      // For native apps, open OAuth in in-app browser
+      // The HTTPS deep link (https://expense-tracker-io.vercel.app/api/auth/callback/google)
+      // will be intercepted by Android App Links and captured by the appUrlOpen listener
+      const callbackUrl = `${window.location.origin}/api/auth/callback/google`;
+      const oauthUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
       if (debugMode) {
-        addLog("🔐 Starting OAuth flow...");
-        addLog(`Callback URL: ${callbackUrl}`);
-        addLog(`Sign-in URL: ${signInUrl}`);
+        addLog("Opening in-app browser...");
+        addLog(`OAuth URL: ${oauthUrl}`);
+        addLog(`Callback will be: ${callbackUrl}`);
       }
 
       try {
-        if (debugMode) addLog("📱 Opening in-app browser...");
+        setIsAuthenticating(true);
         await Browser.open({
-          url: signInUrl,
+          url: oauthUrl,
           windowName: "_self",
-          presentationStyle: "popover",
         });
-        if (debugMode) addLog("✅ Browser opened successfully");
+
+        if (debugMode) addLog("✅ Browser opened - waiting for callback...");
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        if (debugMode) addLog(`❌ Browser open failed: ${errorMsg}`);
+        setIsAuthenticating(false);
+        toast.error("Failed to open authentication browser");
+        if (debugMode) addLog(`❌ Error: ${errorMsg}`);
         console.error("Browser open failed:", error);
-        // Fallback to regular sign in
-        if (debugMode) addLog("🔄 Falling back to regular sign-in...");
-        signIn("google", { callbackUrl: "/dashboard" });
       }
     } else {
       // Web browser - use regular NextAuth flow
-      if (debugMode) addLog("🌐 Using web browser OAuth flow");
+      if (debugMode) addLog("🌐 Using web OAuth flow");
       signIn("google", { callbackUrl: "/dashboard" });
     }
   };
