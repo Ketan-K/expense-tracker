@@ -13,7 +13,7 @@ import { useConfirm } from "@/hooks/useConfirm";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function SignInPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
@@ -21,6 +21,7 @@ export default function SignInPage() {
   const [tapTimeout, setTapTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -38,24 +39,53 @@ export default function SignInPage() {
         const url = data.url;
         if (debugMode) addLog(`📱 Deep link received: ${url}`);
 
-        // Check if this is an OAuth callback
-        if (url.includes("/api/auth/callback/google")) {
-          if (debugMode) addLog("✅ OAuth callback detected");
-          setIsAuthenticating(true);
+        // Parse URL to check for errors
+        try {
+          const urlObj = new URL(url);
 
-          // Start polling for session
-          const startTime = Date.now();
-          const pollInterval = setInterval(() => {
-            const elapsed = Date.now() - startTime;
+          // Check for error in callback
+          if (urlObj.pathname.includes("/api/auth/error")) {
+            const error = urlObj.searchParams.get("error") || "Unknown error";
+            if (debugMode) addLog(`❌ OAuth error: ${error}`);
+            toast.error(`Authentication failed: ${error}`);
+            setIsAuthenticating(false);
+            return;
+          }
 
-            if (elapsed > 10000) {
-              // Timeout after 10 seconds
+          // Check if this is an OAuth callback
+          if (urlObj.pathname.includes("/api/auth/callback/google")) {
+            if (debugMode) addLog("✅ OAuth callback detected");
+            setIsAuthenticating(true);
+
+            // Trigger session refresh to pick up new authentication
+            if (debugMode) addLog("🔄 Refreshing session...");
+            updateSession();
+
+            // Clear any existing polling interval
+            if (pollInterval) {
               clearInterval(pollInterval);
-              setIsAuthenticating(false);
-              toast.error("Authentication timeout. Please try again.");
-              if (debugMode) addLog("❌ Authentication timeout");
             }
-          }, 500);
+
+            // Start polling for session
+            const startTime = Date.now();
+            const interval = setInterval(() => {
+              const elapsed = Date.now() - startTime;
+
+              if (elapsed > 10000) {
+                // Timeout after 10 seconds
+                clearInterval(interval);
+                setPollInterval(null);
+                setIsAuthenticating(false);
+                toast.error("Authentication timeout. Please try again.");
+                if (debugMode) addLog("❌ Authentication timeout");
+              }
+            }, 500);
+
+            setPollInterval(interval);
+          }
+        } catch (error) {
+          console.error("Failed to parse deep link URL:", error);
+          if (debugMode) addLog(`❌ Failed to parse URL: ${url}`);
         }
       });
 
@@ -70,16 +100,25 @@ export default function SignInPage() {
         listenerHandle.remove();
         if (debugMode) addLog("🗑️ App URL listener removed");
       }
+      // Clear any active polling interval
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
-  }, [debugMode]);
+  }, [debugMode, pollInterval, updateSession]);
 
   // Monitor session changes for successful authentication
   useEffect(() => {
     if (isAuthenticating && status === "authenticated" && session?.user?.id) {
-      // Redirect to dashboard - this will unmount the component
+      // Clear polling interval on success
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+
+      // Redirect to dashboard - this will unmount the component and cleanup state
       window.location.href = "/dashboard";
     }
-  }, [session, status, isAuthenticating]);
+  }, [session, status, isAuthenticating, pollInterval, debugMode]);
 
   const handleLogoTap = () => {
     const newCount = tapCount + 1;
