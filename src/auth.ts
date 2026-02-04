@@ -35,16 +35,62 @@ export const authConfig: NextAuthConfig = {
     signIn: "/auth/signin",
   },
   trustHost: true,
-  useSecureCookies: process.env.NODE_ENV === "production",
+  useSecureCookies: false, // Disable for Capacitor WebView compatibility
   cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
     pkceCodeVerifier: {
       name: "next-auth.pkce.code_verifier",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: false,
         maxAge: 60 * 15, // 15 minutes
+      },
+    },
+    state: {
+      name: "next-auth.state",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+        maxAge: 60 * 15,
+      },
+    },
+    nonce: {
+      name: "next-auth.nonce",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
       },
     },
   },

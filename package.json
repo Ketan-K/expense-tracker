@@ -42,6 +42,7 @@
     "@auth/mongodb-adapter": "^3.11.1",
     "@capacitor-community/contacts": "^7.1.0",
     "@capacitor/android": "^8.0.2",
+    "@capacitor/browser": "^8.0.0",
     "@capacitor/cli": "^7.4.5",
     "@capacitor/core": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.0",
