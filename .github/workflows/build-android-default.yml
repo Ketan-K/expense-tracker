@@ -99,31 +99,60 @@ jobs:
           jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null
           
           if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /tmp/jarsigner.log 2>&1; then
-            echo "✓ Signing test successful"
+            echo "✓ Signing test successful with secrets"
             rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log
           else
-            echo "ERROR: Failed to sign with KEY_PASSWORD"
+            echo "ERROR: Failed to sign with KEY_PASSWORD from secrets"
             cat /tmp/jarsigner.log
             
-            # Test if passwords should be the same
+            # Test with hardcoded passwords from credentials file
             echo ""
-            echo "Attempting with same password for both store and key..."
+            echo "=== Testing with hardcoded passwords from KEYSTORE_CREDENTIALS.txt ==="
+            HARDCODED_STORE_PASS="uviP8JjgdUye66v8Yecruw=="
+            HARDCODED_KEY_PASS="afiwykWY/W0tyrCoBytQRQ=="
+            
             echo "TEST" > /tmp/test.txt
             jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null
             
-            if jarsigner -keystore android/app/release.keystore -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" /tmp/test.jar "$KEY_ALIAS" > /dev/null 2>&1; then
-              echo "✓ SUCCESS using KEYSTORE_PASSWORD for both!"
+            if jarsigner -keystore android/app/release.keystore -storepass "$HARDCODED_STORE_PASS" -keypass "$HARDCODED_KEY_PASS" /tmp/test.jar "$KEY_ALIAS" > /tmp/hardcoded_test.log 2>&1; then
+              echo "✓✓✓ SUCCESS with hardcoded passwords! ✓✓✓"
               echo ""
               echo "======================================================================"
-              echo "SOLUTION: Update your KEY_PASSWORD secret to match KEYSTORE_PASSWORD"
-              echo "Your keystore was generated with the same password for both."
+              echo "FOUND IT: Hardcoded passwords work, but secrets don't!"
+              echo "This means there's an encoding/whitespace issue with GitHub Secrets."
+              echo ""
+              echo "Check your secrets for:"
+              echo "  - Leading/trailing spaces"
+              echo "  - Hidden characters"
+              echo "  - Copy-paste issues"
               echo "======================================================================"
-              rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log
+              cat /tmp/hardcoded_test.log
+              rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log /tmp/hardcoded_test.log
               exit 1
             else
-              echo "ERROR: Both password configurations failed"
-              rm -f /tmp/test.jar /tmp/test.txt /tmp/jarsigner.log
-              exit 1
+              echo "ERROR: Hardcoded passwords also failed"
+              cat /tmp/hardcoded_test.log
+              
+              # Test if passwords should be the same
+              echo ""
+              echo "Testing with same password for both..."
+              echo "TEST" > /tmp/test.txt
+              jar cf /tmp/test.jar /tmp/test.txt 2>/dev/null
+              
+              if jarsigner -keystore android/app/release.keystore -storepass "$HARDCODED_STORE_PASS" -keypass "$HARDCODED_STORE_PASS" /tmp/test.jar "$KEY_ALIAS" > /dev/null 2>&1; then
+                echo "✓ SUCCESS using store password for both!"
+                echo ""
+                echo "======================================================================"
+                echo "SOLUTION: Keystore uses same password for both store and key"
+                echo "Update KEY_PASSWORD secret to: uviP8JjgdUye66v8Yecruw=="
+                echo "======================================================================"
+                rm -f /tmp/test.jar /tmp/test.txt /tmp/*.log
+                exit 1
+              else
+                echo "ERROR: All password tests failed"
+                rm -f /tmp/test.jar /tmp/test.txt /tmp/*.log
+                exit 1
+              fi
             fi
           fi
           
