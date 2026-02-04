@@ -38,6 +38,12 @@ export default function SignInPage() {
         try {
           const urlObj = new URL(url);
 
+          // Ignore deep links to the sign-in page itself (prevents loop)
+          if (urlObj.pathname.includes("/auth/signin")) {
+            if (debugMode) addLog("⚠️ Ignoring deep link to sign-in page (prevents loop)");
+            return;
+          }
+
           // Check for error in callback
           if (urlObj.pathname.includes("/api/auth/error")) {
             const error = urlObj.searchParams.get("error") || "Unknown error";
@@ -47,11 +53,17 @@ export default function SignInPage() {
             return;
           }
 
-          // Check if this is an OAuth callback
+          // Check if this is an OAuth callback with authorization code
           if (urlObj.pathname.includes("/api/auth/callback/google")) {
-            if (debugMode) addLog("✅ OAuth callback detected");
             const code = urlObj.searchParams.get("code");
-            if (debugMode) addLog(`📝 Code parameter: ${code ? "present" : "missing"}`);
+
+            if (!code) {
+              if (debugMode) addLog("⚠️ OAuth callback without code - ignoring");
+              return;
+            }
+
+            if (debugMode) addLog("✅ OAuth callback detected with code");
+            if (debugMode) addLog("📝 Code parameter present");
 
             setIsAuthenticating(true);
 
@@ -67,6 +79,9 @@ export default function SignInPage() {
             // Navigate WebView to callback URL so NextAuth can process code exchange
             if (debugMode) addLog("🔄 Navigating to callback URL for code exchange...");
             window.location.href = url;
+          } else {
+            // Log any other deep links for debugging
+            if (debugMode) addLog(`ℹ️ Ignoring non-callback deep link: ${urlObj.pathname}`);
           }
         } catch (error) {
           console.error("Failed to parse deep link URL:", error);
@@ -132,7 +147,8 @@ export default function SignInPage() {
     if (Capacitor.isNativePlatform()) {
       // Native OAuth flow with deep links (in-app browser by default)
       const callbackUrl = `${window.location.origin}/api/auth/callback/google`;
-      const oauthUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      // NextAuth uses path-based routing: /api/auth/signin/{provider}
+      const oauthUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
       if (debugMode) {
         addLog("🔐 Using native in-app browser flow");
