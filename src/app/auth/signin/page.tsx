@@ -4,8 +4,33 @@ import { signIn } from "next-auth/react";
 import { TrendingUp, PieChart, BarChart3 } from "lucide-react";
 import { theme } from "@/lib/theme";
 import Image from "next/image";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 export default function SignInPage() {
+  const handleSignIn = async () => {
+    // If running in Capacitor (native app), use in-app browser
+    if (Capacitor.isNativePlatform()) {
+      const callbackUrl = `${window.location.origin}/dashboard`;
+      const signInUrl = `/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+      try {
+        await Browser.open({
+          url: signInUrl,
+          windowName: "_self",
+          presentationStyle: "popover",
+        });
+      } catch (error) {
+        console.error("Browser open failed:", error);
+        // Fallback to regular sign in
+        signIn("google", { callbackUrl: "/dashboard" });
+      }
+    } else {
+      // Web browser - use regular NextAuth flow
+      signIn("google", { callbackUrl: "/dashboard" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-app-gradient-from via-app-gradient-via to-app-gradient-to flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full">
@@ -48,7 +73,7 @@ export default function SignInPage() {
           </div>
 
           <button
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={handleSignIn}
             className="w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold py-4 sm:py-5 px-6 rounded-xl sm:rounded-2xl transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24">
