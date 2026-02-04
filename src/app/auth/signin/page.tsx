@@ -1,32 +1,82 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { TrendingUp, PieChart, BarChart3 } from "lucide-react";
+import { TrendingUp, PieChart, BarChart3, Terminal, X } from "lucide-react";
 import { theme } from "@/lib/theme";
 import Image from "next/image";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { useState, useEffect } from "react";
 
 export default function SignInPage() {
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [tapCount, setTapCount] = useState(0);
+  const [tapTimeout, setTapTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+  };
+
+  const handleLogoTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+
+    // Clear existing timeout
+    if (tapTimeout) clearTimeout(tapTimeout);
+
+    // Enable debug mode on 7 taps
+    if (newCount >= 7 && !debugMode) {
+      setDebugMode(true);
+      setTapCount(0);
+      // Set initial debug logs
+      const timestamp = new Date().toLocaleTimeString();
+      setDebugLogs([
+        `[${timestamp}] 🐛 Debug mode enabled`,
+        `[${timestamp}] Platform: ${Capacitor.isNativePlatform() ? "Native" : "Web"}`,
+        `[${timestamp}] Platform: ${Capacitor.getPlatform()}`,
+        `[${timestamp}] Origin: ${window.location.origin}`,
+      ]);
+      return;
+    }
+
+    // Reset tap count after 2 seconds
+    const timeout = setTimeout(() => setTapCount(0), 2000);
+    setTapTimeout(timeout);
+  };
+
   const handleSignIn = async () => {
     // If running in Capacitor (native app), use in-app browser
     if (Capacitor.isNativePlatform()) {
       const callbackUrl = `${window.location.origin}/dashboard`;
       const signInUrl = `/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
+      if (debugMode) {
+        addLog("🔐 Starting OAuth flow...");
+        addLog(`Callback URL: ${callbackUrl}`);
+        addLog(`Sign-in URL: ${signInUrl}`);
+      }
+
       try {
+        if (debugMode) addLog("📱 Opening in-app browser...");
         await Browser.open({
           url: signInUrl,
           windowName: "_self",
           presentationStyle: "popover",
         });
+        if (debugMode) addLog("✅ Browser opened successfully");
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (debugMode) addLog(`❌ Browser open failed: ${errorMsg}`);
         console.error("Browser open failed:", error);
         // Fallback to regular sign in
+        if (debugMode) addLog("🔄 Falling back to regular sign-in...");
         signIn("google", { callbackUrl: "/dashboard" });
       }
     } else {
       // Web browser - use regular NextAuth flow
+      if (debugMode) addLog("🌐 Using web browser OAuth flow");
       signIn("google", { callbackUrl: "/dashboard" });
     }
   };
@@ -34,9 +84,25 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-app-gradient-from via-app-gradient-via to-app-gradient-to flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl border border-white/20 hover:shadow-3xl transition-all">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl border border-white/20 hover:shadow-3xl transition-all relative">
+          {/* Platform Badge */}
+          <div className="absolute top-4 right-4">
+            <div
+              className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                Capacitor.isNativePlatform()
+                  ? "bg-green-500/20 text-green-100 border border-green-500/30"
+                  : "bg-blue-500/20 text-blue-100 border border-blue-500/30"
+              }`}
+            >
+              {Capacitor.isNativePlatform() ? "📱 Native App" : "🌐 Web Browser"}
+            </div>
+          </div>
+
           <div className="text-center mb-6 sm:mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-full mb-4 shadow-lg">
+            <div
+              onClick={handleLogoTap}
+              className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-full mb-4 shadow-lg cursor-pointer hover:bg-white/30 transition-all active:scale-95"
+            >
               <Image
                 src={theme.assets.logo}
                 alt={theme.assets.logoText}
@@ -44,6 +110,11 @@ export default function SignInPage() {
                 height={40}
                 className="w-7 h-7 sm:w-10 sm:h-10"
               />
+              {tapCount > 0 && tapCount < 7 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center text-xs font-bold text-gray-900">
+                  {tapCount}
+                </div>
+              )}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2">
               {theme.brand.name}
@@ -101,6 +172,55 @@ export default function SignInPage() {
             Your data is stored securely and synced across devices
           </p>
         </div>
+
+        {/* Debug Console */}
+        {debugMode && (
+          <div className="mt-4 bg-black/80 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-green-400" />
+                <h3 className="text-sm font-semibold text-white">Debug Console</h3>
+              </div>
+              <button
+                onClick={() => setDebugMode(false)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-black/50 rounded-lg p-3 max-h-60 overflow-y-auto font-mono text-xs">
+              {debugLogs.length === 0 ? (
+                <p className="text-gray-500 italic">No logs yet...</p>
+              ) : (
+                debugLogs.map((log, index) => (
+                  <div key={index} className="text-green-400 mb-1">
+                    {log}
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => {
+                  setDebugLogs([]);
+                  addLog("🗑️ Logs cleared");
+                }}
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white text-xs py-2 px-3 rounded-lg transition-all"
+              >
+                Clear Logs
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(debugLogs.join("\n"));
+                  addLog("📋 Logs copied to clipboard");
+                }}
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white text-xs py-2 px-3 rounded-lg transition-all"
+              >
+                Copy Logs
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
