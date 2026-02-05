@@ -82,17 +82,29 @@ NEXTAUTH_URL=https://expense-tracker-io.vercel.app
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create a new project or select existing
-3. Enable "Google+ API"
+3. Enable "Google+ API" (or "Google Identity" API)
 4. Go to "Credentials" → "Create Credentials" → "OAuth client ID"
 5. Application type: **Web application**
-6. Authorized redirect URIs:
+6. **CRITICAL**: Authorized redirect URIs must include:
    ```
    http://localhost:3000/api/auth/callback/google
    https://your-production-domain.com/api/auth/callback/google
+   ```
+   
+   **Example for production:**
+   ```
    https://expense-tracker-io.vercel.app/api/auth/callback/google
    ```
-7. Copy `Client ID` → `AUTH_GOOGLE_ID`
-8. Copy `Client Secret` → `AUTH_GOOGLE_SECRET`
+   
+   ⚠️ **Important**: The redirect URI must **exactly match** your `NEXTAUTH_URL` + `/api/auth/callback/google`
+   
+   Common mistakes:
+   - Missing trailing slash in base URL
+   - Using `http` instead of `https` for production
+   - Forgetting to add production domain after local testing
+
+7. Copy `Client ID` → `GOOGLE_CLIENT_ID`
+8. Copy `Client Secret` → `GOOGLE_CLIENT_SECRET`
 
 #### 4. MongoDB URI
 

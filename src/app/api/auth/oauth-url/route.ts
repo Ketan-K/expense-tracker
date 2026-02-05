@@ -15,16 +15,36 @@ export async function POST(request: NextRequest) {
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const baseUrl = process.env.NEXTAUTH_URL || request.headers.get("origin") || "";
+    
+    // Match NextAuth's behavior: use request host with trustHost: true
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const protocol = request.headers.get("x-forwarded-proto") || "https";
+    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXTAUTH_URL || "";
+    
+    console.log("OAuth URL generation:", {
+      host,
+      protocol,
+      baseUrl,
+      origin: request.headers.get("origin"),
+      referer: request.headers.get("referer"),
+    });
     
     if (!clientId) {
+      console.error("GOOGLE_CLIENT_ID not configured");
       return NextResponse.json({ error: "OAuth client not configured" }, { status: 500 });
     }
+
+    if (!baseUrl) {
+      console.error("Unable to determine base URL");
+      return NextResponse.json({ error: "Base URL not configured" }, { status: 500 });
+    }
+
+    const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
     // Build Google OAuth URL manually (no state needed since checks: [] in auth.ts)
     const params = new URLSearchParams({
       client_id: clientId,
-      redirect_uri: `${baseUrl}/api/auth/callback/google`,
+      redirect_uri: redirectUri,
       response_type: "code",
       scope: "openid email profile",
       access_type: "offline",
@@ -32,6 +52,8 @@ export async function POST(request: NextRequest) {
     });
 
     const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+    console.log("Generated OAuth URL with redirect_uri:", redirectUri);
 
     return NextResponse.json({ url: oauthUrl });
   } catch (error) {
