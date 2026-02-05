@@ -22,10 +22,10 @@ export async function POST(request: NextRequest) {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
       const response = NextResponse.json(
-        { 
+        {
           success: false,
           error: "Database connection not configured",
-          message: "DATABASE_URL environment variable is not set" 
+          message: "DATABASE_URL environment variable is not set",
         },
         { status: 500 }
       );
@@ -34,20 +34,21 @@ export async function POST(request: NextRequest) {
 
     // Read all migration files from supabase/migrations directory
     const migrationsDir = path.join(process.cwd(), "supabase", "migrations");
-    
+
     if (!fs.existsSync(migrationsDir)) {
       const response = NextResponse.json(
-        { 
+        {
           success: false,
           error: "Migrations directory not found",
-          message: "The supabase/migrations directory does not exist" 
+          message: "The supabase/migrations directory does not exist",
         },
         { status: 404 }
       );
       return addCorsHeaders(response, request.headers.get("origin"));
     }
 
-    const migrationFiles = fs.readdirSync(migrationsDir)
+    const migrationFiles = fs
+      .readdirSync(migrationsDir)
       .filter(file => file.endsWith(".sql"))
       .sort(); // Execute in alphabetical order
 
@@ -55,7 +56,6 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({
         success: true,
         migrations: [],
-        totalFiles: 0,
         successCount: 0,
         failureCount: 0,
         message: "No migration files found",
@@ -87,12 +87,8 @@ export async function POST(request: NextRequest) {
       `);
 
       // Get list of already executed migrations
-      const executedResult = await client.query(
-        'SELECT filename FROM schema_migrations'
-      );
-      const executedMigrations = new Set(
-        executedResult.rows.map((row: any) => row.filename)
-      );
+      const executedResult = await client.query("SELECT filename FROM schema_migrations");
+      const executedMigrations = new Set(executedResult.rows.map((row: any) => row.filename));
 
       // Execute each migration
       for (const file of migrationFiles) {
@@ -114,13 +110,10 @@ export async function POST(request: NextRequest) {
         try {
           // Execute the SQL
           await client.query(sql);
-          
+
           // Record successful migration
-          await client.query(
-            'INSERT INTO schema_migrations (filename) VALUES ($1)',
-            [file]
-          );
-          
+          await client.query("INSERT INTO schema_migrations (filename) VALUES ($1)", [file]);
+
           results.push({
             file,
             success: true,
@@ -151,23 +144,23 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: failureCount === 0,
       migrations: results,
-      totalFiles: migrationFiles.length,
       successCount,
       failureCount,
       skippedCount,
       executedCount,
-      message: failureCount === 0 
-        ? `${executedCount > 0 ? `Executed ${executedCount} new migration(s)` : 'No new migrations to execute'}${skippedCount > 0 ? `, ${skippedCount} already applied` : ''}` 
-        : `Executed ${executedCount} migration(s), ${failureCount} failed${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`,
+      message:
+        failureCount === 0
+          ? `${executedCount > 0 ? `Executed ${executedCount} new migration(s)` : "No new migrations to execute"}${skippedCount > 0 ? `, ${skippedCount} already applied` : ""}`
+          : `Executed ${executedCount} migration(s), ${failureCount} failed${skippedCount > 0 ? `, ${skippedCount} skipped` : ""}`,
     });
 
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error: any) {
     const response = NextResponse.json(
-      { 
+      {
         success: false,
         error: error.message,
-        message: "Failed to execute migrations" 
+        message: "Failed to execute migrations",
       },
       { status: 500 }
     );
@@ -190,7 +183,8 @@ export async function GET(request: NextRequest) {
   try {
     // List available migration files
     const migrationsDir = path.join(process.cwd(), "supabase", "migrations");
-    const migrationFiles = fs.readdirSync(migrationsDir)
+    const migrationFiles = fs
+      .readdirSync(migrationsDir)
       .filter(file => file.endsWith(".sql"))
       .sort();
 
@@ -211,10 +205,7 @@ export async function GET(request: NextRequest) {
 
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error: any) {
-    const response = NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    const response = NextResponse.json({ error: error.message }, { status: 500 });
     return addCorsHeaders(response, request.headers.get("origin"));
   }
 }

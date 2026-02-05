@@ -1,20 +1,8 @@
 import NextAuth, { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import clientPromise from "./lib/mongodb";
-
-// Wrap MongoDB adapter to handle connection failures gracefully
-const getAdapter = () => {
-  try {
-    return MongoDBAdapter(clientPromise);
-  } catch (error) {
-    console.error("MongoDB adapter initialization failed:", error);
-    return undefined;
-  }
-};
 
 export const authConfig: NextAuthConfig = {
-  adapter: getAdapter(),
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
