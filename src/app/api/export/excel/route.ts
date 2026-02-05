@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import { Expense, Category } from "@/lib/types";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { validateQueryParams } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { expenseService, categoryService } from "@/lib/services";
+import { DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -40,27 +40,39 @@ export async function GET(request: Request) {
       );
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const query: any = { userId: session.user.id };
-
+    // Use service layer for expenses
+    let expensesResult;
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+      expensesResult = await expenseService.getExpensesByDateRange(
+        session.user.id,
+        startDate ? new Date(startDate) : new Date(0),
+        endDate ? new Date(endDate) : new Date()
+      );
+    } else {
+      expensesResult = await expenseService.getExpenses(session.user.id);
     }
 
-    const expenses = await db
-      .collection<Expense>("expenses")
-      .find(query)
-      .sort({ date: -1 })
-      .toArray();
+    if (expensesResult.isFailure()) {
+      const error = expensesResult.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch expenses" }, { status: 500 });
+    }
 
-    const categories = await db
-      .collection<Category>("categories")
-      .find({ userId: session.user.id })
-      .toArray();
+    // Use service layer for categories
+    const categoriesResult = await categoryService.getCategories(session.user.id);
+
+    if (categoriesResult.isFailure()) {
+      const error = categoriesResult.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
+    }
+
+    const expenses = expensesResult.value;
+    const categories = categoriesResult.value;
 
     // Create workbook
     const workbook = XLSX.utils.book_new();

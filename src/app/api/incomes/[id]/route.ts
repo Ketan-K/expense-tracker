@@ -1,12 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import { Income } from "@/lib/types";
-import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { validateIncome, sanitizeObjectId } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { incomeService } from "@/lib/services/income.service";
+import { ValidationError, NotFoundError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -24,23 +22,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
 
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid income ID" }, { status: 400 });
+    const result = await incomeService.getIncomeById(id, session.user.id);
+
+    if (result.isFailure()) {
+      if (result.error instanceof NotFoundError) {
+        return NextResponse.json({ error: result.error.message }, { status: 404 });
+      }
+      return NextResponse.json({ error: result.error.message }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const income = await db.collection<Income>("incomes").findOne({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!income) {
-      return NextResponse.json({ error: "Income not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(income);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching income:", error);
@@ -59,42 +50,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
-
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid income ID" }, { status: 400 });
-    }
-
     const body = await request.json();
 
-    const validation = validateIncome(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    const result = await incomeService.updateIncome(id, session.user.id, body);
+
+    if (result.isFailure()) {
+      if (result.error instanceof NotFoundError) {
+        return NextResponse.json({ error: result.error.message }, { status: 404 });
+      }
+      if (result.error instanceof ValidationError) {
+        return NextResponse.json({ error: result.error.message }, { status: 400 });
+      }
+      return NextResponse.json({ error: result.error.message }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const updateData = {
-      ...validation.sanitized!,
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .collection<Income>("incomes")
-      .findOneAndUpdate(
-        { _id: new ObjectId(id), userId: session.user.id },
-        { $set: updateData },
-        { returnDocument: "after" }
-      );
-
-    if (!result) {
-      return NextResponse.json({ error: "Income not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(result);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating income:", error);
@@ -114,20 +84,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params;
 
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid income ID" }, { status: 400 });
-    }
+    const result = await incomeService.deleteIncome(id, session.user.id);
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const result = await db.collection<Income>("incomes").findOneAndDelete({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!result) {
-      return NextResponse.json({ error: "Income not found" }, { status: 404 });
+    if (result.isFailure()) {
+      if (result.error instanceof NotFoundError) {
+        return NextResponse.json({ error: result.error.message }, { status: 404 });
+      }
+      return NextResponse.json({ error: result.error.message }, { status: 500 });
     }
 
     const response = NextResponse.json({ message: "Income deleted successfully" });

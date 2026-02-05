@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import type { Budget } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { validateBudget, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { budgetService } from "@/lib/services/budget.service";
+import { ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -23,7 +22,7 @@ export async function GET(request: Request) {
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
-    const month = searchParams.get("month");
+    const month = searchParams.get("month") || undefined;
 
     // Validate month format if provided
     if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
@@ -33,19 +32,21 @@ export async function GET(request: Request) {
       );
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
+    const result = await budgetService.getBudgets(session.user.id);
 
-    const query: any = { userId: session.user.id };
-    if (month) {
-      query.month = sanitizeString(month);
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch budgets" }, { status: 500 });
     }
 
-    const budgets = await db
-      .collection<Budget>("budgets")
-      .find(query)
-      .sort({ month: -1 })
-      .toArray();
+    // Filter by month if provided
+    let budgets = result.value;
+    if (month) {
+      budgets = budgets.filter(b => b.month === month);
+    }
 
     const response = NextResponse.json(budgets);
     return addCorsHeaders(response, request.headers.get("origin"));
@@ -68,59 +69,23 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Validate and sanitize input
-    const validation = validateBudget(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    const result = await budgetService.createBudget(session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof ValidationError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to set budget" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const { categoryId, month, amount } = validation.sanitized!;
-
-    // Check if budget already exists for this category and month
-    const existing = await db.collection<Budget>("budgets").findOne({
-      userId: session.user.id,
-      categoryId,
-      month,
-    });
-
-    if (existing) {
-      // Update existing budget
-      const result = await db
-        .collection<Budget>("budgets")
-        .findOneAndUpdate(
-          { userId: session.user.id, categoryId, month },
-          { $set: { amount, updatedAt: new Date() } },
-          { returnDocument: "after" }
-        );
-
-      const response = NextResponse.json(result);
-      return addCorsHeaders(response, request.headers.get("origin"));
-    }
-
-    const budget: Budget = {
-      userId: session.user.id,
-      categoryId,
-      month,
-      amount,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const result = await db.collection<Budget>("budgets").insertOne(budget);
-
-    const response = NextResponse.json({
-      ...budget,
-      _id: budget._id || result.insertedId,
-    });
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error creating budget:", error);
+    console.error("Error setting budget:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

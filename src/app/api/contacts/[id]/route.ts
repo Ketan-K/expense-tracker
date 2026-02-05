@@ -1,12 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import { Contact } from "@/lib/types";
-import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { validateContact, sanitizeObjectId } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { contactService } from "@/lib/services/contact.service";
+import { NotFoundError, ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -24,23 +22,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
 
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
+    const result = await contactService.getContactById(id, session.user.id);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch contact" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const contact = await db.collection<Contact>("contacts").findOne({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!contact) {
-      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(contact);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching contact:", error);
@@ -59,42 +54,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
-
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
-    }
-
     const body = await request.json();
 
-    const validation = validateContact(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    const result = await contactService.updateContact(id, session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      if (error instanceof ValidationError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to update contact" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const updateData = {
-      ...validation.sanitized!,
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .collection<Contact>("contacts")
-      .findOneAndUpdate(
-        { _id: new ObjectId(id), userId: session.user.id },
-        { $set: updateData },
-        { returnDocument: "after" }
-      );
-
-    if (!result) {
-      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(result);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating contact:", error);
@@ -114,36 +92,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params;
 
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
+    const result = await contactService.deleteContact(id, session.user.id);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to delete contact" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    // Check if contact is used in any loans
-    const loansUsingContact = await db.collection("loans").countDocuments({
-      userId: session.user.id,
-      contactId: id,
-    });
-
-    if (loansUsingContact > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete contact with associated loans" },
-        { status: 409 }
-      );
-    }
-
-    const result = await db.collection<Contact>("contacts").findOneAndDelete({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!result) {
-      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json({ message: "Contact deleted successfully" });
+    const response = NextResponse.json({ success: true });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error deleting contact:", error);

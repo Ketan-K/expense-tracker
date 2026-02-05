@@ -1,12 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import { Loan } from "@/lib/types";
-import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { validateLoan, sanitizeObjectId } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { loanService } from "@/lib/services/loan.service";
+import { NotFoundError, ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -24,23 +22,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
 
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 });
+    const result = await loanService.getLoanById(id, session.user.id);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to get loan" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const loan = await db.collection<Loan>("loans").findOne({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!loan) {
-      return NextResponse.json({ error: "Loan not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(loan);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching loan:", error);
@@ -59,42 +54,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
-
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 });
-    }
-
     const body = await request.json();
 
-    const validation = validateLoan(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    const result = await loanService.updateLoan(id, session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      if (error instanceof ValidationError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to update loan" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const updateData = {
-      ...validation.sanitized!,
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .collection<Loan>("loans")
-      .findOneAndUpdate(
-        { _id: new ObjectId(id), userId: session.user.id },
-        { $set: updateData },
-        { returnDocument: "after" }
-      );
-
-    if (!result) {
-      return NextResponse.json({ error: "Loan not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(result);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating loan:", error);
@@ -114,36 +92,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params;
 
-    if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 });
+    const result = await loanService.deleteLoan(id, session.user.id);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to delete loan" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    // Check if there are any payments for this loan
-    const paymentsCount = await db.collection("loanPayments").countDocuments({
-      loanId: id,
-      userId: session.user.id,
-    });
-
-    if (paymentsCount > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete loan with existing payments. Delete payments first." },
-        { status: 409 }
-      );
-    }
-
-    const result = await db.collection<Loan>("loans").findOneAndDelete({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!result) {
-      return NextResponse.json({ error: "Loan not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json({ message: "Loan deleted successfully" });
+    const response = NextResponse.json({ success: true });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error deleting loan:", error);

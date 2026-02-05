@@ -1,12 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import type { LoanPayment, Loan } from "@/lib/types";
-import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { validateLoanPayment, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { loanPaymentService } from "@/lib/services/loan-payment.service";
+import { NotFoundError, ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -25,22 +23,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const loanId = searchParams.get("loanId");
 
-    const client = await getConnectedClient();
-    const db = client.db();
+    const result = loanId 
+      ? await loanPaymentService.getPaymentsByLoanId(loanId, session.user.id)
+      : await loanPaymentService.getPaymentsByLoanId("", session.user.id); // Empty string gets all
 
-    const query: any = { userId: session.user.id };
-
-    if (loanId) {
-      query.loanId = sanitizeString(loanId);
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch loan payments" }, { status: 500 });
     }
 
-    const payments = await db
-      .collection<LoanPayment>("loanPayments")
-      .find(query)
-      .sort({ date: -1 })
-      .toArray();
-
-    const response = NextResponse.json(payments);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching loan payments:", error);
@@ -60,64 +55,23 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const validation = validateLoanPayment(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
-    }
+    const result = await loanPaymentService.createPayment(session.user.id, body);
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    // Verify the loan exists and belongs to the user
-    const loan = await db.collection<Loan>("loans").findOne({
-      _id: new ObjectId(validation.sanitized!.loanId),
-      userId: session.user.id,
-    });
-
-    if (!loan) {
-      return NextResponse.json({ error: "Loan not found" }, { status: 404 });
-    }
-
-    // Verify payment amount doesn't exceed outstanding amount
-    if (validation.sanitized!.amount > loan.outstandingAmount) {
-      return NextResponse.json(
-        { error: "Payment amount exceeds outstanding loan amount" },
-        { status: 400 }
-      );
-    }
-
-    const payment: LoanPayment = {
-      userId: session.user.id,
-      ...validation.sanitized!,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    // Create payment
-    const result = await db.collection<LoanPayment>("loanPayments").insertOne(payment);
-
-    // Update loan outstanding amount and status
-    const newOutstanding = loan.outstandingAmount - validation.sanitized!.amount;
-    const newStatus = newOutstanding === 0 ? "paid" : loan.status;
-
-    await db.collection<Loan>("loans").updateOne(
-      { _id: new ObjectId(validation.sanitized!.loanId) },
-      {
-        $set: {
-          outstandingAmount: newOutstanding,
-          status: newStatus,
-          updatedAt: new Date(),
-        },
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
       }
-    );
+      if (error instanceof ValidationError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to create loan payment" }, { status: 500 });
+    }
 
-    const response = NextResponse.json({
-      ...payment,
-      _id: payment._id || result.insertedId,
-    });
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating loan payment:", error);

@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import type { Income } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { validateIncome, validateQueryParams, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { incomeService } from "@/lib/services/income.service";
+import { ValidationError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -24,34 +23,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-    const source = searchParams.get("source");
 
-    const validation = validateQueryParams({ startDate, endDate, category: source });
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Invalid query parameters", details: validation.errors },
-        { status: 400 }
+    let result;
+    if (startDate && endDate) {
+      result = await incomeService.getIncomesByDateRange(
+        session.user.id,
+        new Date(startDate),
+        new Date(endDate)
       );
+    } else {
+      result = await incomeService.getIncomes(session.user.id);
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const query: any = { userId: session.user.id };
-
-    if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+    if (result.isFailure()) {
+      return NextResponse.json({ error: result.error.message }, { status: 500 });
     }
 
-    if (source) {
-      query.source = sanitizeString(source);
-    }
-
-    const incomes = await db.collection<Income>("incomes").find(query).sort({ date: -1 }).toArray();
-
-    const response = NextResponse.json(incomes);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching incomes:", error);
@@ -71,30 +59,16 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const validation = validateIncome(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    const result = await incomeService.createIncome(session.user.id, body);
+
+    if (result.isFailure()) {
+      if (result.error instanceof ValidationError) {
+        return NextResponse.json({ error: result.error.message }, { status: 400 });
+      }
+      return NextResponse.json({ error: result.error.message }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const income: Income = {
-      userId: session.user.id,
-      ...validation.sanitized!,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const result = await db.collection<Income>("incomes").insertOne(income);
-
-    const response = NextResponse.json({
-      ...income,
-      _id: income._id || result.insertedId,
-    });
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating income:", error);

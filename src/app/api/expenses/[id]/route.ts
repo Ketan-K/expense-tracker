@@ -1,12 +1,11 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import { Expense } from "@/lib/types";
-import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
-import { validateExpense, sanitizeObjectId } from "@/lib/validation";
+import { sanitizeObjectId } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { expenseService } from "@/lib/services";
+import { NotFoundError, ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -30,19 +29,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
+    // Use service layer
+    const result = await expenseService.getExpenseById(id, session.user.id);
 
-    const expense = await db.collection<Expense>("expenses").findOne({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (!expense) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch expense" }, { status: 500 });
     }
 
-    const response = NextResponse.json(expense);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching expense:", error);
@@ -70,36 +71,27 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const body = await request.json();
 
-    // Validate and sanitize input
-    const validation = validateExpense(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    // Use service layer
+    const result = await expenseService.updateExpense(id, session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+      }
+      if (error instanceof ValidationError) {
+        return NextResponse.json(
+          { error: "Validation failed", details: error.message },
+          { status: 400 }
+        );
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to update expense" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const updateData = {
-      ...validation.sanitized!,
-      updatedAt: new Date(),
-    };
-
-    const result = await db
-      .collection<Expense>("expenses")
-      .findOneAndUpdate(
-        { _id: new ObjectId(id), userId: session.user.id },
-        { $set: updateData },
-        { returnDocument: "after" }
-      );
-
-    if (!result) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
-    }
-
-    const response = NextResponse.json(result);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error updating expense:", error);
@@ -125,16 +117,18 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
+    // Use service layer
+    const result = await expenseService.deleteExpense(id, session.user.id);
 
-    const result = await db.collection<Expense>("expenses").deleteOne({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
-
-    if (result.deletedCount === 0) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof NotFoundError) {
+        return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to delete expense" }, { status: 500 });
     }
 
     const response = NextResponse.json({ success: true });

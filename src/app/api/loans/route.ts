@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import type { Loan } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { validateLoan, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { loanService } from "@/lib/services/loan.service";
+import { ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -22,30 +21,33 @@ export async function GET(request: Request) {
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
-    const direction = searchParams.get("direction");
-    const status = searchParams.get("status");
-    const contactId = searchParams.get("contactId");
+    const direction = searchParams.get("direction") as "given" | "taken" | undefined;
+    const status = searchParams.get("status") as "active" | "paid" | "overdue" | undefined;
+    const contactId = searchParams.get("contactId") || undefined;
 
-    const client = await getConnectedClient();
-    const db = client.db();
+    const result = await loanService.getLoans(session.user.id);
 
-    const query: any = { userId: session.user.id };
-
-    if (direction && (direction === "given" || direction === "taken")) {
-      query.direction = direction;
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to get loans" }, { status: 500 });
     }
 
-    if (status && ["active", "paid", "overdue"].includes(status)) {
-      query.status = status;
+    // Filter client-side
+    let filteredLoans = result.value;
+    if (direction) {
+      filteredLoans = filteredLoans.filter(loan => loan.direction === direction);
     }
-
+    if (status) {
+      filteredLoans = filteredLoans.filter(loan => loan.status === status);
+    }
     if (contactId) {
-      query.contactId = sanitizeString(contactId);
+      filteredLoans = filteredLoans.filter(loan => loan.contactId === contactId);
     }
 
-    const loans = await db.collection<Loan>("loans").find(query).sort({ startDate: -1 }).toArray();
-
-    const response = NextResponse.json(loans);
+    const response = NextResponse.json(filteredLoans);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching loans:", error);
@@ -65,32 +67,20 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const validation = validateLoan(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    const result = await loanService.createLoan(session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof ValidationError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to create loan" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const loan: Loan = {
-      userId: session.user.id,
-      ...validation.sanitized!,
-      outstandingAmount: validation.sanitized!.principalAmount, // Initially equals principal
-      status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const result = await db.collection<Loan>("loans").insertOne(loan);
-
-    const response = NextResponse.json({
-      ...loan,
-      _id: loan._id || result.insertedId,
-    });
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating loan:", error);

@@ -1,11 +1,11 @@
 import { auth } from "@/auth";
-import clientPromise, { getConnectedClient } from "@/lib/mongodb";
-import type { Expense } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { validateExpense, validateQueryParams, sanitizeString } from "@/lib/validation";
+import { validateQueryParams } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { expenseService } from "@/lib/services";
+import { NotFoundError, ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -36,26 +36,31 @@ export async function GET(request: Request) {
       );
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const query: any = { userId: session.user.id };
-
+    // Use service layer
+    let result;
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+      result = await expenseService.getExpensesByDateRange(
+        session.user.id,
+        startDate ? new Date(startDate) : new Date(0),
+        endDate ? new Date(endDate) : new Date()
+      );
+    } else {
+      result = await expenseService.getExpenses(session.user.id);
     }
 
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch expenses" }, { status: 500 });
+    }
+
+    // Filter by category if provided
+    let expenses = result.value;
     if (category) {
-      query.category = sanitizeString(category);
+      expenses = expenses.filter(e => e.category === category);
     }
-
-    const expenses = await db
-      .collection<Expense>("expenses")
-      .find(query)
-      .sort({ date: -1 })
-      .toArray();
 
     const response = NextResponse.json(expenses);
     return addCorsHeaders(response, request.headers.get("origin"));
@@ -78,32 +83,24 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Validate and sanitize input
-    const validation = validateExpense(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    // Use service layer
+    const result = await expenseService.createExpense(session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof ValidationError) {
+        return NextResponse.json(
+          { error: "Validation failed", details: error.message },
+          { status: 400 }
+        );
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to create expense" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    const expense: Expense = {
-      userId: session.user.id,
-      ...validation.sanitized!,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    // Use client-provided _id if available to prevent duplicates
-    const result = await db.collection<Expense>("expenses").insertOne(expense);
-
-    const response = NextResponse.json({
-      ...expense,
-      _id: expense._id || result.insertedId,
-    });
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating expense:", error);

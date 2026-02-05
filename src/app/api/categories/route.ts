@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
-import { getConnectedClient } from "@/lib/mongodb";
-import { type Category, DEFAULT_CATEGORIES } from "@/lib/types";
 import { NextResponse } from "next/server";
-import { validateCategory, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
+import { categoryService } from "@/lib/services";
+import { ValidationError, DatabaseError } from "@/lib/core/errors";
 
 export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
@@ -22,30 +21,18 @@ export async function GET(request: Request) {
     const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
     if (rateLimitResult) return rateLimitResult;
 
-    const client = await getConnectedClient();
-    const db = client.db();
+    // Use service layer
+    const result = await categoryService.getCategories(session.user.id);
 
-    const categories = await db
-      .collection<Category>("categories")
-      .find({ userId: session.user.id })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    // Initialize default categories for new users
-    if (categories.length === 0) {
-      const defaultCategories = DEFAULT_CATEGORIES.map(cat => ({
-        ...cat,
-        userId: session.user.id,
-        createdAt: new Date(),
-      }));
-
-      await db.collection<Category>("categories").insertMany(defaultCategories);
-
-      const response = NextResponse.json(defaultCategories);
-      return addCorsHeaders(response, request.headers.get("origin"));
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
     }
 
-    const response = NextResponse.json(categories);
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -66,44 +53,31 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Validate and sanitize input
-    const validation = validateCategory(body);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validation.errors },
-        { status: 400 }
-      );
+    // Use service layer
+    const result = await categoryService.createCategory(session.user.id, body);
+
+    if (result.isFailure()) {
+      const error = result.error;
+      if (error instanceof ValidationError) {
+        // Check if it's a duplicate category error
+        if (error.message.includes("already exists")) {
+          return NextResponse.json(
+            { error: "A category with this name already exists" },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json(
+          { error: "Validation failed", details: error.message },
+          { status: 400 }
+        );
+      }
+      if (error instanceof DatabaseError) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
     }
 
-    const client = await getConnectedClient();
-    const db = client.db();
-
-    // Check if category with this name already exists for this user
-    const existingCategory = await db.collection<Category>("categories").findOne({
-      userId: session.user.id,
-      name: { $regex: new RegExp(`^${sanitizeString(validation.sanitized!.name)}$`, "i") }, // Case-insensitive match
-    });
-
-    if (existingCategory) {
-      return NextResponse.json(
-        { error: "A category with this name already exists" },
-        { status: 409 }
-      );
-    }
-
-    const category: Category = {
-      userId: session.user.id,
-      ...validation.sanitized!,
-      isDefault: false,
-      createdAt: new Date(),
-    };
-
-    const result = await db.collection<Category>("categories").insertOne(category);
-
-    const response = NextResponse.json({
-      ...category,
-      _id: category._id || result.insertedId,
-    });
+    const response = NextResponse.json(result.value);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating category:", error);
