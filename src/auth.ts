@@ -14,7 +14,7 @@ const getAdapter = () => {
 };
 
 export const authConfig: NextAuthConfig = {
-  // adapter: getAdapter(),
+  adapter: getAdapter(),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
