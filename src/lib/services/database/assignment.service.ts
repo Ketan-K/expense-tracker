@@ -30,7 +30,16 @@ class DatabaseAssignmentService {
         return ok(this.assignmentCache.get(userId)!);
       }
 
-      // Query Supabase
+      // Detect MongoDB ObjectId format (24-character hex string)
+      // If user has MongoDB ID, they're a MongoDB user - skip Supabase query
+      const isMongoId = /^[a-f0-9]{24}$/i.test(userId);
+      if (isMongoId) {
+        logger.debug("User ID is MongoDB ObjectId format, skipping assignment lookup", { userId });
+        this.assignmentCache.set(userId, "mongodb");
+        return ok("mongodb");
+      }
+
+      // Query Supabase for UUID-based users
       const { data, error } = await this.client
         .from("user_database_assignments")
         .select("database_provider")
@@ -47,7 +56,7 @@ class DatabaseAssignmentService {
       }
 
       const provider = data.database_provider as DatabaseProvider;
-      
+
       // Cache the result
       this.assignmentCache.set(userId, provider);
 
@@ -82,8 +91,10 @@ class DatabaseAssignmentService {
       logger.debug("Database user counts", { mongoCount, supabaseCount });
 
       // Determine least-used database with health check
-      const primaryProvider: DatabaseProvider = mongoCount <= supabaseCount ? "mongodb" : "supabase";
-      const fallbackProvider: DatabaseProvider = primaryProvider === "mongodb" ? "supabase" : "mongodb";
+      const primaryProvider: DatabaseProvider =
+        mongoCount <= supabaseCount ? "mongodb" : "supabase";
+      const fallbackProvider: DatabaseProvider =
+        primaryProvider === "mongodb" ? "supabase" : "mongodb";
 
       // Try to assign to primary provider
       const primaryResult = await this.assignUserToDatabase(userId, primaryProvider);
@@ -106,7 +117,6 @@ class DatabaseAssignmentService {
       // Both failed
       logger.error("Both database assignments failed", { userId });
       return fail(new DatabaseError("Unable to assign user to any database"));
-
     } catch (error) {
       logger.error("Unexpected error assigning to least-used database", error, { userId });
       return fail(new DatabaseError("Unexpected error during database assignment"));
@@ -121,12 +131,10 @@ class DatabaseAssignmentService {
     provider: DatabaseProvider
   ): Promise<Result<void, DatabaseError>> {
     try {
-      const { error } = await this.client
-        .from("user_database_assignments")
-        .insert({
-          user_id: userId,
-          database_provider: provider,
-        });
+      const { error } = await this.client.from("user_database_assignments").insert({
+        user_id: userId,
+        database_provider: provider,
+      });
 
       if (error) {
         logger.error("Failed to insert database assignment", error, { userId, provider });
@@ -173,12 +181,17 @@ class DatabaseAssignmentService {
   /**
    * Get detailed assignment statistics for admin
    */
-  async getAssignmentStats(): Promise<Result<{
-    mongodb: number;
-    supabase: number;
-    total: number;
-    unassigned: number;
-  }, DatabaseError>> {
+  async getAssignmentStats(): Promise<
+    Result<
+      {
+        mongodb: number;
+        supabase: number;
+        total: number;
+        unassigned: number;
+      },
+      DatabaseError
+    >
+  > {
     try {
       const statsResult = await this.getDatabaseStats();
       if (statsResult.isFailure()) {
