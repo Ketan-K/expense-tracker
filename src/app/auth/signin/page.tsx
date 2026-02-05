@@ -154,7 +154,6 @@ export default function SignInPage() {
           setError(`Deep link parsing failed: ${errorMsg}`);
           setDebugMode(true); // Auto-enable debug mode on error
         }
-        }
       });
 
       if (debugMode) addLog("👂 App URL listener registered");
@@ -220,7 +219,9 @@ export default function SignInPage() {
       try {
         if (debugMode) addLog("📱 Opening NextAuth signin in browser...");
 
-        const signinUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent("/dashboard")}`;
+        // Try both NextAuth v5 formats
+        const callbackUrl = encodeURIComponent("/dashboard");
+        const signinUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${callbackUrl}`;
         
         if (debugMode) addLog(`🔗 Signin URL: ${signinUrl}`);
 
