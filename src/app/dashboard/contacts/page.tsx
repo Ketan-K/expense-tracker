@@ -41,21 +41,21 @@ export default function ContactsPage() {
     return null;
   }
 
-  const filteredContacts = (contacts || []).filter((contact) =>
+  const filteredContacts = (contacts || []).filter(contact =>
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getContactLoans = (contactId: string) => {
-    return (loans || []).filter((loan) => loan.contactId === contactId);
+    return (loans || []).filter(loan => loan.contactId === contactId);
   };
 
   const getContactOutstanding = (contactId: string) => {
     const contactLoans = getContactLoans(contactId);
     const given = contactLoans
-      .filter((l) => l.direction === "given" && l.status === "active")
+      .filter(l => l.direction === "given" && l.status === "active")
       .reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
     const taken = contactLoans
-      .filter((l) => l.direction === "taken" && l.status === "active")
+      .filter(l => l.direction === "taken" && l.status === "active")
       .reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
     return { given, taken, net: given - taken };
   };
@@ -166,7 +166,7 @@ export default function ContactsPage() {
                 type="text"
                 placeholder="Search contacts..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
               />
             </div>
@@ -195,11 +195,11 @@ export default function ContactsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredContacts.map((contact) => {
+              {filteredContacts.map(contact => {
                 if (!contact._id) return null;
                 const outstanding = getContactOutstanding(contact._id);
                 const contactLoansData = getContactLoans(contact._id);
-                const activeLoans = contactLoansData.filter((l) => l.status === "active").length;
+                const activeLoans = contactLoansData.filter(l => l.status === "active").length;
 
                 return (
                   <div

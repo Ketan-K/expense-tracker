@@ -27,7 +27,7 @@ export default function IncomePage() {
       return await db.incomes
         .where("userId")
         .equals(session.user.id)
-        .and((income) => {
+        .and(income => {
           const incomeDate = new Date(income.date);
           return incomeDate >= monthStart && incomeDate <= monthEnd;
         })
@@ -157,7 +157,7 @@ export default function IncomePage() {
             </div>
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {incomes && incomes.length > 0 ? (
-                incomes.map((income) => (
+                incomes.map(income => (
                   <div
                     key={income._id}
                     className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"

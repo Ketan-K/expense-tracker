@@ -7,7 +7,7 @@ const themeName = process.env.NEXT_PUBLIC_THEME || "default";
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: true,
-  webpack: (config) => {
+  webpack: config => {
     // Add alias for active theme
     config.resolve.alias["@/active-theme.css"] = path.resolve(
       __dirname,

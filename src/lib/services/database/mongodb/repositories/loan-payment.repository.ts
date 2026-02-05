@@ -2,16 +2,16 @@
  * MongoDB Loan Payment Repository Implementation
  */
 
-import { ObjectId } from 'mongodb';
-import { ILoanPaymentRepository, BaseLoanPayment } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getMongoClient, handleMongoError } from '../client';
+import { ObjectId } from "mongodb";
+import { ILoanPaymentRepository, BaseLoanPayment } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getMongoClient, handleMongoError } from "../client";
 
 export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
   private async getCollection() {
     const client = await getMongoClient();
-    return client.db().collection('loanPayments');
+    return client.db().collection("loanPayments");
   }
 
   async findByLoanId(loanId: string, userId: string): Promise<Result<BaseLoanPayment[], DatabaseError>> {
@@ -36,7 +36,7 @@ export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch loan payments', handleMongoError(error, 'findByLoanId')));
+      return fail(new DatabaseError("Failed to fetch loan payments", handleMongoError(error, "findByLoanId")));
     }
   }
 
@@ -66,11 +66,11 @@ export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch loan payment', handleMongoError(error, 'findById')));
+      return fail(new DatabaseError("Failed to fetch loan payment", handleMongoError(error, "findById")));
     }
   }
 
-  async create(payment: Omit<BaseLoanPayment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseLoanPayment, DatabaseError>> {
+  async create(payment: Omit<BaseLoanPayment, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseLoanPayment, DatabaseError>> {
     try {
       const collection = await this.getCollection();
       const now = new Date();
@@ -92,7 +92,7 @@ export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
 
       return ok(created);
     } catch (error) {
-      return fail(new DatabaseError('Failed to create loan payment', handleMongoError(error, 'create')));
+      return fail(new DatabaseError("Failed to create loan payment", handleMongoError(error, "create")));
     }
   }
 
@@ -111,11 +111,11 @@ export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
             updatedAt: now 
           } 
         },
-        { returnDocument: 'after' }
+        { returnDocument: "after" }
       );
 
       if (!result) {
-        return fail(new DatabaseError('Loan payment not found or unauthorized'));
+        return fail(new DatabaseError("Loan payment not found or unauthorized"));
       }
 
       const updated: BaseLoanPayment = {
@@ -132,7 +132,7 @@ export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
 
       return ok(updated);
     } catch (error) {
-      return fail(new DatabaseError('Failed to update loan payment', handleMongoError(error, 'update')));
+      return fail(new DatabaseError("Failed to update loan payment", handleMongoError(error, "update")));
     }
   }
 
@@ -145,12 +145,12 @@ export class MongoDBLoanPaymentRepository implements ILoanPaymentRepository {
       });
 
       if (result.deletedCount === 0) {
-        return fail(new DatabaseError('Loan payment not found or unauthorized'));
+        return fail(new DatabaseError("Loan payment not found or unauthorized"));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Failed to delete loan payment', handleMongoError(error, 'delete')));
+      return fail(new DatabaseError("Failed to delete loan payment", handleMongoError(error, "delete")));
     }
   }
 }

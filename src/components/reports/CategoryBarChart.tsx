@@ -39,14 +39,14 @@ export default function CategoryBarChart({ data }: CategoryBarChartProps) {
           <YAxis />
           <Tooltip
             formatter={(value: number | string | Array<number | string> | undefined) => {
-              const numValue = typeof value === 'number' ? value : 0;
+              const numValue = typeof value === "number" ? value : 0;
               return `₹${numValue.toFixed(2)}`;
             }}
             contentStyle={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white'
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              border: "none",
+              borderRadius: "8px",
+              color: "white"
             }}
           />
           <Bar dataKey="value" fill={theme.colors.budgets} />

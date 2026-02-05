@@ -56,10 +56,10 @@ export default function ReportsClient({
 }: ReportsClientProps) {
   const [activeView, setActiveView] = useState<"overview" | "trends" | "transactions">(initialView);
   useEffect(() => {
-    const savedView = sessionStorage.getItem('dashboardActiveView') as "overview" | "trends" | "transactions" | null;
+    const savedView = sessionStorage.getItem("dashboardActiveView") as "overview" | "trends" | "transactions" | null;
     if (savedView) {
       setActiveView(savedView);
-      sessionStorage.removeItem('dashboardActiveView');
+      sessionStorage.removeItem("dashboardActiveView");
     }
   }, []);
   return (

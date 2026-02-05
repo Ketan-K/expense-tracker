@@ -41,14 +41,14 @@ export default function LoansPage() {
     return null;
   }
 
-  const filteredLoans = (loans || []).filter((loan) => {
+  const filteredLoans = (loans || []).filter(loan => {
     if (statusFilter !== "all" && loan.status !== statusFilter) return false;
     if (directionFilter !== "all" && loan.direction !== directionFilter) return false;
     return true;
   });
 
-  const givenLoans = filteredLoans.filter((l) => l.direction === "given");
-  const takenLoans = filteredLoans.filter((l) => l.direction === "taken");
+  const givenLoans = filteredLoans.filter(l => l.direction === "given");
+  const takenLoans = filteredLoans.filter(l => l.direction === "taken");
 
   const totalGiven = givenLoans.reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
   const totalTaken = takenLoans.reduce((sum, l) => sum + (l.outstandingAmount || 0), 0);
@@ -160,7 +160,7 @@ export default function LoansPage() {
             </motion.div>
 
             <motion.div 
-              className={`bg-gradient-to-br ${netPosition >= 0 ? 'from-app-income to-app-income-end' : 'from-app-expenses to-app-expenses-end'} rounded-2xl shadow-lg p-6 text-white`}
+              className={`bg-gradient-to-br ${netPosition >= 0 ? "from-app-income to-app-income-end" : "from-app-expenses to-app-expenses-end"} rounded-2xl shadow-lg p-6 text-white`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
@@ -185,7 +185,7 @@ export default function LoansPage() {
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Direction</label>
                 <div className="flex gap-2">
-                  {(["all", "given", "taken"] as DirectionFilter[]).map((dir) => (
+                  {(["all", "given", "taken"] as DirectionFilter[]).map(dir => (
                     <button
                       key={dir}
                       onClick={() => setDirectionFilter(dir)}
@@ -204,7 +204,7 @@ export default function LoansPage() {
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
                 <div className="flex gap-2">
-                  {(["all", "active", "paid", "overdue"] as StatusFilter[]).map((stat) => (
+                  {(["all", "active", "paid", "overdue"] as StatusFilter[]).map(stat => (
                     <button
                       key={stat}
                       onClick={() => setStatusFilter(stat)}
@@ -243,7 +243,7 @@ export default function LoansPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredLoans.map((loan) => (
+              {filteredLoans.map(loan => (
                 <div
                   key={loan._id}
                   onClick={() => router.push(`/dashboard/loans/${loan._id}`)}

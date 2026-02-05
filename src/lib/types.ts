@@ -182,7 +182,7 @@ export interface Budget {
 }
 
 // Import centralized color palette
-import { COLORS } from './colors';
+import { COLORS } from "./colors";
 
 export const DEFAULT_CATEGORIES = [
   { name: "Grocery", icon: "ShoppingCart", color: COLORS.categories[0], isDefault: true },

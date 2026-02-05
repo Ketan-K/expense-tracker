@@ -4,10 +4,10 @@
  */
 
 // Re-export types for convenience
-export * from './interface';
+export * from "./interface";
 
 // Export router functions
-export { getDatabaseServiceForUser, getDatabaseService } from './router';
+export { getDatabaseServiceForUser, getDatabaseService } from "./router";
 
 // Export assignment service
-export { databaseAssignmentService, type DatabaseProvider, type DatabaseAssignment } from './assignment.service';
+export { databaseAssignmentService, type DatabaseProvider, type DatabaseAssignment } from "./assignment.service";

@@ -3,14 +3,14 @@
  * Combines all repositories into a single service
  */
 
-import { IDatabaseService } from '../interface';
-import { SupabaseExpenseRepository } from './repositories/expense.repository';
-import { SupabaseIncomeRepository } from './repositories/income.repository';
-import { SupabaseCategoryRepository } from './repositories/category.repository';
-import { SupabaseBudgetRepository } from './repositories/budget.repository';
-import { SupabaseContactRepository } from './repositories/contact.repository';
-import { SupabaseLoanRepository } from './repositories/loan.repository';
-import { SupabaseLoanPaymentRepository } from './repositories/loan-payment.repository';
+import { IDatabaseService } from "../interface";
+import { SupabaseExpenseRepository } from "./repositories/expense.repository";
+import { SupabaseIncomeRepository } from "./repositories/income.repository";
+import { SupabaseCategoryRepository } from "./repositories/category.repository";
+import { SupabaseBudgetRepository } from "./repositories/budget.repository";
+import { SupabaseContactRepository } from "./repositories/contact.repository";
+import { SupabaseLoanRepository } from "./repositories/loan.repository";
+import { SupabaseLoanPaymentRepository } from "./repositories/loan-payment.repository";
 
 class SupabaseDatabaseService implements IDatabaseService {
   public readonly expenses = new SupabaseExpenseRepository();

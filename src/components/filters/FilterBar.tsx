@@ -8,7 +8,7 @@ export interface FilterState {
   categories: string[];
   amountRange: { min: number; max: number } | null;
   paymentMethods: string[];
-  sortBy: 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'category';
+  sortBy: "date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "category";
 }
 
 interface FilterBarProps {
@@ -48,14 +48,14 @@ export default function FilterBar({
 
   const toggleCategory = (category: string) => {
     const newCategories = filters.categories.includes(category)
-      ? filters.categories.filter((c) => c !== category)
+      ? filters.categories.filter(c => c !== category)
       : [...filters.categories, category];
     updateFilter("categories", newCategories);
   };
 
   const togglePaymentMethod = (method: string) => {
     const newMethods = filters.paymentMethods.includes(method)
-      ? filters.paymentMethods.filter((m) => m !== method)
+      ? filters.paymentMethods.filter(m => m !== method)
       : [...filters.paymentMethods, method];
     updateFilter("paymentMethods", newMethods);
   };
@@ -88,7 +88,7 @@ export default function FilterBar({
               type="text"
               placeholder="Search transactions..."
               value={filters.search}
-              onChange={(e) => updateFilter("search", e.target.value)}
+              onChange={e => updateFilter("search", e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
             />
           </div>
@@ -120,7 +120,7 @@ export default function FilterBar({
               Categories
             </label>
             <div className="flex flex-wrap gap-2">
-              {availableCategories.map((category) => (
+              {availableCategories.map(category => (
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
@@ -142,7 +142,7 @@ export default function FilterBar({
               Amount Range
             </label>
             <div className="flex flex-wrap gap-2">
-              {AMOUNT_RANGES.map((range) => (
+              {AMOUNT_RANGES.map(range => (
                 <button
                   key={range.label}
                   onClick={() => updateFilter("amountRange", range.value)}
@@ -164,7 +164,7 @@ export default function FilterBar({
               Payment Method
             </label>
             <div className="flex gap-2">
-              {PAYMENT_METHODS.map((method) => (
+              {PAYMENT_METHODS.map(method => (
                 <button
                   key={method}
                   onClick={() => togglePaymentMethod(method)}
@@ -187,12 +187,12 @@ export default function FilterBar({
             </label>
             <select
               value={filters.sortBy}
-              onChange={(e) =>
+              onChange={e =>
                 updateFilter("sortBy", e.target.value as FilterState["sortBy"])
               }
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
             >
-              {SORT_OPTIONS.map((option) => (
+              {SORT_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

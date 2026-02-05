@@ -2,30 +2,30 @@
  * Supabase Contact Repository Implementation
  */
 
-import { IContactRepository, BaseContact } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getSupabaseClient, handleSupabaseError } from '../client';
+import { IContactRepository, BaseContact } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getSupabaseClient, handleSupabaseError } from "../client";
 
 export class SupabaseContactRepository implements IContactRepository {
   private client = getSupabaseClient();
-  private table = 'contacts';
+  private table = "contacts";
 
   async findByUserId(userId: string): Promise<Result<BaseContact[], DatabaseError>> {
     try {
       const { data, error } = await this.client
         .from(this.table)
-        .select('*')
-        .eq('userId', userId)
-        .order('name', { ascending: true });
+        .select("*")
+        .eq("userId", userId)
+        .order("name", { ascending: true });
 
       if (error) {
-        return fail(new DatabaseError('Failed to fetch contacts', handleSupabaseError(error, 'findByUserId')));
+        return fail(new DatabaseError("Failed to fetch contacts", handleSupabaseError(error, "findByUserId")));
       }
 
       return ok(data as BaseContact[]);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error fetching contacts', error));
+      return fail(new DatabaseError("Unexpected error fetching contacts", error));
     }
   }
 
@@ -33,19 +33,19 @@ export class SupabaseContactRepository implements IContactRepository {
     try {
       const { data, error } = await this.client
         .from(this.table)
-        .select('*')
-        .eq('id', id)
-        .eq('userId', userId)
+        .select("*")
+        .eq("id", id)
+        .eq("userId", userId)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return ok(null);
-        return fail(new DatabaseError('Failed to fetch contact', handleSupabaseError(error, 'findById')));
+        if (error.code === "PGRST116") return ok(null);
+        return fail(new DatabaseError("Failed to fetch contact", handleSupabaseError(error, "findById")));
       }
 
       return ok(data as BaseContact);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error fetching contact', error));
+      return fail(new DatabaseError("Unexpected error fetching contact", error));
     }
   }
 
@@ -53,21 +53,21 @@ export class SupabaseContactRepository implements IContactRepository {
     try {
       const { data, error } = await this.client
         .from(this.table)
-        .select('*')
-        .eq('userId', userId)
-        .ilike('name', `%${name}%`);
+        .select("*")
+        .eq("userId", userId)
+        .ilike("name", `%${name}%`);
 
       if (error) {
-        return fail(new DatabaseError('Failed to search contacts', handleSupabaseError(error, 'findByName')));
+        return fail(new DatabaseError("Failed to search contacts", handleSupabaseError(error, "findByName")));
       }
 
       return ok(data as BaseContact[]);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error searching contacts', error));
+      return fail(new DatabaseError("Unexpected error searching contacts", error));
     }
   }
 
-  async create(contact: Omit<BaseContact, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseContact, DatabaseError>> {
+  async create(contact: Omit<BaseContact, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseContact, DatabaseError>> {
     try {
       const now = new Date();
       const { data, error } = await this.client
@@ -81,12 +81,12 @@ export class SupabaseContactRepository implements IContactRepository {
         .single();
 
       if (error) {
-        return fail(new DatabaseError('Failed to create contact', handleSupabaseError(error, 'create')));
+        return fail(new DatabaseError("Failed to create contact", handleSupabaseError(error, "create")));
       }
 
       return ok(data as BaseContact);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error creating contact', error));
+      return fail(new DatabaseError("Unexpected error creating contact", error));
     }
   }
 
@@ -98,18 +98,18 @@ export class SupabaseContactRepository implements IContactRepository {
           ...contact,
           updatedAt: new Date().toISOString(),
         })
-        .eq('id', id)
-        .eq('userId', userId)
+        .eq("id", id)
+        .eq("userId", userId)
         .select()
         .single();
 
       if (error) {
-        return fail(new DatabaseError('Failed to update contact', handleSupabaseError(error, 'update')));
+        return fail(new DatabaseError("Failed to update contact", handleSupabaseError(error, "update")));
       }
 
       return ok(data as BaseContact);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error updating contact', error));
+      return fail(new DatabaseError("Unexpected error updating contact", error));
     }
   }
 
@@ -118,16 +118,16 @@ export class SupabaseContactRepository implements IContactRepository {
       const { error } = await this.client
         .from(this.table)
         .delete()
-        .eq('id', id)
-        .eq('userId', userId);
+        .eq("id", id)
+        .eq("userId", userId);
 
       if (error) {
-        return fail(new DatabaseError('Failed to delete contact', handleSupabaseError(error, 'delete')));
+        return fail(new DatabaseError("Failed to delete contact", handleSupabaseError(error, "delete")));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error deleting contact', error));
+      return fail(new DatabaseError("Unexpected error deleting contact", error));
     }
   }
 }

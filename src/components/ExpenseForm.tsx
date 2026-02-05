@@ -453,10 +453,10 @@ export default function ExpenseForm({
                 availableIcons.filter(icon =>
                   icon.name.toLowerCase().includes(iconSearch.toLowerCase())
                 ).length === 0 && (
-                  <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
                     No icons found matching &ldquo;{iconSearch}&rdquo;
-                  </p>
-                )}
+                </p>
+              )}
             </div>
 
             {/* Color Picker */}

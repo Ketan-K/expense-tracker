@@ -3,8 +3,8 @@
  * Abstracts authentication provider for future flexibility
  */
 
-import { Result } from '@/lib/core/result';
-import { AuthError } from '@/lib/core/errors';
+import { Result } from "@/lib/core/result";
+import { AuthError } from "@/lib/core/errors";
 
 export interface User {
   id: string;

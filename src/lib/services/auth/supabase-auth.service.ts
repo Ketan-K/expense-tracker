@@ -2,13 +2,13 @@
  * Supabase authentication service implementation
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { IAuthService, User, Session } from './interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { AuthError } from '@/lib/core/errors';
-import { config } from '@/lib/core/config';
-import { logger } from '@/lib/core/logger';
-import { databaseAssignmentService } from '../database/assignment.service';
+import { createClient } from "@supabase/supabase-js";
+import { IAuthService, User, Session } from "./interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { AuthError } from "@/lib/core/errors";
+import { config } from "@/lib/core/config";
+import { logger } from "@/lib/core/logger";
+import { databaseAssignmentService } from "../database/assignment.service";
 
 class SupabaseAuthService implements IAuthService {
   private client;
@@ -35,8 +35,8 @@ class SupabaseAuthService implements IAuthService {
       const { data, error } = await this.client.auth.getUser(sessionToken);
 
       if (error) {
-        logger.error('Failed to get user', error);
-        return fail(new AuthError('Failed to get user'));
+        logger.error("Failed to get user", error);
+        return fail(new AuthError("Failed to get user"));
       }
 
       if (!data.user) {
@@ -52,8 +52,8 @@ class SupabaseAuthService implements IAuthService {
 
       return ok(user);
     } catch (error) {
-      logger.error('Unexpected error getting user', error);
-      return fail(new AuthError('Unexpected error getting user'));
+      logger.error("Unexpected error getting user", error);
+      return fail(new AuthError("Unexpected error getting user"));
     }
   }
 
@@ -77,8 +77,8 @@ class SupabaseAuthService implements IAuthService {
 
       return ok(session);
     } catch (error) {
-      logger.error('Unexpected error validating session', error);
-      return fail(new AuthError('Unexpected error validating session'));
+      logger.error("Unexpected error validating session", error);
+      return fail(new AuthError("Unexpected error validating session"));
     }
   }
 
@@ -95,7 +95,7 @@ class SupabaseAuthService implements IAuthService {
       });
 
       if (error) {
-        logger.error('Failed to create user', error, { email });
+        logger.error("Failed to create user", error, { email });
         return fail(new AuthError(`Failed to create user: ${error.message}`));
       }
 
@@ -107,17 +107,17 @@ class SupabaseAuthService implements IAuthService {
       };
 
       // Automatically assign user to least-used database
-      logger.info('Assigning new user to database', { userId: user.id, email });
+      logger.info("Assigning new user to database", { userId: user.id, email });
       const assignmentResult = await databaseAssignmentService.assignToLeastUsed(user.id);
 
       if (assignmentResult.isFailure()) {
-        logger.error('Failed to assign user to database', assignmentResult.error, { userId: user.id });
+        logger.error("Failed to assign user to database", assignmentResult.error, { userId: user.id });
         // This is critical - delete the user if assignment fails
         await this.client.auth.admin.deleteUser(user.id);
-        return fail(new AuthError('Failed to assign user to database. Registration cancelled.'));
+        return fail(new AuthError("Failed to assign user to database. Registration cancelled."));
       }
 
-      logger.info('User created and assigned to database', {
+      logger.info("User created and assigned to database", {
         userId: user.id,
         email,
         database: assignmentResult.value,
@@ -125,8 +125,8 @@ class SupabaseAuthService implements IAuthService {
 
       return ok(user);
     } catch (error) {
-      logger.error('Unexpected error creating user', error, { email });
-      return fail(new AuthError('Unexpected error creating user'));
+      logger.error("Unexpected error creating user", error, { email });
+      return fail(new AuthError("Unexpected error creating user"));
     }
   }
 
@@ -135,8 +135,8 @@ class SupabaseAuthService implements IAuthService {
       const { data, error } = await this.client.auth.admin.listUsers();
 
       if (error) {
-        logger.error('Failed to list users', error);
-        return fail(new AuthError('Failed to get user by email'));
+        logger.error("Failed to list users", error);
+        return fail(new AuthError("Failed to get user by email"));
       }
 
       const foundUser = data.users.find((u: any) => u.email === email);
@@ -154,8 +154,8 @@ class SupabaseAuthService implements IAuthService {
 
       return ok(user);
     } catch (error) {
-      logger.error('Unexpected error getting user by email', error, { email });
-      return fail(new AuthError('Unexpected error getting user by email'));
+      logger.error("Unexpected error getting user by email", error, { email });
+      return fail(new AuthError("Unexpected error getting user by email"));
     }
   }
 

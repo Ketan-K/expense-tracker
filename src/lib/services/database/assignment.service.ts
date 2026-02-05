@@ -3,12 +3,12 @@
  * Manages user assignments to MongoDB or Supabase databases
  */
 
-import { getSupabaseClient } from './supabase/client';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { logger } from '@/lib/core/logger';
+import { getSupabaseClient } from "./supabase/client";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { logger } from "@/lib/core/logger";
 
-export type DatabaseProvider = 'mongodb' | 'supabase';
+export type DatabaseProvider = "mongodb" | "supabase";
 
 export interface DatabaseAssignment {
   userId: string;
@@ -32,18 +32,18 @@ class DatabaseAssignmentService {
 
       // Query Supabase
       const { data, error } = await this.client
-        .from('user_database_assignments')
-        .select('database_provider')
-        .eq('user_id', userId)
+        .from("user_database_assignments")
+        .select("database_provider")
+        .eq("user_id", userId)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === "PGRST116") {
           // No assignment found
           return ok(null);
         }
-        logger.error('Failed to get database assignment', error, { userId });
-        return fail(new DatabaseError('Failed to get database assignment'));
+        logger.error("Failed to get database assignment", error, { userId });
+        return fail(new DatabaseError("Failed to get database assignment"));
       }
 
       const provider = data.database_provider as DatabaseProvider;
@@ -53,8 +53,8 @@ class DatabaseAssignmentService {
 
       return ok(provider);
     } catch (error) {
-      logger.error('Unexpected error getting database assignment', error, { userId });
-      return fail(new DatabaseError('Unexpected error getting database assignment'));
+      logger.error("Unexpected error getting database assignment", error, { userId });
+      return fail(new DatabaseError("Unexpected error getting database assignment"));
     }
   }
 
@@ -63,27 +63,27 @@ class DatabaseAssignmentService {
    */
   async assignToLeastUsed(userId: string): Promise<Result<DatabaseProvider, DatabaseError>> {
     try {
-      logger.info('Assigning user to least-used database', { userId });
+      logger.info("Assigning user to least-used database", { userId });
 
       // Count users in each database
       const { data: counts, error: countError } = await this.client
-        .from('user_database_assignments')
-        .select('database_provider', { count: 'exact', head: false });
+        .from("user_database_assignments")
+        .select("database_provider", { count: "exact", head: false });
 
       if (countError) {
-        logger.error('Failed to count database assignments', countError);
-        return fail(new DatabaseError('Failed to count database assignments'));
+        logger.error("Failed to count database assignments", countError);
+        return fail(new DatabaseError("Failed to count database assignments"));
       }
 
       // Calculate user counts per database
-      const mongoCount = counts.filter((c: any) => c.database_provider === 'mongodb').length;
-      const supabaseCount = counts.filter((c: any) => c.database_provider === 'supabase').length;
+      const mongoCount = counts.filter((c: any) => c.database_provider === "mongodb").length;
+      const supabaseCount = counts.filter((c: any) => c.database_provider === "supabase").length;
 
-      logger.debug('Database user counts', { mongoCount, supabaseCount });
+      logger.debug("Database user counts", { mongoCount, supabaseCount });
 
       // Determine least-used database with health check
-      let primaryProvider: DatabaseProvider = mongoCount <= supabaseCount ? 'mongodb' : 'supabase';
-      let fallbackProvider: DatabaseProvider = primaryProvider === 'mongodb' ? 'supabase' : 'mongodb';
+      const primaryProvider: DatabaseProvider = mongoCount <= supabaseCount ? "mongodb" : "supabase";
+      const fallbackProvider: DatabaseProvider = primaryProvider === "mongodb" ? "supabase" : "mongodb";
 
       // Try to assign to primary provider
       const primaryResult = await this.assignUserToDatabase(userId, primaryProvider);
@@ -92,7 +92,7 @@ class DatabaseAssignmentService {
       }
 
       // Fallback to other database
-      logger.warn('Primary database assignment failed, trying fallback', {
+      logger.warn("Primary database assignment failed, trying fallback", {
         userId,
         primary: primaryProvider,
         fallback: fallbackProvider,
@@ -104,12 +104,12 @@ class DatabaseAssignmentService {
       }
 
       // Both failed
-      logger.error('Both database assignments failed', { userId });
-      return fail(new DatabaseError('Unable to assign user to any database'));
+      logger.error("Both database assignments failed", { userId });
+      return fail(new DatabaseError("Unable to assign user to any database"));
 
     } catch (error) {
-      logger.error('Unexpected error assigning to least-used database', error, { userId });
-      return fail(new DatabaseError('Unexpected error during database assignment'));
+      logger.error("Unexpected error assigning to least-used database", error, { userId });
+      return fail(new DatabaseError("Unexpected error during database assignment"));
     }
   }
 
@@ -122,25 +122,25 @@ class DatabaseAssignmentService {
   ): Promise<Result<void, DatabaseError>> {
     try {
       const { error } = await this.client
-        .from('user_database_assignments')
+        .from("user_database_assignments")
         .insert({
           user_id: userId,
           database_provider: provider,
         });
 
       if (error) {
-        logger.error('Failed to insert database assignment', error, { userId, provider });
+        logger.error("Failed to insert database assignment", error, { userId, provider });
         return fail(new DatabaseError(`Failed to assign user to ${provider}`));
       }
 
       // Update cache
       this.assignmentCache.set(userId, provider);
 
-      logger.info('Successfully assigned user to database', { userId, provider });
+      logger.info("Successfully assigned user to database", { userId, provider });
       return ok(undefined);
     } catch (error) {
-      logger.error('Unexpected error assigning user to database', error, { userId, provider });
-      return fail(new DatabaseError('Unexpected error during database assignment'));
+      logger.error("Unexpected error assigning user to database", error, { userId, provider });
+      return fail(new DatabaseError("Unexpected error during database assignment"));
     }
   }
 
@@ -150,23 +150,53 @@ class DatabaseAssignmentService {
   async getDatabaseStats(): Promise<Result<Record<DatabaseProvider, number>, DatabaseError>> {
     try {
       const { data, error } = await this.client
-        .from('user_database_assignments')
-        .select('database_provider');
+        .from("user_database_assignments")
+        .select("database_provider");
 
       if (error) {
-        logger.error('Failed to get database stats', error);
-        return fail(new DatabaseError('Failed to get database stats'));
+        logger.error("Failed to get database stats", error);
+        return fail(new DatabaseError("Failed to get database stats"));
       }
 
       const stats = {
-        mongodb: data.filter((d: any) => d.database_provider === 'mongodb').length,
-        supabase: data.filter((d: any) => d.database_provider === 'supabase').length,
+        mongodb: data.filter((d: any) => d.database_provider === "mongodb").length,
+        supabase: data.filter((d: any) => d.database_provider === "supabase").length,
       };
 
       return ok(stats);
     } catch (error) {
-      logger.error('Unexpected error getting database stats', error);
-      return fail(new DatabaseError('Unexpected error getting database stats'));
+      logger.error("Unexpected error getting database stats", error);
+      return fail(new DatabaseError("Unexpected error getting database stats"));
+    }
+  }
+
+  /**
+   * Get detailed assignment statistics for admin
+   */
+  async getAssignmentStats(): Promise<Result<{
+    mongodb: number;
+    supabase: number;
+    total: number;
+    unassigned: number;
+  }, DatabaseError>> {
+    try {
+      const statsResult = await this.getDatabaseStats();
+      if (statsResult.isFailure()) {
+        return fail(statsResult.error);
+      }
+
+      const stats = statsResult.value;
+      const total = stats.mongodb + stats.supabase;
+
+      return ok({
+        mongodb: stats.mongodb,
+        supabase: stats.supabase,
+        total,
+        unassigned: 0, // Will be calculated when we query total users
+      });
+    } catch (error) {
+      logger.error("Unexpected error getting assignment stats", error);
+      return fail(new DatabaseError("Unexpected error getting assignment stats"));
     }
   }
 
@@ -175,7 +205,7 @@ class DatabaseAssignmentService {
    */
   clearCache(): void {
     this.assignmentCache.clear();
-    logger.debug('Database assignment cache cleared');
+    logger.debug("Database assignment cache cleared");
   }
 }
 

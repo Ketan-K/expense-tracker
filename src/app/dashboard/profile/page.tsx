@@ -423,19 +423,19 @@ export default function ProfilePage() {
               (unsyncedStats.expenses > 0 ||
                 unsyncedStats.budgets > 0 ||
                 unsyncedStats.categories > 0) && (
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <p className="text-sm text-orange-800 dark:text-orange-300 font-medium mb-2">
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                <p className="text-sm text-orange-800 dark:text-orange-300 font-medium mb-2">
                     Unsynced Data Found
-                  </p>
-                  <div className="space-y-1 text-xs text-orange-700 dark:text-orange-400">
-                    {unsyncedStats.expenses > 0 && <div>• {unsyncedStats.expenses} expenses</div>}
-                    {unsyncedStats.budgets > 0 && <div>• {unsyncedStats.budgets} budgets</div>}
-                    {unsyncedStats.categories > 0 && (
-                      <div>• {unsyncedStats.categories} categories</div>
-                    )}
-                  </div>
+                </p>
+                <div className="space-y-1 text-xs text-orange-700 dark:text-orange-400">
+                  {unsyncedStats.expenses > 0 && <div>• {unsyncedStats.expenses} expenses</div>}
+                  {unsyncedStats.budgets > 0 && <div>• {unsyncedStats.budgets} budgets</div>}
+                  {unsyncedStats.categories > 0 && (
+                    <div>• {unsyncedStats.categories} categories</div>
+                  )}
                 </div>
-              )}
+              </div>
+            )}
             <button
               onClick={() => setShowSyncDialog(true)}
               className="w-full mt-4 py-3 sm:py-4 px-4 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl sm:rounded-2xl hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all font-medium text-sm sm:text-base active:scale-95 cursor-pointer flex items-center justify-center gap-2"
@@ -546,10 +546,10 @@ export default function ProfilePage() {
                             <div className="font-medium">{item.data.name}</div>
                             {item.data.primaryPhone !== undefined &&
                               item.data.phones?.[item.data.primaryPhone] && (
-                                <div className="text-xs text-gray-500 dark:text-gray-500">
-                                  {item.data.phones[item.data.primaryPhone]}
-                                </div>
-                              )}
+                              <div className="text-xs text-gray-500 dark:text-gray-500">
+                                {item.data.phones[item.data.primaryPhone]}
+                              </div>
+                            )}
                           </>
                         )}
                         {item.collection === "loans" && item.data && (
@@ -659,13 +659,13 @@ export default function ProfilePage() {
                   (unsyncedStats.expenses === 0 &&
                     unsyncedStats.budgets === 0 &&
                     unsyncedStats.categories === 0)) && (
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="text-sm font-medium">Everything is synced!</span>
-                    </div>
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2 text-green-800 dark:text-green-300">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="text-sm font-medium">Everything is synced!</span>
                   </div>
-                )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">

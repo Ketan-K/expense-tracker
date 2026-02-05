@@ -2,16 +2,16 @@
  * MongoDB Category Repository Implementation
  */
 
-import { ObjectId } from 'mongodb';
-import { ICategoryRepository, BaseCategory } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getMongoClient, handleMongoError } from '../client';
+import { ObjectId } from "mongodb";
+import { ICategoryRepository, BaseCategory } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getMongoClient, handleMongoError } from "../client";
 
 export class MongoDBCategoryRepository implements ICategoryRepository {
   private async getCollection() {
     const client = await getMongoClient();
-    return client.db().collection('categories');
+    return client.db().collection("categories");
   }
 
   async findByUserId(userId: string): Promise<Result<BaseCategory[], DatabaseError>> {
@@ -34,7 +34,7 @@ export class MongoDBCategoryRepository implements ICategoryRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch categories', handleMongoError(error, 'findByUserId')));
+      return fail(new DatabaseError("Failed to fetch categories", handleMongoError(error, "findByUserId")));
     }
   }
 
@@ -62,11 +62,11 @@ export class MongoDBCategoryRepository implements ICategoryRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch category', handleMongoError(error, 'findById')));
+      return fail(new DatabaseError("Failed to fetch category", handleMongoError(error, "findById")));
     }
   }
 
-  async create(category: Omit<BaseCategory, 'id' | 'createdAt'>): Promise<Result<BaseCategory, DatabaseError>> {
+  async create(category: Omit<BaseCategory, "id" | "createdAt">): Promise<Result<BaseCategory, DatabaseError>> {
     try {
       const collection = await this.getCollection();
       const doc = {
@@ -87,7 +87,7 @@ export class MongoDBCategoryRepository implements ICategoryRepository {
 
       return ok(created);
     } catch (error) {
-      return fail(new DatabaseError('Failed to create category', handleMongoError(error, 'create')));
+      return fail(new DatabaseError("Failed to create category", handleMongoError(error, "create")));
     }
   }
 
@@ -107,12 +107,12 @@ export class MongoDBCategoryRepository implements ICategoryRepository {
           $set: updateData,
         },
         {
-          returnDocument: 'after',
+          returnDocument: "after",
         }
       );
 
       if (!result) {
-        return fail(new DatabaseError('Category not found or not updated'));
+        return fail(new DatabaseError("Category not found or not updated"));
       }
 
       const updated: BaseCategory = {
@@ -127,7 +127,7 @@ export class MongoDBCategoryRepository implements ICategoryRepository {
 
       return ok(updated);
     } catch (error) {
-      return fail(new DatabaseError('Failed to update category', handleMongoError(error, 'update')));
+      return fail(new DatabaseError("Failed to update category", handleMongoError(error, "update")));
     }
   }
 
@@ -140,12 +140,12 @@ export class MongoDBCategoryRepository implements ICategoryRepository {
       });
 
       if (result.deletedCount === 0) {
-        return fail(new DatabaseError('Category not found or not deleted'));
+        return fail(new DatabaseError("Category not found or not deleted"));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Failed to delete category', handleMongoError(error, 'delete')));
+      return fail(new DatabaseError("Failed to delete category", handleMongoError(error, "delete")));
     }
   }
 }

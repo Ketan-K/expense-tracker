@@ -77,16 +77,16 @@ export default function EditExpenseModal({
 
   const initialData = expense
     ? {
-        date:
+      date:
           expense.date instanceof Date
             ? expense.date.toISOString().split("T")[0]
             : new Date(expense.date).toISOString().split("T")[0],
-        amount: expense.amount.toString(),
-        category: expense.category,
-        description: expense.description || "",
-        paymentMethod: expense.paymentMethod || "upi",
-        type: expense.type || "expense",
-      }
+      amount: expense.amount.toString(),
+      category: expense.category,
+      description: expense.description || "",
+      paymentMethod: expense.paymentMethod || "upi",
+      type: expense.type || "expense",
+    }
     : undefined;
 
   return (

@@ -2,30 +2,30 @@
  * Supabase Loan Repository Implementation
  */
 
-import { ILoanRepository, BaseLoan } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getSupabaseClient, handleSupabaseError } from '../client';
+import { ILoanRepository, BaseLoan } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getSupabaseClient, handleSupabaseError } from "../client";
 
 export class SupabaseLoanRepository implements ILoanRepository {
   private client = getSupabaseClient();
-  private table = 'loans';
+  private table = "loans";
 
   async findByUserId(userId: string): Promise<Result<BaseLoan[], DatabaseError>> {
     try {
       const { data, error } = await this.client
         .from(this.table)
-        .select('*')
-        .eq('userId', userId)
-        .order('startDate', { ascending: false });
+        .select("*")
+        .eq("userId", userId)
+        .order("startDate", { ascending: false });
 
       if (error) {
-        return fail(new DatabaseError('Failed to fetch loans', handleSupabaseError(error, 'findByUserId')));
+        return fail(new DatabaseError("Failed to fetch loans", handleSupabaseError(error, "findByUserId")));
       }
 
       return ok(data as BaseLoan[]);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error fetching loans', error));
+      return fail(new DatabaseError("Unexpected error fetching loans", error));
     }
   }
 
@@ -33,19 +33,19 @@ export class SupabaseLoanRepository implements ILoanRepository {
     try {
       const { data, error } = await this.client
         .from(this.table)
-        .select('*')
-        .eq('id', id)
-        .eq('userId', userId)
+        .select("*")
+        .eq("id", id)
+        .eq("userId", userId)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return ok(null);
-        return fail(new DatabaseError('Failed to fetch loan', handleSupabaseError(error, 'findById')));
+        if (error.code === "PGRST116") return ok(null);
+        return fail(new DatabaseError("Failed to fetch loan", handleSupabaseError(error, "findById")));
       }
 
       return ok(data as BaseLoan);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error fetching loan', error));
+      return fail(new DatabaseError("Unexpected error fetching loan", error));
     }
   }
 
@@ -53,22 +53,22 @@ export class SupabaseLoanRepository implements ILoanRepository {
     try {
       const { data, error } = await this.client
         .from(this.table)
-        .select('*')
-        .eq('userId', userId)
-        .eq('status', status)
-        .order('startDate', { ascending: false });
+        .select("*")
+        .eq("userId", userId)
+        .eq("status", status)
+        .order("startDate", { ascending: false });
 
       if (error) {
-        return fail(new DatabaseError('Failed to fetch loans by status', handleSupabaseError(error, 'findByStatus')));
+        return fail(new DatabaseError("Failed to fetch loans by status", handleSupabaseError(error, "findByStatus")));
       }
 
       return ok(data as BaseLoan[]);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error fetching loans by status', error));
+      return fail(new DatabaseError("Unexpected error fetching loans by status", error));
     }
   }
 
-  async create(loan: Omit<BaseLoan, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseLoan, DatabaseError>> {
+  async create(loan: Omit<BaseLoan, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseLoan, DatabaseError>> {
     try {
       const now = new Date();
       const { data, error } = await this.client
@@ -82,12 +82,12 @@ export class SupabaseLoanRepository implements ILoanRepository {
         .single();
 
       if (error) {
-        return fail(new DatabaseError('Failed to create loan', handleSupabaseError(error, 'create')));
+        return fail(new DatabaseError("Failed to create loan", handleSupabaseError(error, "create")));
       }
 
       return ok(data as BaseLoan);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error creating loan', error));
+      return fail(new DatabaseError("Unexpected error creating loan", error));
     }
   }
 
@@ -99,18 +99,18 @@ export class SupabaseLoanRepository implements ILoanRepository {
           ...loan,
           updatedAt: new Date().toISOString(),
         })
-        .eq('id', id)
-        .eq('userId', userId)
+        .eq("id", id)
+        .eq("userId", userId)
         .select()
         .single();
 
       if (error) {
-        return fail(new DatabaseError('Failed to update loan', handleSupabaseError(error, 'update')));
+        return fail(new DatabaseError("Failed to update loan", handleSupabaseError(error, "update")));
       }
 
       return ok(data as BaseLoan);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error updating loan', error));
+      return fail(new DatabaseError("Unexpected error updating loan", error));
     }
   }
 
@@ -119,16 +119,16 @@ export class SupabaseLoanRepository implements ILoanRepository {
       const { error } = await this.client
         .from(this.table)
         .delete()
-        .eq('id', id)
-        .eq('userId', userId);
+        .eq("id", id)
+        .eq("userId", userId);
 
       if (error) {
-        return fail(new DatabaseError('Failed to delete loan', handleSupabaseError(error, 'delete')));
+        return fail(new DatabaseError("Failed to delete loan", handleSupabaseError(error, "delete")));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Unexpected error deleting loan', error));
+      return fail(new DatabaseError("Unexpected error deleting loan", error));
     }
   }
 }

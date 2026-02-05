@@ -50,16 +50,16 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number | undefined) => value ? `₹${value.toFixed(2)}` : '₹0.00'}
+            formatter={(value: number | undefined) => value ? `₹${value.toFixed(2)}` : "₹0.00"}
             contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              color: '#111827',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "8px",
+              color: "#111827",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
             }}
             labelStyle={{
-              color: '#111827',
+              color: "#111827",
               fontWeight: 600
             }}
           />

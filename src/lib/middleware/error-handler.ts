@@ -3,13 +3,13 @@
  * Converts service Result errors to HTTP responses
  */
 
-import { NextResponse } from 'next/server';
-import { AppError } from '@/lib/core/errors';
-import { logger } from '@/lib/core/logger';
+import { NextResponse } from "next/server";
+import { AppError } from "@/lib/core/errors";
+import { logger } from "@/lib/core/logger";
 
 export function handleServiceError(error: Error | AppError): NextResponse {
   // Log the error
-  logger.error('API error', error);
+  logger.error("API error", error);
 
   // Handle AppError types
   if (error instanceof AppError) {
@@ -25,8 +25,8 @@ export function handleServiceError(error: Error | AppError): NextResponse {
   // Handle unknown errors
   return NextResponse.json(
     {
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
+      error: "Internal server error",
+      code: "INTERNAL_ERROR",
     },
     { status: 500 }
   );
@@ -45,7 +45,7 @@ export function handleServiceResult<T>(
   }
 
   return NextResponse.json(
-    { error: 'Unknown error occurred' },
+    { error: "Unknown error occurred" },
     { status: 500 }
   );
 }

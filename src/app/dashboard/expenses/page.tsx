@@ -33,7 +33,7 @@ export default function ExpensesPage() {
       return await db.expenses
         .where("userId")
         .equals(session.user.id)
-        .and((expense) => {
+        .and(expense => {
           const expenseDate = new Date(expense.date);
           return expenseDate >= monthStart && expenseDate <= monthEnd;
         })
@@ -79,12 +79,12 @@ export default function ExpensesPage() {
   const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
 
   const getCategoryIcon = (categoryName: string) => {
-    const category = categories?.find((c) => c.name === categoryName);
+    const category = categories?.find(c => c.name === categoryName);
     return category?.icon || "🏷️";
   };
 
   const getCategoryColor = (categoryName: string) => {
-    const category = categories?.find((c) => c.name === categoryName);
+    const category = categories?.find(c => c.name === categoryName);
     return category?.color || "#6B7280";
   };
 

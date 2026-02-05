@@ -77,13 +77,13 @@ export function ContactDuplicateDialog({
     const primaryPhoneIdx = primaryPhone
       ? mergedPhones.indexOf(primaryPhone)
       : mergedPhones.length > 0
-      ? 0
-      : undefined;
+        ? 0
+        : undefined;
     const primaryEmailIdx = primaryEmail
       ? mergedEmails.indexOf(primaryEmail)
       : mergedEmails.length > 0
-      ? 0
-      : undefined;
+        ? 0
+        : undefined;
 
     onMerge({
       name: existing.name, // Keep existing name
@@ -254,7 +254,7 @@ export function ContactDuplicateDialog({
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Phone Numbers</p>
                 <div className="space-y-2">
-                  {allPhones.map((phone) => (
+                  {allPhones.map(phone => (
                     <label key={phone} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -290,7 +290,7 @@ export function ContactDuplicateDialog({
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Emails</p>
                 <div className="space-y-2">
-                  {allEmails.map((email) => (
+                  {allEmails.map(email => (
                     <label key={email} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"

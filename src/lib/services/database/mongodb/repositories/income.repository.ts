@@ -2,16 +2,16 @@
  * MongoDB Income Repository Implementation
  */
 
-import { ObjectId } from 'mongodb';
-import { IIncomeRepository, BaseIncome } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getMongoClient, handleMongoError } from '../client';
+import { ObjectId } from "mongodb";
+import { IIncomeRepository, BaseIncome } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getMongoClient, handleMongoError } from "../client";
 
 export class MongoDBIncomeRepository implements IIncomeRepository {
   private async getCollection() {
     const client = await getMongoClient();
-    return client.db().collection('incomes');
+    return client.db().collection("incomes");
   }
 
   async findByUserId(userId: string, limit?: number, offset?: number): Promise<Result<BaseIncome[], DatabaseError>> {
@@ -43,7 +43,7 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch incomes', handleMongoError(error, 'findByUserId')));
+      return fail(new DatabaseError("Failed to fetch incomes", handleMongoError(error, "findByUserId")));
     }
   }
 
@@ -75,7 +75,7 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch income', handleMongoError(error, 'findById')));
+      return fail(new DatabaseError("Failed to fetch income", handleMongoError(error, "findById")));
     }
   }
 
@@ -109,11 +109,11 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch incomes by date range', handleMongoError(error, 'findByDateRange')));
+      return fail(new DatabaseError("Failed to fetch incomes by date range", handleMongoError(error, "findByDateRange")));
     }
   }
 
-  async create(income: Omit<BaseIncome, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseIncome, DatabaseError>> {
+  async create(income: Omit<BaseIncome, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseIncome, DatabaseError>> {
     try {
       const collection = await this.getCollection();
       const now = new Date();
@@ -135,7 +135,7 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
 
       return ok(created);
     } catch (error) {
-      return fail(new DatabaseError('Failed to create income', handleMongoError(error, 'create')));
+      return fail(new DatabaseError("Failed to create income", handleMongoError(error, "create")));
     }
   }
 
@@ -154,11 +154,11 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
             updatedAt: now 
           } 
         },
-        { returnDocument: 'after' }
+        { returnDocument: "after" }
       );
 
       if (!result) {
-        return fail(new DatabaseError('Income not found or unauthorized'));
+        return fail(new DatabaseError("Income not found or unauthorized"));
       }
 
       const updated: BaseIncome = {
@@ -177,7 +177,7 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
 
       return ok(updated);
     } catch (error) {
-      return fail(new DatabaseError('Failed to update income', handleMongoError(error, 'update')));
+      return fail(new DatabaseError("Failed to update income", handleMongoError(error, "update")));
     }
   }
 
@@ -190,12 +190,12 @@ export class MongoDBIncomeRepository implements IIncomeRepository {
       });
 
       if (result.deletedCount === 0) {
-        return fail(new DatabaseError('Income not found or unauthorized'));
+        return fail(new DatabaseError("Income not found or unauthorized"));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Failed to delete income', handleMongoError(error, 'delete')));
+      return fail(new DatabaseError("Failed to delete income", handleMongoError(error, "delete")));
     }
   }
 }

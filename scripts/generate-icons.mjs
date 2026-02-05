@@ -8,32 +8,32 @@
  * - PWA icons (192x192, 512x512)
  */
 
-import sharp from 'sharp';
-import fs from 'fs';
-import path from 'path';
-import pngToIco from 'png-to-ico';
-import { fileURLToPath } from 'url';
+import sharp from "sharp";
+import fs from "fs";
+import path from "path";
+import pngToIco from "png-to-ico";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const THEME = process.argv[2] || 'vibe';
-const SOURCE_LOGO = path.join(__dirname, '../public/logo-vibe.svg');
-const OUTPUT_DIR = path.join(__dirname, '../public');
+const THEME = process.argv[2] || "vibe";
+const SOURCE_LOGO = path.join(__dirname, "../public/logo-vibe.svg");
+const OUTPUT_DIR = path.join(__dirname, "../public");
 
 // Icon configurations
 const ICONS = [
   // Favicon sizes (will be combined into .ico)
-  { name: 'favicon-16', size: 16, format: 'png' },
-  { name: 'favicon-32', size: 32, format: 'png' },
-  { name: 'favicon-48', size: 48, format: 'png' },
+  { name: "favicon-16", size: 16, format: "png" },
+  { name: "favicon-32", size: 32, format: "png" },
+  { name: "favicon-48", size: 48, format: "png" },
   
   // Apple touch icon
-  { name: `apple-touch-icon-${THEME}`, size: 180, format: 'png' },
+  { name: `apple-touch-icon-${THEME}`, size: 180, format: "png" },
   
   // PWA icons
-  { name: `icon-192x192-${THEME}`, size: 192, format: 'png' },
-  { name: `icon-512x512-${THEME}`, size: 512, format: 'png' },
+  { name: `icon-192x192-${THEME}`, size: 192, format: "png" },
+  { name: `icon-512x512-${THEME}`, size: 512, format: "png" },
 ];
 
 async function generateIcons() {
@@ -61,7 +61,7 @@ async function generateIcons() {
     try {
       await sharp(SOURCE_LOGO)
         .resize(icon.size, icon.size, {
-          fit: 'contain',
+          fit: "contain",
           background: { r: 255, g: 255, b: 255, alpha: 0 }
         })
         .png()
@@ -70,7 +70,7 @@ async function generateIcons() {
       console.log(`✅ Generated: ${icon.name}.${icon.format} (${icon.size}x${icon.size})`);
       
       // Collect favicon PNGs for ICO conversion
-      if (icon.name.startsWith('favicon-')) {
+      if (icon.name.startsWith("favicon-")) {
         faviconPngs.push({
           path: outputPath,
           size: icon.size
@@ -91,7 +91,7 @@ async function generateIcons() {
       const tempPath = path.join(OUTPUT_DIR, `temp-${png.size}.png`);
       await sharp(SOURCE_LOGO)
         .resize(png.size, png.size, {
-          fit: 'contain',
+          fit: "contain",
           background: { r: 255, g: 255, b: 255, alpha: 0 }
         })
         .png()
@@ -111,13 +111,13 @@ async function generateIcons() {
       }
     });
   } catch (error) {
-    console.error(`❌ Failed to generate .ico file:`, error.message);
+    console.error("❌ Failed to generate .ico file:", error.message);
   }
 
   // Generate OG Image (1200x630 with branding)
   await generateOGImage();
 
-  console.log(`\n✨ Icon generation complete!`);
+  console.log("\n✨ Icon generation complete!");
 }
 
 async function generateOGImage() {
@@ -126,7 +126,7 @@ async function generateOGImage() {
   try {
     // Create a branded OG image with logo and gradient background
     const logoBuffer = await sharp(SOURCE_LOGO)
-      .resize(400, 400, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .resize(400, 400, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png()
       .toBuffer();
 
@@ -161,12 +161,12 @@ async function generateOGImage() {
 
     console.log(`✅ Generated: og-image-${THEME}.png (1200x630)`);
   } catch (error) {
-    console.error(`❌ Failed to generate OG image:`, error.message);
+    console.error("❌ Failed to generate OG image:", error.message);
   }
 }
 
 // Run the generator
 generateIcons().catch(error => {
-  console.error('❌ Icon generation failed:', error);
+  console.error("❌ Icon generation failed:", error);
   process.exit(1);
 });

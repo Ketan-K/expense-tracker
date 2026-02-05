@@ -22,7 +22,7 @@ export function useConfirm() {
     setOptions(opts);
     setIsOpen(true);
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<boolean>(resolve => {
       setResolvePromise(() => resolve);
     });
   }, []);

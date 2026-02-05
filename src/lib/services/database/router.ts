@@ -3,12 +3,12 @@
  * Routes database operations to the correct provider based on user assignment
  */
 
-import { IDatabaseService } from './interface';
-import { supabaseDatabaseService } from './supabase';
-import { mongoDBDatabaseService } from './mongodb';
-import { databaseAssignmentService, DatabaseProvider } from './assignment.service';
-import { logger } from '@/lib/core/logger';
-import { NotFoundError } from '@/lib/core/errors';
+import { IDatabaseService } from "./interface";
+import { supabaseDatabaseService } from "./supabase";
+import { mongoDBDatabaseService } from "./mongodb";
+import { databaseAssignmentService, DatabaseProvider } from "./assignment.service";
+import { logger } from "@/lib/core/logger";
+import { NotFoundError } from "@/lib/core/errors";
 
 // Singleton instances
 const databaseServices: Record<DatabaseProvider, IDatabaseService> = {
@@ -25,18 +25,23 @@ export async function getDatabaseServiceForUser(userId: string): Promise<IDataba
   const assignmentResult = await databaseAssignmentService.getAssignment(userId);
 
   if (assignmentResult.isFailure()) {
-    logger.error('Failed to get database assignment', assignmentResult.error, { userId });
-    throw assignmentResult.error;
+    // If the table doesn't exist yet or any other error, default to MongoDB
+    logger.warn("Failed to get database assignment, defaulting to MongoDB", { 
+      userId, 
+      error: assignmentResult.error.message 
+    });
+    return databaseServices["mongodb"];
   }
 
-  const provider = assignmentResult.value;
+  let provider = assignmentResult.value;
 
+  // Fallback to MongoDB for users without assignment (existing users)
   if (!provider) {
-    logger.error('User has no database assignment', { userId });
-    throw new NotFoundError('User has no database assignment. This should not happen.', 'assignment');
+    logger.warn("User has no database assignment, defaulting to MongoDB", { userId });
+    provider = "mongodb";
   }
 
-  logger.debug('Routing user to database', { userId, provider });
+  logger.debug("Routing user to database", { userId, provider });
   return databaseServices[provider];
 }
 

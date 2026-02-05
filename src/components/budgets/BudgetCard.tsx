@@ -46,7 +46,7 @@ export default function BudgetCard({
             </p>
           </div>
         </div>
-        {status === 'exceeded' || status === 'danger' ? (
+        {status === "exceeded" || status === "danger" ? (
           <AlertCircle className={`w-5 h-5 ${color}`} />
         ) : null}
       </div>
@@ -70,31 +70,31 @@ export default function BudgetCard({
           <span className="text-gray-500 dark:text-gray-400 ml-1">used</span>
         </div>
         <div className="text-right">
-          <span className={`font-semibold ${remaining >= 0 ? 'text-gray-900 dark:text-white' : color}`}>
+          <span className={`font-semibold ${remaining >= 0 ? "text-gray-900 dark:text-white" : color}`}>
             ₹{Math.abs(remaining).toFixed(2)}
           </span>
           <span className="text-gray-500 dark:text-gray-400 ml-1">
-            {remaining >= 0 ? 'left' : 'over'}
+            {remaining >= 0 ? "left" : "over"}
           </span>
         </div>
       </div>
 
       {/* Warning Messages */}
-      {status === 'exceeded' && (
+      {status === "exceeded" && (
         <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
           <p className="text-xs text-red-600 dark:text-red-400 font-medium">
             Budget exceeded by ₹{Math.abs(remaining).toFixed(2)}!
           </p>
         </div>
       )}
-      {status === 'danger' && percentage < 100 && (
+      {status === "danger" && percentage < 100 && (
         <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
           <p className="text-xs text-red-600 dark:text-red-400 font-medium">
             {(100 - percentage).toFixed(1)}% remaining - slow down spending
           </p>
         </div>
       )}
-      {status === 'warning' && (
+      {status === "warning" && (
         <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
           <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
             Approaching limit - {(100 - percentage).toFixed(1)}% remaining

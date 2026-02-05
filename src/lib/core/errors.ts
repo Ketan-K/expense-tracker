@@ -17,12 +17,12 @@ export class AppError extends Error {
 
 export class DatabaseError extends AppError {
   constructor(message: string, public readonly originalError?: unknown) {
-    super(message, 'DATABASE_ERROR', 500);
+    super(message, "DATABASE_ERROR", 500);
   }
 }
 
 export class AuthError extends AppError {
-  constructor(message: string, code: string = 'AUTH_ERROR') {
+  constructor(message: string, code: string = "AUTH_ERROR") {
     super(message, code, 401);
   }
 }
@@ -32,30 +32,30 @@ export class ValidationError extends AppError {
     message: string,
     public readonly field?: string
   ) {
-    super(message, 'VALIDATION_ERROR', 400);
+    super(message, "VALIDATION_ERROR", 400);
   }
 }
 
 export class NotFoundError extends AppError {
   constructor(message: string, public readonly resource?: string) {
-    super(message, 'NOT_FOUND', 404);
+    super(message, "NOT_FOUND", 404);
   }
 }
 
 export class ForbiddenError extends AppError {
   constructor(message: string) {
-    super(message, 'FORBIDDEN', 403);
+    super(message, "FORBIDDEN", 403);
   }
 }
 
 export class ConflictError extends AppError {
   constructor(message: string) {
-    super(message, 'CONFLICT', 409);
+    super(message, "CONFLICT", 409);
   }
 }
 
 export class RateLimitError extends AppError {
-  constructor(message: string = 'Too many requests') {
-    super(message, 'RATE_LIMIT_EXCEEDED', 429);
+  constructor(message: string = "Too many requests") {
+    super(message, "RATE_LIMIT_EXCEEDED", 429);
   }
 }

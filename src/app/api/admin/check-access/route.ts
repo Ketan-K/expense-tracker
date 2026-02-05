@@ -9,7 +9,7 @@ import { auth } from "@/auth";
 export async function GET() {
   try {
     const session = await auth();
-    console.log(`[ADMIN CHECK] Admin access check requested by ${session?.user?.email || 'unauthenticated user'}`);
+    console.log(`[ADMIN CHECK] Admin access check requested by ${session?.user?.email || "unauthenticated user"}`);
     
     const adminCheck = await isAdmin();
     
@@ -17,7 +17,7 @@ export async function GET() {
       isAdmin: adminCheck 
     });
   } catch (error) {
-    console.error(`[ADMIN CHECK] Error during admin check:`, error);
+    console.error("[ADMIN CHECK] Error during admin check:", error);
     return NextResponse.json({ 
       isAdmin: false 
     }, { status: 403 });

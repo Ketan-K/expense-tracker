@@ -2,16 +2,16 @@
  * MongoDB Expense Repository Implementation
  */
 
-import { ObjectId } from 'mongodb';
-import { IExpenseRepository, BaseExpense } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getMongoClient, handleMongoError } from '../client';
+import { ObjectId } from "mongodb";
+import { IExpenseRepository, BaseExpense } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getMongoClient, handleMongoError } from "../client";
 
 export class MongoDBExpenseRepository implements IExpenseRepository {
   private async getCollection() {
     const client = await getMongoClient();
-    return client.db().collection('expenses');
+    return client.db().collection("expenses");
   }
 
   async findByUserId(userId: string, limit?: number, offset?: number): Promise<Result<BaseExpense[], DatabaseError>> {
@@ -43,7 +43,7 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch expenses', handleMongoError(error, 'findByUserId')));
+      return fail(new DatabaseError("Failed to fetch expenses", handleMongoError(error, "findByUserId")));
     }
   }
 
@@ -74,7 +74,7 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch expense', handleMongoError(error, 'findById')));
+      return fail(new DatabaseError("Failed to fetch expense", handleMongoError(error, "findById")));
     }
   }
 
@@ -107,11 +107,11 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch expenses by date range', handleMongoError(error, 'findByDateRange')));
+      return fail(new DatabaseError("Failed to fetch expenses by date range", handleMongoError(error, "findByDateRange")));
     }
   }
 
-  async create(expense: Omit<BaseExpense, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseExpense, DatabaseError>> {
+  async create(expense: Omit<BaseExpense, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseExpense, DatabaseError>> {
     try {
       const collection = await this.getCollection();
       const now = new Date();
@@ -137,7 +137,7 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
 
       return ok(created);
     } catch (error) {
-      return fail(new DatabaseError('Failed to create expense', handleMongoError(error, 'create')));
+      return fail(new DatabaseError("Failed to create expense", handleMongoError(error, "create")));
     }
   }
 
@@ -160,12 +160,12 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
           },
         },
         {
-          returnDocument: 'after',
+          returnDocument: "after",
         }
       );
 
       if (!result) {
-        return fail(new DatabaseError('Expense not found or not updated'));
+        return fail(new DatabaseError("Expense not found or not updated"));
       }
 
       const updated: BaseExpense = {
@@ -183,7 +183,7 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
 
       return ok(updated);
     } catch (error) {
-      return fail(new DatabaseError('Failed to update expense', handleMongoError(error, 'update')));
+      return fail(new DatabaseError("Failed to update expense", handleMongoError(error, "update")));
     }
   }
 
@@ -196,12 +196,12 @@ export class MongoDBExpenseRepository implements IExpenseRepository {
       });
 
       if (result.deletedCount === 0) {
-        return fail(new DatabaseError('Expense not found or not deleted'));
+        return fail(new DatabaseError("Expense not found or not deleted"));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Failed to delete expense', handleMongoError(error, 'delete')));
+      return fail(new DatabaseError("Failed to delete expense", handleMongoError(error, "delete")));
     }
   }
 }

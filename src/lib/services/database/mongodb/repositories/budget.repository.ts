@@ -2,16 +2,16 @@
  * MongoDB Budget Repository Implementation
  */
 
-import { ObjectId } from 'mongodb';
-import { IBudgetRepository, BaseBudget } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getMongoClient, handleMongoError } from '../client';
+import { ObjectId } from "mongodb";
+import { IBudgetRepository, BaseBudget } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getMongoClient, handleMongoError } from "../client";
 
 export class MongoDBBudgetRepository implements IBudgetRepository {
   private async getCollection() {
     const client = await getMongoClient();
-    return client.db().collection('budgets');
+    return client.db().collection("budgets");
   }
 
   async findByUserId(userId: string): Promise<Result<BaseBudget[], DatabaseError>> {
@@ -34,7 +34,7 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch budgets', handleMongoError(error, 'findByUserId')));
+      return fail(new DatabaseError("Failed to fetch budgets", handleMongoError(error, "findByUserId")));
     }
   }
 
@@ -62,7 +62,7 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch budget', handleMongoError(error, 'findById')));
+      return fail(new DatabaseError("Failed to fetch budget", handleMongoError(error, "findById")));
     }
   }
 
@@ -85,11 +85,11 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch budgets by month', handleMongoError(error, 'findByMonth')));
+      return fail(new DatabaseError("Failed to fetch budgets by month", handleMongoError(error, "findByMonth")));
     }
   }
 
-  async create(budget: Omit<BaseBudget, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseBudget, DatabaseError>> {
+  async create(budget: Omit<BaseBudget, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseBudget, DatabaseError>> {
     try {
       const collection = await this.getCollection();
       const now = new Date();
@@ -111,7 +111,7 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
 
       return ok(created);
     } catch (error) {
-      return fail(new DatabaseError('Failed to create budget', handleMongoError(error, 'create')));
+      return fail(new DatabaseError("Failed to create budget", handleMongoError(error, "create")));
     }
   }
 
@@ -130,11 +130,11 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
             updatedAt: now 
           } 
         },
-        { returnDocument: 'after' }
+        { returnDocument: "after" }
       );
 
       if (!result) {
-        return fail(new DatabaseError('Budget not found or unauthorized'));
+        return fail(new DatabaseError("Budget not found or unauthorized"));
       }
 
       const updated: BaseBudget = {
@@ -149,7 +149,7 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
 
       return ok(updated);
     } catch (error) {
-      return fail(new DatabaseError('Failed to update budget', handleMongoError(error, 'update')));
+      return fail(new DatabaseError("Failed to update budget", handleMongoError(error, "update")));
     }
   }
 
@@ -162,12 +162,12 @@ export class MongoDBBudgetRepository implements IBudgetRepository {
       });
 
       if (result.deletedCount === 0) {
-        return fail(new DatabaseError('Budget not found or unauthorized'));
+        return fail(new DatabaseError("Budget not found or unauthorized"));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Failed to delete budget', handleMongoError(error, 'delete')));
+      return fail(new DatabaseError("Failed to delete budget", handleMongoError(error, "delete")));
     }
   }
 }

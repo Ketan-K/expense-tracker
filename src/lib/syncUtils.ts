@@ -54,7 +54,7 @@ export async function processSyncQueue(userId: string): Promise<{
     .anyOf("pending", "failed")
     .toArray();
 
-  const itemsToProcess = items.filter((item) => {
+  const itemsToProcess = items.filter(item => {
     // If it's pending, process immediately
     if (item.status === "pending") return true;
 
@@ -413,7 +413,7 @@ export async function pullFromServer(userId: string): Promise<void> {
       // Sync expenses
       for (const serverExp of serverExpenses) {
         // Check if this server expense is a duplicate of any local unsynced expense
-        const isDuplicate = localUnsynced.some((localExp) =>
+        const isDuplicate = localUnsynced.some(localExp =>
           isDuplicateExpense(serverExp, localExp)
         );
 

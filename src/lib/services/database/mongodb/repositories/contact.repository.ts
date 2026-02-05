@@ -2,16 +2,16 @@
  * MongoDB Contact Repository Implementation
  */
 
-import { ObjectId } from 'mongodb';
-import { IContactRepository, BaseContact } from '../../interface';
-import { Result, ok, fail } from '@/lib/core/result';
-import { DatabaseError } from '@/lib/core/errors';
-import { getMongoClient, handleMongoError } from '../client';
+import { ObjectId } from "mongodb";
+import { IContactRepository, BaseContact } from "../../interface";
+import { Result, ok, fail } from "@/lib/core/result";
+import { DatabaseError } from "@/lib/core/errors";
+import { getMongoClient, handleMongoError } from "../client";
 
 export class MongoDBContactRepository implements IContactRepository {
   private async getCollection() {
     const client = await getMongoClient();
-    return client.db().collection('contacts');
+    return client.db().collection("contacts");
   }
 
   async findByUserId(userId: string): Promise<Result<BaseContact[], DatabaseError>> {
@@ -40,7 +40,7 @@ export class MongoDBContactRepository implements IContactRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch contacts', handleMongoError(error, 'findByUserId')));
+      return fail(new DatabaseError("Failed to fetch contacts", handleMongoError(error, "findByUserId")));
     }
   }
 
@@ -74,7 +74,7 @@ export class MongoDBContactRepository implements IContactRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to fetch contact', handleMongoError(error, 'findById')));
+      return fail(new DatabaseError("Failed to fetch contact", handleMongoError(error, "findById")));
     }
   }
 
@@ -84,7 +84,7 @@ export class MongoDBContactRepository implements IContactRepository {
       const contacts = await collection
         .find({
           userId,
-          name: { $regex: name, $options: 'i' },
+          name: { $regex: name, $options: "i" },
         })
         .sort({ name: 1 })
         .toArray();
@@ -107,11 +107,11 @@ export class MongoDBContactRepository implements IContactRepository {
 
       return ok(result);
     } catch (error) {
-      return fail(new DatabaseError('Failed to search contacts', handleMongoError(error, 'findByName')));
+      return fail(new DatabaseError("Failed to search contacts", handleMongoError(error, "findByName")));
     }
   }
 
-  async create(contact: Omit<BaseContact, 'id' | 'createdAt' | 'updatedAt'>): Promise<Result<BaseContact, DatabaseError>> {
+  async create(contact: Omit<BaseContact, "id" | "createdAt" | "updatedAt">): Promise<Result<BaseContact, DatabaseError>> {
     try {
       const collection = await this.getCollection();
       const now = new Date();
@@ -133,7 +133,7 @@ export class MongoDBContactRepository implements IContactRepository {
 
       return ok(created);
     } catch (error) {
-      return fail(new DatabaseError('Failed to create contact', handleMongoError(error, 'create')));
+      return fail(new DatabaseError("Failed to create contact", handleMongoError(error, "create")));
     }
   }
 
@@ -152,11 +152,11 @@ export class MongoDBContactRepository implements IContactRepository {
             updatedAt: now 
           } 
         },
-        { returnDocument: 'after' }
+        { returnDocument: "after" }
       );
 
       if (!result) {
-        return fail(new DatabaseError('Contact not found or unauthorized'));
+        return fail(new DatabaseError("Contact not found or unauthorized"));
       }
 
       const updated: BaseContact = {
@@ -177,7 +177,7 @@ export class MongoDBContactRepository implements IContactRepository {
 
       return ok(updated);
     } catch (error) {
-      return fail(new DatabaseError('Failed to update contact', handleMongoError(error, 'update')));
+      return fail(new DatabaseError("Failed to update contact", handleMongoError(error, "update")));
     }
   }
 
@@ -190,12 +190,12 @@ export class MongoDBContactRepository implements IContactRepository {
       });
 
       if (result.deletedCount === 0) {
-        return fail(new DatabaseError('Contact not found or unauthorized'));
+        return fail(new DatabaseError("Contact not found or unauthorized"));
       }
 
       return ok(undefined);
     } catch (error) {
-      return fail(new DatabaseError('Failed to delete contact', handleMongoError(error, 'delete')));
+      return fail(new DatabaseError("Failed to delete contact", handleMongoError(error, "delete")));
     }
   }
 }

@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const userDistribution = assignmentResult.value;
 
     // Get MongoDB stats
-    let mongoStats = {
+    const mongoStats = {
       connected: false,
       totalUsers: userDistribution.mongodb,
       collections: {} as Record<string, number>,
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       mongoStats.connected = true;
       
       // Count documents in each collection
-      const collections = ['expenses', 'incomes', 'categories', 'budgets', 'contacts', 'loans', 'loanPayments'];
+      const collections = ["expenses", "incomes", "categories", "budgets", "contacts", "loans", "loanPayments"];
       for (const collectionName of collections) {
         try {
           const count = await db.collection(collectionName).countDocuments();
@@ -60,11 +60,11 @@ export async function GET(request: Request) {
         }
       }
     } catch (error) {
-      mongoStats.error = error instanceof Error ? error.message : 'MongoDB connection failed';
+      mongoStats.error = error instanceof Error ? error.message : "MongoDB connection failed";
     }
 
     // Get Supabase stats
-    let supabaseStats = {
+    const supabaseStats = {
       connected: false,
       totalUsers: userDistribution.supabase,
       collections: {} as Record<string, number>,
@@ -76,12 +76,12 @@ export async function GET(request: Request) {
       supabaseStats.connected = true;
 
       // Count rows in each table
-      const tables = ['expenses', 'incomes', 'categories', 'budgets', 'contacts', 'loans', 'loan_payments'];
+      const tables = ["expenses", "incomes", "categories", "budgets", "contacts", "loans", "loan_payments"];
       for (const tableName of tables) {
         try {
           const { count, error } = await supabaseClient
             .from(tableName)
-            .select('*', { count: 'exact', head: true });
+            .select("*", { count: "exact", head: true });
           
           if (!error) {
             supabaseStats.collections[tableName] = count || 0;
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (error) {
-      supabaseStats.error = error instanceof Error ? error.message : 'Supabase connection failed';
+      supabaseStats.error = error instanceof Error ? error.message : "Supabase connection failed";
     }
 
     const stats = {
