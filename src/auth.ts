@@ -19,8 +19,9 @@ export const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // Disable PKCE for mobile apps - use state-only verification
-      checks: ["state"],
+      // Disable checks for mobile compatibility (cookies don't work in Capacitor)
+      // Mobile apps use deep links which don't support cookie-based state validation
+      checks: [],
       authorization: {
         params: {
           prompt: "consent",

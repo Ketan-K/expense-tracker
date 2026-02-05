@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * Generate OAuth URL for mobile in-app browser
  * 
- * This builds the Google OAuth URL manually for Capacitor apps
- * since NextAuth's signIn() expects cookies which don't work in WebView
+ * Manually builds Google OAuth URL since state validation is disabled
+ * for mobile compatibility (cookies don't work in Capacitor WebView)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -14,14 +14,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only Google provider supported" }, { status: 400 });
     }
 
-    const clientId = process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
     const baseUrl = process.env.NEXTAUTH_URL || request.headers.get("origin") || "";
     
     if (!clientId) {
       return NextResponse.json({ error: "OAuth client not configured" }, { status: 500 });
     }
 
-    // Build Google OAuth URL manually
+    // Build Google OAuth URL manually (no state needed since checks: [] in auth.ts)
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: `${baseUrl}/api/auth/callback/google`,
@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
       scope: "openid email profile",
       access_type: "offline",
       prompt: "consent",
-      // State for CSRF protection - NextAuth will validate this
-      state: crypto.randomUUID(),
     });
 
     const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -38,6 +36,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: oauthUrl });
   } catch (error) {
     console.error("OAuth URL generation failed:", error);
-    return NextResponse.json({ error: "Failed to generate OAuth URL" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to generate OAuth URL",
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
