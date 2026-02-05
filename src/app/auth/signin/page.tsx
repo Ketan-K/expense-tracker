@@ -219,8 +219,19 @@ export default function SignInPage() {
       try {
         if (debugMode) addLog("📱 Opening NextAuth signin in browser...");
 
+        // Force fresh OAuth flow by clearing any existing web session first
+        // This prevents the in-app browser from showing dashboard if already logged in via web
+        try {
+          if (debugMode) addLog("🔄 Clearing web session...");
+          await fetch("/api/auth/signout", { method: "POST" });
+          if (debugMode) addLog("✅ Web session cleared");
+        } catch {
+          if (debugMode) addLog("⚠️ Could not clear web session (may not exist)");
+        }
+
         // Try both NextAuth v5 formats
         const callbackUrl = encodeURIComponent("/dashboard");
+        // Add prompt=login to force Google to show account picker
         const signinUrl = `${window.location.origin}/api/auth/signin?provider=google&callbackUrl=${callbackUrl}`;
         
         if (debugMode) addLog(`🔗 Signin URL: ${signinUrl}`);
