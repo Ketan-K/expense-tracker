@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X, Plus, Copy } from "lucide-react";
 import { getIconComponent } from "@/lib/types";
 import { db, LocalCategory } from "@/lib/db";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -27,7 +27,7 @@ export default function BudgetFormModal({
   currentMonth,
   onBudgetAdded,
 }: BudgetFormModalProps) {
-  const { data: session } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ export default function BudgetFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCategory || !amount || !session?.user?.id) return;
+    if (!selectedCategory || !amount || !user?.id) return;
 
     setLoading(true);
     try {
@@ -51,7 +51,7 @@ export default function BudgetFormModal({
 
       await db.budgets.add({
         _id: budgetId,
-        userId: session.user.id,
+        userId: user.id,
         categoryId: category._id || category.name,
         amount: parseFloat(amount),
         month: monthString,
@@ -83,7 +83,7 @@ export default function BudgetFormModal({
 
       // Trigger sync if online
       if (navigator.onLine) {
-        processSyncQueue(session.user.id);
+        processSyncQueue(user.id);
       }
     } catch (error) {
       toast.error("Failed to create budget");
@@ -94,13 +94,13 @@ export default function BudgetFormModal({
   };
 
   const handleImportLastMonth = async () => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     setImporting(true);
     try {
       const lastMonthBudgets = await db.budgets
         .where("userId")
-        .equals(session.user.id)
+        .equals(user.id)
         .and((budget) => budget.month === lastMonthString)
         .toArray();
 
@@ -111,7 +111,7 @@ export default function BudgetFormModal({
 
       const existingBudgets = await db.budgets
         .where("userId")
-        .equals(session.user.id)
+        .equals(user.id)
         .and((budget) => budget.month === monthString)
         .toArray();
 
@@ -139,7 +139,7 @@ export default function BudgetFormModal({
           
           const newBudget = {
             _id: budgetId,
-            userId: session.user.id!,
+            userId: user.id,
             categoryId: budget.categoryId,
             amount: budget.amount,
             month: monthString,

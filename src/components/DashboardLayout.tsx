@@ -14,7 +14,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { performSync } from "@/lib/syncUtils";
 import { t } from "@/lib/terminology";
@@ -29,24 +29,24 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Perform immediate sync on mount
   useEffect(() => {
-    if (session?.user?.id && navigator.onLine) {
-      performSync(session.user.id).catch(console.error);
+    if (user?.id && navigator.onLine) {
+      performSync(user.id).catch(console.error);
       setLastSyncTime(new Date());
     }
-  }, [session?.user?.id]);
+  }, [user?.id]);
 
   // Manual sync trigger
   const handleManualSync = async () => {
-    if (!session?.user?.id || isSyncing) return;
+    if (!user?.id || isSyncing) return;
     setIsSyncing(true);
     try {
-      await performSync(session.user.id);
+      await performSync(user.id);
       setLastSyncTime(new Date());
     } catch (error) {
       console.error("Sync error:", error);

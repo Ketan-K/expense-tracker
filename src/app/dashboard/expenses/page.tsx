@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import { getCategoryColor } from "@/lib/colors";
 
 export default function ExpensesPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -29,10 +29,10 @@ export default function ExpensesPage() {
 
   const expenses = useLiveQuery(
     async () => {
-      if (!session?.user?.id) return [];
+      if (!user?.id) return [];
       return await db.expenses
         .where("userId")
-        .equals(session.user.id)
+        .equals(user.id)
         .and((expense) => {
           const expenseDate = new Date(expense.date);
           return expenseDate >= monthStart && expenseDate <= monthEnd;
@@ -40,28 +40,28 @@ export default function ExpensesPage() {
         .reverse()
         .sortBy("date");
     },
-    [session?.user?.id, monthStart, monthEnd]
+    [user?.id, monthStart, monthEnd]
   );
 
   const categories = useLiveQuery(
     async () => {
-      if (!session?.user?.id) return [];
-      return await db.categories.where("userId").equals(session.user.id).toArray();
+      if (!user?.id) return [];
+      return await db.categories.where("userId").equals(user.id).toArray();
     },
-    [session?.user?.id]
+    [user?.id]
   );
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
       </DashboardLayout>
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }
@@ -115,8 +115,8 @@ export default function ExpensesPage() {
 
       toast.success("Expense deleted");
 
-      if (navigator.onLine && session?.user?.id) {
-        processSyncQueue(session.user.id);
+      if (navigator.onLine && user?.id) {
+        processSyncQueue(user.id);
       }
     } catch (error) {
       console.error("Error deleting expense:", error);
@@ -249,7 +249,7 @@ export default function ExpensesPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         categories={categories || []}
-        userId={session?.user?.id || ""}
+        userId={user?.id || ""}
       />
 
       {editingExpense && (

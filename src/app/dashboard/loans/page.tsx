@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { db, LocalLoan } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -15,18 +15,18 @@ type StatusFilter = "all" | "active" | "paid" | "overdue";
 type DirectionFilter = "all" | "given" | "taken";
 
 export default function LoansPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>("all");
   const [showAddModal, setShowAddModal] = useState(false);
 
   const loans = useLiveQuery(
-    () => db.loans.where("userId").equals(session?.user?.id || "").toArray(),
-    [session?.user?.id]
+    () => db.loans.where("userId").equals(user?.id || "").toArray(),
+    [user?.id]
   );
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -36,7 +36,7 @@ export default function LoansPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }
@@ -315,7 +315,7 @@ export default function LoansPage() {
       <AddLoanModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        userId={session?.user?.id || ""}
+        userId={user?.id || ""}
       />
     </DashboardLayout>
   );

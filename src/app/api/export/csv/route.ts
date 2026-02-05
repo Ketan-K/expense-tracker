@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
+import { requireAuth, getPlatformContext, handleAuthError } from "@/lib/auth/server";
 import { getConnectedClient } from "@/lib/mongodb";
 import { Expense } from "@/lib/types";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { validateQueryParams } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
@@ -11,16 +11,13 @@ export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(request);
 
     // Apply rate limiting (export has stricter limits)
     const rateLimitResult = await applyRateLimit(
-      session.user.id,
+      session.user.id!!,
       getIP(request),
       rateLimiters.export
     );
@@ -42,7 +39,7 @@ export async function GET(request: Request) {
     const client = await getConnectedClient();
     const db = client.db();
 
-    const query: any = { userId: session.user.id };
+    const query: any = { userId: session.user.id!! };
 
     if (startDate || endDate) {
       query.date = {};
@@ -80,6 +77,6 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error exporting CSV:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return handleAuthError(error, request);
   }
 }

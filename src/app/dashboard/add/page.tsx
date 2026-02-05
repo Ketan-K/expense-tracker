@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -11,20 +11,20 @@ import { generateObjectId } from "@/lib/idGenerator";
 import { processSyncQueue } from "@/lib/syncUtils";
 
 export default function AddExpensePage() {
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   const categories = useLiveQuery(
     async () => {
-      if (!session?.user?.id) return [];
-      return await db.categories.where("userId").equals(session.user.id).toArray();
+      if (!user?.id) return [];
+      return await db.categories.where("userId").equals(user.id).toArray();
     },
-    [session?.user?.id]
+    [user?.id]
   );
 
   useEffect(() => {
     // Initialize default categories if none exist
     const initCategories = async () => {
-      if (session?.user?.id && categories && categories.length === 0) {
+      if (user?.id && categories && categories.length === 0) {
         const response = await fetch("/api/categories");
         if (response.ok) {
           const serverCategories = await response.json();
@@ -34,7 +34,7 @@ export default function AddExpensePage() {
             try {
               await db.categories.put({
                 _id: cat._id,
-                userId: session.user.id,
+                userId: user.id,
                 name: cat.name,
                 icon: cat.icon,
                 color: cat.color,
@@ -52,7 +52,7 @@ export default function AddExpensePage() {
     };
 
     initCategories();
-  }, [session?.user?.id, categories]);
+  }, [user?.id, categories]);
 
   const handleSubmit = async (formData: {
     date: string;
@@ -61,7 +61,7 @@ export default function AddExpensePage() {
     description: string;
     paymentMethod: string;
   }) => {
-    if (!session?.user?.id) {
+    if (!user?.id) {
       toast.error("Please sign in to add expenses");
       return;
     }
@@ -78,7 +78,7 @@ export default function AddExpensePage() {
       // Add to IndexedDB (offline-first)
       const expense = {
         _id: expenseId,
-        userId: session.user.id,
+        userId: user.id,
         date: new Date(formData.date),
         amount: parseFloat(formData.amount),
         category: formData.category,
@@ -106,7 +106,7 @@ export default function AddExpensePage() {
 
       // Trigger sync if online
       if (navigator.onLine) {
-        processSyncQueue(session.user.id);
+        processSyncQueue(user.id);
       }
     } catch (error) {
       console.error("Error adding expense:", error);
@@ -131,7 +131,7 @@ export default function AddExpensePage() {
             categories={categories || []}
             onSubmit={handleSubmit}
             submitLabel="Add Expense"
-            userId={session?.user?.id}
+            userId={user?.id}
           />
         </div>
       </div>

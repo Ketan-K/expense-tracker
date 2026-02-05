@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { db, LocalExpense } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -29,7 +29,7 @@ import { theme } from "@/lib/theme";
 import { t } from "@/lib/terminology";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showBudgetModal, setShowBudgetModal] = useState(false);
@@ -66,42 +66,42 @@ export default function DashboardPage() {
 
   // Fetch expenses from IndexedDB
   const expenses = useLiveQuery(async () => {
-    if (!session?.user?.id) return [];
+    if (!user?.id) return [];
 
     return await db.expenses
       .where("userId")
-      .equals(session.user.id)
+      .equals(user.id)
       .and(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= monthStart && expenseDate <= monthEnd;
       })
       .toArray();
-  }, [session?.user?.id, monthStart.getTime(), monthEnd.getTime()]);
+  }, [user?.id, monthStart.getTime(), monthEnd.getTime()]);
 
   // Fetch incomes from IndexedDB
   const incomes = useLiveQuery(async () => {
-    if (!session?.user?.id) return [];
+    if (!user?.id) return [];
 
     return await db.incomes
       .where("userId")
-      .equals(session.user.id)
+      .equals(user.id)
       .and(income => {
         const incomeDate = new Date(income.date);
         return incomeDate >= monthStart && incomeDate <= monthEnd;
       })
       .toArray();
-  }, [session?.user?.id, monthStart.getTime(), monthEnd.getTime()]);
+  }, [user?.id, monthStart.getTime(), monthEnd.getTime()]);
 
   // Fetch loans from IndexedDB
   const loans = useLiveQuery(async () => {
-    if (!session?.user?.id) return [];
+    if (!user?.id) return [];
 
-    return await db.loans.where("userId").equals(session.user.id).toArray();
-  }, [session?.user?.id]);
+    return await db.loans.where("userId").equals(user.id).toArray();
+  }, [user?.id]);
 
   const categories = useLiveQuery(async () => {
-    if (!session?.user?.id) return [];
-    const allCategories = await db.categories.where("userId").equals(session.user.id).toArray();
+    if (!user?.id) return [];
+    const allCategories = await db.categories.where("userId").equals(user.id).toArray();
 
     // Deduplicate by name - keep the first occurrence
     const seen = new Map();
@@ -112,17 +112,17 @@ export default function DashboardPage() {
     });
 
     return uniqueCategories;
-  }, [session?.user?.id]);
+  }, [user?.id]);
 
   // Fetch budgets for current month
   const budgets = useLiveQuery(async () => {
-    if (!session?.user?.id) return [];
+    if (!user?.id) return [];
     return await db.budgets
       .where("userId")
-      .equals(session.user.id)
+      .equals(user.id)
       .and(budget => budget.month === monthString)
       .toArray();
-  }, [session?.user?.id, monthString]);
+  }, [user?.id, monthString]);
 
   // Process data for charts with filters applied
   const { categoryData, dailyData, transactions, totalSpent, dailyAverage } = useMemo(() => {
@@ -321,19 +321,19 @@ export default function DashboardPage() {
       description: string;
       date: string;
     }) => {
-      if (!session?.user?.id) return;
+      if (!user?.id) return;
 
       const expense = await db.expenses.get(transaction.id);
       if (expense) {
         setEditingExpense(expense);
       }
     },
-    [session?.user?.id]
+    [user?.id]
   );
 
   const handleDeleteTransaction = useCallback(
     async (id: string) => {
-      if (!session?.user?.id) return;
+      if (!user?.id) return;
 
       try {
         // Delete from IndexedDB
@@ -353,13 +353,13 @@ export default function DashboardPage() {
         toast.success("Transaction deleted");
 
         // Trigger background sync
-        processSyncQueue(session.user.id).catch(console.error);
+        processSyncQueue(user.id).catch(console.error);
       } catch (error) {
         console.error("Error deleting transaction:", error);
         toast.error("Failed to delete transaction");
       }
     },
-    [session]
+    [user]
   );
 
   // Get greeting based on time of day
@@ -370,7 +370,7 @@ export default function DashboardPage() {
     return t.eveningGreeting;
   };
 
-  const userName = session?.user?.name?.split(" ")[0] || "there";
+  const userName = user?.name?.split(" ")[0] || "there";
 
   // Calculate financial overview stats
   const financialStats = useMemo(() => {
@@ -406,7 +406,7 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 

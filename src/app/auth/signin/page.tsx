@@ -1,6 +1,8 @@
 "use client";
 
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
+import { setAuthToken } from "@/lib/auth/token-storage";
 import { TrendingUp, PieChart, BarChart3, Terminal, X } from "lucide-react";
 import { theme } from "@/lib/theme";
 import Image from "next/image";
@@ -11,7 +13,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function SignInPage() {
-  const { data: session, status, update: updateSession } = useSession();
+  const { user, isLoading, isAuthenticated, update: updateSession } = useAuth();
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [tapCount, setTapCount] = useState(0);
@@ -34,18 +36,17 @@ export default function SignInPage() {
         const url = data.url;
         if (debugMode) addLog(`📱 Deep link received: ${url}`);
 
-        // Parse URL to check for errors
         try {
           const urlObj = new URL(url);
 
-          // Ignore deep links to the sign-in page itself (prevents loop)
-          if (urlObj.pathname.includes("/auth/signin")) {
-            if (debugMode) addLog("⚠️ Ignoring deep link to sign-in page (prevents loop)");
+          // Ignore non-callback deep links
+          if (!urlObj.pathname.includes("/api/auth/callback/google")) {
+            if (debugMode) addLog(`ℹ️ Ignoring non-callback deep link`);
             return;
           }
 
-          // Check for error in callback
-          if (urlObj.pathname.includes("/api/auth/error")) {
+          // Check for OAuth errors
+          if (urlObj.searchParams.get("error")) {
             const error = urlObj.searchParams.get("error") || "Unknown error";
             if (debugMode) addLog(`❌ OAuth error: ${error}`);
             toast.error(`Authentication failed: ${error}`);
@@ -53,39 +54,60 @@ export default function SignInPage() {
             return;
           }
 
-          // Check if this is an OAuth callback with authorization code
-          if (urlObj.pathname.includes("/api/auth/callback/google")) {
-            const code = urlObj.searchParams.get("code");
+          if (debugMode) addLog("✅ OAuth callback detected");
+          setIsAuthenticating(true);
 
-            if (!code) {
-              if (debugMode) addLog("⚠️ OAuth callback without code - ignoring");
-              return;
-            }
-
-            if (debugMode) addLog("✅ OAuth callback detected with code");
-            if (debugMode) addLog("📝 Code parameter present");
-
-            setIsAuthenticating(true);
-
-            // Close the in-app browser
-            try {
-              await Browser.close();
-              if (debugMode) addLog("🗑️ In-app browser closed");
-            } catch (e) {
-              // Browser might already be closed
-              if (debugMode) addLog("⚠️ Browser close attempt (may already be closed)");
-            }
-
-            // Navigate WebView to callback URL so NextAuth can process code exchange
-            if (debugMode) addLog("🔄 Navigating to callback URL for code exchange...");
-            window.location.href = url;
-          } else {
-            // Log any other deep links for debugging
-            if (debugMode) addLog(`ℹ️ Ignoring non-callback deep link: ${urlObj.pathname}`);
+          // Close the in-app browser
+          try {
+            await Browser.close();
+            if (debugMode) addLog("🗑️ In-app browser closed");
+          } catch (e) {
+            if (debugMode) addLog("⚠️ Browser already closed");
           }
+
+          // Exchange OAuth callback for JWT token
+          if (debugMode) addLog("🔄 Exchanging session for mobile token...");
+          
+          // Navigate to callback URL first to establish session
+          window.location.href = url;
+          
+          // Give NextAuth time to process callback and set session
+          setTimeout(async () => {
+            try {
+              const response = await fetch("/api/auth/mobile-token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+
+              if (!response.ok) {
+                throw new Error("Token exchange failed");
+              }
+
+              const data = await response.json();
+              
+              if (debugMode) addLog("✅ Token received, storing locally");
+              
+              // Store token and user data
+              setAuthToken({
+                token: data.token,
+                user: data.user,
+                expiresAt: data.expiresAt,
+              });
+
+              if (debugMode) addLog("🎉 Authentication complete!");
+              
+              // Redirect to dashboard
+              window.location.href = "/dashboard";
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              if (debugMode) addLog(`❌ Token exchange error: ${errorMsg}`);
+              toast.error("Failed to complete authentication");
+              setIsAuthenticating(false);
+            }
+          }, 2000); // Wait 2 seconds for session to be established
         } catch (error) {
           console.error("Failed to parse deep link URL:", error);
-          if (debugMode) addLog(`❌ Failed to parse URL: ${url}`);
+          if (debugMode) addLog(`❌ Failed to parse URL`);
         }
       });
 
@@ -101,15 +123,15 @@ export default function SignInPage() {
         if (debugMode) addLog("🗑️ App URL listener removed");
       }
     };
-  }, [debugMode, updateSession]);
+  }, [debugMode]);
 
-  // Monitor session changes for successful authentication
+  // Monitor authentication state - redirect when authenticated
   useEffect(() => {
-    if (isAuthenticating && status === "authenticated" && session?.user?.id) {
-      // Redirect to dashboard - this will unmount the component and cleanup state
+    if (isAuthenticated && user?.id && !isAuthenticating) {
+      if (debugMode) addLog("✅ Already authenticated, redirecting...");
       window.location.href = "/dashboard";
     }
-  }, [session, status, isAuthenticating, debugMode]);
+  }, [user, isAuthenticated, isAuthenticating, debugMode]);
 
   const handleLogoTap = () => {
     const newCount = tapCount + 1;

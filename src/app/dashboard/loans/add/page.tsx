@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { db, LocalLoan } from "@/lib/db";
 import { toast } from "sonner";
@@ -11,11 +11,11 @@ import { Handshake } from "lucide-react";
 import { useState } from "react";
 
 export default function AddLoanPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -25,7 +25,7 @@ export default function AddLoanPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }
@@ -40,7 +40,7 @@ export default function AddLoanPage() {
     dueDate?: string;
     description: string;
   }) => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     setIsSubmitting(true);
     try {
@@ -50,7 +50,7 @@ export default function AddLoanPage() {
 
       const loan: LocalLoan = {
         _id: loanId,
-        userId: session.user.id,
+        userId: user.id,
         contactId: formData.contactId,
         contactName: formData.contactName,
         direction: formData.direction,
@@ -80,8 +80,8 @@ export default function AddLoanPage() {
 
       toast.success("Loan created successfully!");
 
-      if (navigator.onLine && session.user.id) {
-        processSyncQueue(session.user.id);
+      if (navigator.onLine && user.id) {
+        processSyncQueue(user.id);
       }
 
       router.push("/dashboard/loans");
@@ -121,7 +121,7 @@ export default function AddLoanPage() {
             <LoanForm
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
-              userId={session?.user?.id || ""}
+              userId={user?.id || ""}
             />
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter, useParams } from "next/navigation";
 import { db } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -18,7 +18,7 @@ import {
 import { motion } from "framer-motion";
 
 export default function ContactDetailsPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const params = useParams();
   const contactId = params.id as string;
@@ -30,7 +30,7 @@ export default function ContactDetailsPage() {
     [contactId]
   );
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -40,7 +40,7 @@ export default function ContactDetailsPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }

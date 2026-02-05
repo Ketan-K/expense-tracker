@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth-utils";
-import { auth } from "@/auth";
+import { requireAuth } from "@/lib/auth/server";
 
 /**
  * Check if current user has admin access
  * Used by admin page to verify authorization
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await requireAuth(request);
     console.log(`[ADMIN CHECK] Admin access check requested by ${session?.user?.email || 'unauthenticated user'}`);
     
     const adminCheck = await isAdmin();

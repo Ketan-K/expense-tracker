@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Shield, Database, CheckCircle, XCircle, AlertCircle, Loader2, Users, TrendingUp, Wallet, FileText } from "lucide-react";
 
 export default function AdminPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'indexes' | 'migrations'>('overview');
@@ -28,9 +28,9 @@ export default function AdminPage() {
 
   // Check admin authorization
   useEffect(() => {
-    if (status === "loading") return;
+    if (isLoading) return;
     
-    if (status === "unauthenticated") {
+    if (!isAuthenticated) {
       router.push("/auth/signin?callbackUrl=/admin");
       return;
     }
@@ -50,7 +50,7 @@ export default function AdminPage() {
       .catch(() => {
         router.push("/dashboard");
       });
-  }, [status, router]);
+  }, [isLoading, isAuthenticated, router]);
 
   const fetchStats = async () => {
     setLoading({ ...loading, stats: true });
@@ -127,7 +127,7 @@ export default function AdminPage() {
   };
 
   // Show loading while checking authorization
-  if (status === "loading" || isAuthorized === null) {
+  if (isLoading || isAuthorized === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="text-center">

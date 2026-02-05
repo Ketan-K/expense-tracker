@@ -14,7 +14,7 @@ const getAdapter = () => {
 };
 
 export const authConfig: NextAuthConfig = {
-  adapter: getAdapter(),
+  // adapter: getAdapter(),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -37,7 +37,7 @@ export const authConfig: NextAuthConfig = {
     signIn: "/auth/signin",
   },
   trustHost: true,
-  useSecureCookies: true, // Enable for HTTPS deployment (Vercel)
+  // useSecureCookies auto-detects based on URL scheme
   cookies: {
     sessionToken: {
       name: "next-auth.session-token",
@@ -45,7 +45,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
     callbackUrl: {
@@ -54,7 +54,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
     csrfToken: {
@@ -63,7 +63,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
     pkceCodeVerifier: {
@@ -72,7 +72,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 15, // 15 minutes
       },
     },
@@ -92,7 +92,7 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },

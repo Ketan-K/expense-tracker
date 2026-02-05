@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter, useParams } from "next/navigation";
 import { db, LocalLoan, LocalLoanPayment } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -12,7 +12,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { processSyncQueue } from "@/lib/syncUtils";
 
 export default function LoanDetailsPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const params = useParams();
   const loanId = params.id as string;
@@ -80,7 +80,7 @@ export default function LoanDetailsPage() {
   };
 
   const handleDeletePayment = async (paymentId: string) => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     try {
       const payment = await db.loanPayments.get(paymentId);
@@ -129,8 +129,8 @@ export default function LoanDetailsPage() {
 
       toast.success("Payment deleted successfully");
 
-      if (navigator.onLine && session.user.id) {
-        processSyncQueue(session.user.id);
+      if (navigator.onLine && user?.id) {
+        processSyncQueue(user.id);
       }
 
       setDeleteConfirmOpen(false);

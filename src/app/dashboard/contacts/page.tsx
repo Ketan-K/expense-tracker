@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { db, LocalContact, LocalLoan } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -11,22 +11,22 @@ import AddContactModal from "@/components/AddContactModal";
 import { motion } from "framer-motion";
 
 export default function ContactsPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
   const contacts = useLiveQuery(
-    () => db.contacts.where("userId").equals(session?.user?.id || "").toArray(),
-    [session?.user?.id]
+    () => db.contacts.where("userId").equals(user?.id || "").toArray(),
+    [user?.id]
   );
 
   const loans = useLiveQuery(
-    () => db.loans.where("userId").equals(session?.user?.id || "").toArray(),
-    [session?.user?.id]
+    () => db.loans.where("userId").equals(user?.id || "").toArray(),
+    [user?.id]
   );
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -36,7 +36,7 @@ export default function ContactsPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }
@@ -322,7 +322,7 @@ export default function ContactsPage() {
       <AddContactModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        userId={session?.user?.id || ""}
+        userId={user?.id || ""}
       />
     </DashboardLayout>
   );

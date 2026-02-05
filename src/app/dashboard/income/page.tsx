@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -13,7 +13,7 @@ import AddIncomeModal from "@/components/AddIncomeModal";
 import { motion } from "framer-motion";
 
 export default function IncomePage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -23,10 +23,10 @@ export default function IncomePage() {
 
   const incomes = useLiveQuery(
     async () => {
-      if (!session?.user?.id) return [];
+      if (!user?.id) return [];
       return await db.incomes
         .where("userId")
-        .equals(session.user.id)
+        .equals(user.id)
         .and((income) => {
           const incomeDate = new Date(income.date);
           return incomeDate >= monthStart && incomeDate <= monthEnd;
@@ -34,20 +34,20 @@ export default function IncomePage() {
         .reverse()
         .sortBy("date");
     },
-    [session?.user?.id, monthStart, monthEnd]
+    [user?.id, monthStart, monthEnd]
   );
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
       </DashboardLayout>
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }
@@ -219,7 +219,7 @@ export default function IncomePage() {
       <AddIncomeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        userId={session?.user?.id || ""}
+        userId={user?.id || ""}
       />
     </DashboardLayout>
   );

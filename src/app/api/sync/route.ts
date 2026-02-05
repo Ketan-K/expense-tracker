@@ -1,8 +1,8 @@
-import { auth } from "@/auth";
+import { requireAuth, getPlatformContext, handleAuthError } from "@/lib/auth/server";
 import { getConnectedClient } from "@/lib/mongodb";
 import type { Expense, Category, Budget, Income, Loan, LoanPayment, Contact } from "@/lib/types";
 import { ObjectId } from "mongodb";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   validateExpense,
   validateCategory,
@@ -20,16 +20,13 @@ export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(request);
 
     // Apply rate limiting (sync has stricter limits)
     const rateLimitResult = await applyRateLimit(
-      session.user.id,
+      session.user.id!!,
       getIP(request),
       rateLimiters.sync
     );
@@ -70,7 +67,7 @@ export async function POST(request: Request) {
             }
 
             const expense: Expense = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -106,7 +103,7 @@ export async function POST(request: Request) {
             await db
               .collection<Expense>("expenses")
               .updateOne(
-                { _id: new ObjectId(data._id), userId: session.user.id },
+                { _id: new ObjectId(data._id), userId: session.user.id!! },
                 { $set: updateData }
               );
 
@@ -118,7 +115,7 @@ export async function POST(request: Request) {
           } else if (action === "DELETE" && data._id) {
             await db.collection<Expense>("expenses").deleteOne({
               _id: new ObjectId(data._id),
-              userId: session.user.id,
+              userId: session.user.id!!,
             });
 
             results.push({
@@ -141,7 +138,7 @@ export async function POST(request: Request) {
             }
 
             const category: Category = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               isDefault: false,
               createdAt: new Date(),
@@ -169,7 +166,7 @@ export async function POST(request: Request) {
             }
 
             const budget: Budget = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -177,7 +174,7 @@ export async function POST(request: Request) {
 
             const result = await db.collection<Budget>("budgets").findOneAndUpdate(
               {
-                userId: session.user.id,
+                userId: session.user.id!!,
                 categoryId: validation.sanitized!.categoryId,
                 month: validation.sanitized!.month,
               },
@@ -206,7 +203,7 @@ export async function POST(request: Request) {
             }
 
             const income: Income = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -242,7 +239,7 @@ export async function POST(request: Request) {
             await db
               .collection<Income>("incomes")
               .updateOne(
-                { _id: new ObjectId(data._id), userId: session.user.id },
+                { _id: new ObjectId(data._id), userId: session.user.id!! },
                 { $set: updateData }
               );
 
@@ -254,7 +251,7 @@ export async function POST(request: Request) {
           } else if (action === "DELETE" && data._id) {
             await db.collection<Income>("incomes").deleteOne({
               _id: new ObjectId(data._id),
-              userId: session.user.id,
+              userId: session.user.id!!,
             });
 
             results.push({
@@ -278,7 +275,7 @@ export async function POST(request: Request) {
             }
 
             const loan: Loan = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               outstandingAmount: validation.sanitized!.principalAmount, // Initially outstanding = principal
               status: "active",
@@ -318,7 +315,7 @@ export async function POST(request: Request) {
             await db
               .collection<Loan>("loans")
               .updateOne(
-                { _id: new ObjectId(data._id), userId: session.user.id },
+                { _id: new ObjectId(data._id), userId: session.user.id!! },
                 { $set: updateData }
               );
 
@@ -330,7 +327,7 @@ export async function POST(request: Request) {
           } else if (action === "DELETE" && data._id) {
             await db.collection<Loan>("loans").deleteOne({
               _id: new ObjectId(data._id),
-              userId: session.user.id,
+              userId: session.user.id!!,
             });
 
             results.push({
@@ -354,7 +351,7 @@ export async function POST(request: Request) {
             }
 
             const loanPayment: LoanPayment = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -367,7 +364,7 @@ export async function POST(request: Request) {
             // Update parent loan's outstanding amount
             if (loanPayment.loanId) {
               await db.collection<Loan>("loans").updateOne(
-                { _id: new ObjectId(loanPayment.loanId), userId: session.user.id },
+                { _id: new ObjectId(loanPayment.loanId), userId: session.user.id!! },
                 {
                   $inc: { outstandingAmount: -loanPayment.amount },
                   $set: { updatedAt: new Date() },
@@ -386,19 +383,19 @@ export async function POST(request: Request) {
             // Get payment amount before deleting
             const payment = await db.collection<LoanPayment>("loanPayments").findOne({
               _id: new ObjectId(data._id),
-              userId: session.user.id,
+              userId: session.user.id!!,
             });
 
             if (payment) {
               await db.collection<LoanPayment>("loanPayments").deleteOne({
                 _id: new ObjectId(data._id),
-                userId: session.user.id,
+                userId: session.user.id!!,
               });
 
               // Reverse the payment amount in parent loan
               if (payment.loanId) {
                 await db.collection<Loan>("loans").updateOne(
-                  { _id: new ObjectId(payment.loanId), userId: session.user.id },
+                  { _id: new ObjectId(payment.loanId), userId: session.user.id!! },
                   {
                     $inc: { outstandingAmount: payment.amount },
                     $set: { updatedAt: new Date() },
@@ -435,7 +432,7 @@ export async function POST(request: Request) {
             }
 
             const contact: Contact = {
-              userId: session.user.id,
+              userId: session.user.id!!,
               ...validation.sanitized!,
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -471,7 +468,7 @@ export async function POST(request: Request) {
             await db
               .collection<Contact>("contacts")
               .updateOne(
-                { _id: new ObjectId(data._id), userId: session.user.id },
+                { _id: new ObjectId(data._id), userId: session.user.id!! },
                 { $set: updateData }
               );
 
@@ -483,7 +480,7 @@ export async function POST(request: Request) {
           } else if (action === "DELETE" && data._id) {
             // Check if contact is referenced by any loans
             const loansWithContact = await db.collection<Loan>("loans").countDocuments({
-              userId: session.user.id,
+              userId: session.user.id!!,
               contactId: data._id,
             });
 
@@ -498,7 +495,7 @@ export async function POST(request: Request) {
 
             await db.collection<Contact>("contacts").deleteOne({
               _id: new ObjectId(data._id),
-              userId: session.user.id,
+              userId: session.user.id!!,
             });
 
             results.push({
@@ -522,6 +519,6 @@ export async function POST(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error syncing data:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return handleAuthError(error, request);
   }
 }

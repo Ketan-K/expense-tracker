@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LocalIncome } from "@/lib/db";
@@ -12,11 +12,11 @@ import { TrendingUp, Plus } from "lucide-react";
 import { useState } from "react";
 
 export default function AddIncomePage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
@@ -26,7 +26,7 @@ export default function AddIncomePage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!isAuthenticated) {
     router.push("/auth/signin");
     return null;
   }
@@ -40,7 +40,7 @@ export default function AddIncomePage() {
     taxable: boolean;
     recurring: boolean;
   }) => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     setIsSubmitting(true);
     try {
@@ -49,7 +49,7 @@ export default function AddIncomePage() {
 
       const income: LocalIncome = {
         _id: incomeId,
-        userId: session.user.id,
+        userId: user.id,
         date: new Date(formData.date),
         amount: parseFloat(formData.amount),
         source: formData.source,
@@ -76,8 +76,8 @@ export default function AddIncomePage() {
 
       toast.success("Income added successfully!");
 
-      if (navigator.onLine && session.user.id) {
-        processSyncQueue(session.user.id);
+      if (navigator.onLine && user.id) {
+        processSyncQueue(user.id);
       }
 
       router.push("/dashboard/income");

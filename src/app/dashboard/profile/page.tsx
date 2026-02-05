@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import DashboardLayout from "@/components/DashboardLayout";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -26,7 +26,7 @@ import { processSyncQueue, pullFromServer } from "@/lib/syncUtils";
 import { t } from "@/lib/terminology";
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { user, isLoading, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [dbStats, setDbStats] = useState({
     expenses: 0,
@@ -49,23 +49,23 @@ export default function ProfilePage() {
 
   // Get unsynced items count
   const unsyncedStats = useLiveQuery(async () => {
-    if (!session?.user?.id) return { expenses: 0, budgets: 0, categories: 0 };
+    if (!user?.id) return { expenses: 0, budgets: 0, categories: 0 };
 
     const unsyncedExpenses = await db.expenses
       .where("userId")
-      .equals(session.user.id)
+      .equals(user.id)
       .and(e => !e.synced)
       .count();
 
     const unsyncedBudgets = await db.budgets
       .where("userId")
-      .equals(session.user.id)
+      .equals(user.id)
       .and(b => !b.synced)
       .count();
 
     const unsyncedCategories = await db.categories
       .where("userId")
-      .equals(session.user.id)
+      .equals(user.id)
       .and(c => !c.synced)
       .count();
 
@@ -74,14 +74,14 @@ export default function ProfilePage() {
       budgets: unsyncedBudgets,
       categories: unsyncedCategories,
     };
-  }, [session?.user?.id]);
+  }, [user?.id]);
 
   useEffect(() => {
     setMounted(true);
 
     // Get IndexedDB stats
     const getStats = async () => {
-      if (session?.user?.id) {
+      if (user?.id) {
         const expenseCount = await db.expenses.count();
         const categoryCount = await db.categories.count();
         const budgetCount = await db.budgets.count();
@@ -107,7 +107,7 @@ export default function ProfilePage() {
     };
 
     getStats();
-  }, [session]);
+  }, [user]);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/auth/signin" });
@@ -138,11 +138,11 @@ export default function ProfilePage() {
   };
 
   const syncNow = async () => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     setSyncing(true);
     try {
-      await processSyncQueue(session.user.id);
+      await processSyncQueue(user.id);
 
       // Save last sync time
       const now = new Date();
@@ -160,10 +160,10 @@ export default function ProfilePage() {
   };
 
   const handlePullFromServer = async () => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     try {
-      await pullFromServer(session.user.id);
+      await pullFromServer(user.id);
 
       // Refresh stats
       const expenseCount = await db.expenses.count();
@@ -268,10 +268,10 @@ export default function ProfilePage() {
         {/* User Info */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all">
           <div className="flex items-center gap-4 mb-6">
-            {session?.user?.image ? (
+            {user?.image ? (
               <img
-                src={session.user.image}
-                alt={session?.user?.name || "User"}
+                src={user.image}
+                alt={user?.name || "User"}
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-full ring-4 ring-indigo-100 dark:ring-indigo-900/30"
               />
             ) : (
@@ -281,11 +281,11 @@ export default function ProfilePage() {
             )}
             <div className="min-w-0 flex-1">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate">
-                {session?.user?.name || "User"}
+                {user?.name || "User"}
               </h2>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 flex items-center gap-2 truncate">
                 <Mail className="w-4 h-4 flex-shrink-0" />
-                {session?.user?.email}
+                {user?.email}
               </p>
             </div>
           </div>

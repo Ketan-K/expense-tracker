@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth";
 import { useRouter, useParams } from "next/navigation";
 import { db, LocalLoanPayment } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -12,7 +12,7 @@ import { DollarSign, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function AddLoanPaymentPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const params = useParams();
   const loanId = params.id as string;
@@ -63,7 +63,7 @@ export default function AddLoanPaymentPage() {
     paymentMethod?: string;
     notes?: string;
   }) => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     setIsSubmitting(true);
     try {
@@ -76,7 +76,7 @@ export default function AddLoanPaymentPage() {
 
       const payment: LocalLoanPayment = {
         _id: paymentId,
-        userId: session.user.id,
+        userId: user!.id,
         loanId: loan._id,
         amount,
         date: new Date(formData.date),
@@ -124,8 +124,8 @@ export default function AddLoanPaymentPage() {
 
       toast.success("Payment recorded successfully!");
 
-      if (navigator.onLine && session.user.id) {
-        processSyncQueue(session.user.id);
+      if (navigator.onLine && user?.id) {
+        processSyncQueue(user.id);
       }
 
       router.push(`/dashboard/loans/${loan._id}`);

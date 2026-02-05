@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
+import { requireAuth, getPlatformContext, handleAuthError } from "@/lib/auth/server";
 import { getConnectedClient } from "@/lib/mongodb";
 import type { Loan } from "@/lib/types";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { validateLoan, sanitizeString } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
@@ -11,14 +11,12 @@ export async function OPTIONS(request: Request) {
   return handleOptionsRequest(request);
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(request);
+    const platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
@@ -49,18 +47,16 @@ export async function GET(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error fetching loans:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return handleAuthError(error, request);
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(request);
+    const platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
@@ -94,6 +90,6 @@ export async function POST(request: Request) {
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
     console.error("Error creating loan:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return handleAuthError(error, request);
   }
 }
