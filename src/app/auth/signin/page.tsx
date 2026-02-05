@@ -19,6 +19,7 @@ export default function SignInPage() {
   const [tapCount, setTapCount] = useState(0);
   const [tapTimeout, setTapTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -45,12 +46,17 @@ export default function SignInPage() {
             return;
           }
 
-          // Check for OAuth errors
+          // Check for OAuth errors in callback URL
           if (urlObj.searchParams.get("error")) {
             const error = urlObj.searchParams.get("error") || "Unknown error";
-            if (debugMode) addLog(`❌ OAuth error: ${error}`);
+            const errorDesc = urlObj.searchParams.get("error_description") || "";
+            const fullError = errorDesc ? `${error}: ${errorDesc}` : error;
+            
+            if (debugMode) addLog(`❌ OAuth error: ${fullError}`);
+            setError(fullError);
             toast.error(`Authentication failed: ${error}`);
             setIsAuthenticating(false);
+            setDebugMode(true); // Auto-enable debug mode on error
             return;
           }
 
@@ -68,24 +74,58 @@ export default function SignInPage() {
           // Exchange OAuth callback for JWT token
           if (debugMode) addLog("🔄 Exchanging session for mobile token...");
           
-          // Navigate to callback URL first to establish session
-          window.location.href = url;
+          // Don't navigate away - fetch the callback URL to establish session
+          // This prevents the page from redirecting to error pages
+          if (debugMode) addLog("📡 Processing callback URL...");
+          
+          try {
+            const callbackResponse = await fetch(url, {
+              credentials: 'include',
+              redirect: 'manual'
+            });
+            
+            if (debugMode) addLog(`📊 Callback response: ${callbackResponse.status}`);
+            
+            // Check if callback failed
+            if (callbackResponse.status >= 400) {
+              const errorText = await callbackResponse.text();
+              if (debugMode) addLog(`❌ Callback failed: ${errorText.substring(0, 200)}`);
+              throw new Error(`Callback failed with status ${callbackResponse.status}`);
+            }
+          } catch (fetchError) {
+            const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+            if (debugMode) addLog(`⚠️ Callback fetch error: ${errorMsg}`);
+            // If fetch fails, try navigating directly (fallback)
+            if (debugMode) addLog("🔄 Falling back to direct navigation...");
+            window.location.href = url;
+            return;
+          }
           
           // Give NextAuth time to process callback and set session
           setTimeout(async () => {
             try {
+              if (debugMode) addLog("📡 Calling /api/auth/mobile-token...");
+              
               const response = await fetch("/api/auth/mobile-token", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
               });
 
+              if (debugMode) addLog(`📊 Response status: ${response.status}`);
+
               if (!response.ok) {
-                throw new Error("Token exchange failed");
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error || `HTTP ${response.status}`;
+                if (debugMode) addLog(`❌ Server responded: ${JSON.stringify(errorData)}`);
+                throw new Error(errorMsg);
               }
 
               const data = await response.json();
               
-              if (debugMode) addLog("✅ Token received, storing locally");
+              if (debugMode) {
+                addLog("✅ Token received, storing locally");
+                addLog(`👤 User: ${data.user?.email || "unknown"}`);
+              }
               
               // Store token and user data
               setAuthToken({
@@ -101,13 +141,19 @@ export default function SignInPage() {
             } catch (error) {
               const errorMsg = error instanceof Error ? error.message : String(error);
               if (debugMode) addLog(`❌ Token exchange error: ${errorMsg}`);
+              setError(`Token exchange failed: ${errorMsg}`);
               toast.error("Failed to complete authentication");
               setIsAuthenticating(false);
+              setDebugMode(true); // Auto-enable debug mode on error
             }
           }, 2000); // Wait 2 seconds for session to be established
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
           console.error("Failed to parse deep link URL:", error);
-          if (debugMode) addLog(`❌ Failed to parse URL`);
+          if (debugMode) addLog(`❌ Failed to parse URL: ${errorMsg}`);
+          setError(`Deep link parsing failed: ${errorMsg}`);
+          setDebugMode(true); // Auto-enable debug mode on error
+        }
         }
       });
 
@@ -189,8 +235,10 @@ export default function SignInPage() {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         setIsAuthenticating(false);
+        setError(`Mobile OAuth failed: ${errorMsg}`);
         toast.error("Failed to start authentication");
         if (debugMode) addLog(`❌ Error: ${errorMsg}`);
+        setDebugMode(true); // Auto-enable debug mode on error
         console.error("Mobile OAuth failed:", error);
       }
     } else {
@@ -201,8 +249,10 @@ export default function SignInPage() {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         setIsAuthenticating(false);
+        setError(`Web OAuth failed: ${errorMsg}`);
         toast.error("Failed to start authentication");
         if (debugMode) addLog(`❌ Error: ${errorMsg}`);
+        setDebugMode(true); // Auto-enable debug mode on error
         console.error("SignIn failed:", error);
       }
     }
@@ -298,6 +348,27 @@ export default function SignInPage() {
           <p className="text-center text-white/60 text-xs sm:text-sm mt-6">
             Your data is stored securely and synced across devices
           </p>
+
+          {/* Error Display */}
+          {error && !debugMode && (
+            <div className="mt-4 bg-red-500/20 border border-red-500/50 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-red-400 text-sm flex-1">
+                  <p className="font-semibold mb-1">Authentication Error</p>
+                  <p className="text-xs opacity-90">{error}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setDebugMode(true);
+                    setError(null);
+                  }}
+                  className="text-xs bg-red-500/30 hover:bg-red-500/50 px-3 py-1 rounded-lg transition-all"
+                >
+                  View Logs
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Debug Console */}
@@ -307,20 +378,37 @@ export default function SignInPage() {
               <div className="flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-green-400" />
                 <h3 className="text-sm font-semibold text-white">Debug Console</h3>
+                {error && (
+                  <span className="text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded">
+                    Error Mode
+                  </span>
+                )}
               </div>
               <button
-                onClick={() => setDebugMode(false)}
+                onClick={() => {
+                  setDebugMode(false);
+                  setError(null);
+                }}
                 className="text-white/60 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
+            
+            {/* Error Summary */}
+            {error && (
+              <div className="mb-3 bg-red-900/30 border border-red-500/30 rounded-lg p-3">
+                <p className="text-red-300 text-xs font-semibold mb-1">❌ Error Details:</p>
+                <p className="text-red-200 text-xs font-mono">{error}</p>
+              </div>
+            )}
+            
             <div className="bg-black/50 rounded-lg p-3 max-h-60 overflow-y-auto font-mono text-xs">
               {debugLogs.length === 0 ? (
                 <p className="text-gray-500 italic">No logs yet...</p>
               ) : (
                 debugLogs.map((log, index) => (
-                  <div key={index} className="text-green-400 mb-1">
+                  <div key={index} className={`mb-1 ${log.includes("❌") ? "text-red-400" : "text-green-400"}`}>
                     {log}
                   </div>
                 ))
