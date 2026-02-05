@@ -169,27 +169,19 @@ export default function SignInPage() {
     setIsAuthenticating(true);
 
     if (Capacitor.isNativePlatform()) {
-      // Mobile: Build OAuth URL manually and open in in-app browser
+      // Mobile: Open NextAuth's signin endpoint in in-app browser
+      // This lets NextAuth handle OAuth URL generation with correct redirect_uri
       try {
-        if (debugMode) addLog("📱 Fetching OAuth URL from server...");
+        if (debugMode) addLog("📱 Opening NextAuth signin in browser...");
 
-        const response = await fetch("/api/auth/oauth-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ provider: "google" }),
-        });
+        const signinUrl = `${window.location.origin}/api/auth/signin/google?callbackUrl=${encodeURIComponent("/dashboard")}`;
+        
+        if (debugMode) addLog(`🔗 Signin URL: ${signinUrl}`);
 
-        const data = await response.json();
-
-        if (!data.url) {
-          throw new Error("No OAuth URL returned");
-        }
-
-        if (debugMode) addLog(`🔗 OAuth URL: ${data.url.substring(0, 80)}...`);
-
-        // Open Google OAuth in in-app browser
+        // Open NextAuth's signin endpoint in in-app browser
+        // It will redirect to Google OAuth with the correct redirect_uri
         await Browser.open({
-          url: data.url,
+          url: signinUrl,
           windowName: "_self",
         });
 
