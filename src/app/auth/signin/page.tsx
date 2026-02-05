@@ -7,6 +7,7 @@ import { TrendingUp, PieChart, BarChart3, Terminal, X } from "lucide-react";
 import { theme } from "@/lib/theme";
 import Image from "next/image";
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { App } from "@capacitor/app";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -55,6 +56,14 @@ export default function SignInPage() {
 
           if (debugMode) addLog("✅ OAuth callback detected");
           setIsAuthenticating(true);
+
+          // Close the in-app browser
+          try {
+            await Browser.close();
+            if (debugMode) addLog("🗑️ In-app browser closed");
+          } catch {
+            if (debugMode) addLog("⚠️ Browser already closed");
+          }
 
           // Exchange OAuth callback for JWT token
           if (debugMode) addLog("🔄 Exchanging session for mobile token...");
@@ -159,18 +168,51 @@ export default function SignInPage() {
 
     setIsAuthenticating(true);
 
-    try {
-      // Both mobile and web use NextAuth's signIn
-      // Mobile will capture the callback via deep link
-      // Web will redirect normally
-      if (debugMode) addLog(`${Capacitor.isNativePlatform() ? "📱" : "🌐"} Using NextAuth flow`);
-      await signIn("google", { callbackUrl: "/dashboard" });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      setIsAuthenticating(false);
-      toast.error("Failed to start authentication");
-      if (debugMode) addLog(`❌ Error: ${errorMsg}`);
-      console.error("SignIn failed:", error);
+    if (Capacitor.isNativePlatform()) {
+      // Mobile: Build OAuth URL manually and open in in-app browser
+      try {
+        if (debugMode) addLog("📱 Fetching OAuth URL from server...");
+
+        const response = await fetch("/api/auth/oauth-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: "google" }),
+        });
+
+        const data = await response.json();
+
+        if (!data.url) {
+          throw new Error("No OAuth URL returned");
+        }
+
+        if (debugMode) addLog(`🔗 OAuth URL: ${data.url.substring(0, 80)}...`);
+
+        // Open Google OAuth in in-app browser
+        await Browser.open({
+          url: data.url,
+          windowName: "_self",
+        });
+
+        if (debugMode) addLog("✅ In-app browser opened");
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setIsAuthenticating(false);
+        toast.error("Failed to start authentication");
+        if (debugMode) addLog(`❌ Error: ${errorMsg}`);
+        console.error("Mobile OAuth failed:", error);
+      }
+    } else {
+      // Web: Use NextAuth's client signIn (cookies work fine)
+      try {
+        if (debugMode) addLog("🌐 Using NextAuth flow");
+        await signIn("google", { callbackUrl: "/dashboard" });
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        setIsAuthenticating(false);
+        toast.error("Failed to start authentication");
+        if (debugMode) addLog(`❌ Error: ${errorMsg}`);
+        console.error("SignIn failed:", error);
+      }
     }
   };
 

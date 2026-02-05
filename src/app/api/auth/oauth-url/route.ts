@@ -1,25 +1,41 @@
-import { signIn } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-// API route to get OAuth URL for mobile apps
+/**
+ * Generate OAuth URL for mobile in-app browser
+ * 
+ * This builds the Google OAuth URL manually for Capacitor apps
+ * since NextAuth's signIn() expects cookies which don't work in WebView
+ */
 export async function POST(request: NextRequest) {
   try {
     const { provider } = await request.json();
 
-    if (!provider) {
-      return NextResponse.json({ error: "Provider required" }, { status: 400 });
+    if (provider !== "google") {
+      return NextResponse.json({ error: "Only Google provider supported" }, { status: 400 });
     }
 
-    // Trigger NextAuth signIn server action to get redirect URL
-    // This sets up cookies and returns the OAuth URL
-    const result = await signIn(provider, {
-      redirect: false,
-      redirectTo: "/dashboard",
+    const clientId = process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
+    const baseUrl = process.env.NEXTAUTH_URL || request.headers.get("origin") || "";
+    
+    if (!clientId) {
+      return NextResponse.json({ error: "OAuth client not configured" }, { status: 500 });
+    }
+
+    // Build Google OAuth URL manually
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: `${baseUrl}/api/auth/callback/google`,
+      response_type: "code",
+      scope: "openid email profile",
+      access_type: "offline",
+      prompt: "consent",
+      // State for CSRF protection - NextAuth will validate this
+      state: crypto.randomUUID(),
     });
 
-    // Extract the redirect URL from the result
-    // In NextAuth v5, this should contain the OAuth provider URL
-    return NextResponse.json({ url: result?.url || null });
+    const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+    return NextResponse.json({ url: oauthUrl });
   } catch (error) {
     console.error("OAuth URL generation failed:", error);
     return NextResponse.json({ error: "Failed to generate OAuth URL" }, { status: 500 });
