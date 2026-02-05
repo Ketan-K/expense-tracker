@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Database, CheckCircle, XCircle, AlertCircle, Loader2, Users, TrendingUp, Wallet, FileText } from "lucide-react";
+import { Shield, Database, CheckCircle, XCircle, AlertCircle, Loader2, Users, TrendingUp, Wallet, FileText, MinusCircle } from "lucide-react";
 
 export default function AdminPage() {
   const { status } = useSession();
@@ -472,24 +472,24 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800 dark:text-blue-200">
-                    <p className="font-medium mb-1">About Migrations</p>
-                    <p>This will execute all .sql files from the migrations folder in alphabetical order. Migrations use CREATE IF NOT EXISTS so they&apos;re safe to run multiple times.</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-800 dark:text-blue-200">
+                      <p className="font-medium mb-1">About Migrations</p>
+                      <p>This will automatically execute all .sql files from the migrations folder directly in your Supabase database. Migrations use CREATE IF NOT EXISTS so they&apos;re safe to run multiple times.</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button
-                onClick={ensureMigrations}
-                disabled={loading.ensureMigrations}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
-              >
-                {loading.ensureMigrations ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-                  Load Migration SQL
-              </button>
+                <button
+                  onClick={ensureMigrations}
+                  disabled={loading.ensureMigrations}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+                >
+                  {loading.ensureMigrations ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                  Run Migrations
+                </button>
 
               {ensureMigrationsResult && (
                 <div
@@ -507,56 +507,69 @@ export default function AdminPage() {
                     )}
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 dark:text-white mb-2">
-                        {ensureMigrationsResult.success ? "Migrations Completed" : "Migration Error"}
+                        {ensureMigrationsResult.success ? "Migrations Completed Successfully" : "Migration Error"}
                       </p>
                       {ensureMigrationsResult.success && (
                         <div className="text-sm text-gray-700 dark:text-gray-300">
-                          <p className="mb-3 font-medium">
-                              Found {ensureMigrationsResult.totalFiles} migration file(s)
+                          <p className="mb-3">
+                            {ensureMigrationsResult.message}
                           </p>
-                          {ensureMigrationsResult.sqlContents && ensureMigrationsResult.sqlContents.length > 0 && (
-                            <div className="space-y-4">
-                              <p className="text-yellow-700 dark:text-yellow-300 mb-2">
-                                  ⚠️ Copy and run this SQL in Supabase Dashboard → SQL Editor:
-                              </p>
-                              {ensureMigrationsResult.sqlContents.map((migration: any, idx: number) => (
-                                <div key={idx} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-                                  <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 flex items-center justify-between">
-                                    <code className="text-xs font-medium text-gray-800 dark:text-gray-200">{migration.file}</code>
-                                    <button
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(migration.sql);
-                                        alert(`Copied ${migration.file} to clipboard!`);
-                                      }}
-                                      className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                                    >
-                                        Copy SQL
-                                    </button>
+                          {ensureMigrationsResult.migrations && ensureMigrationsResult.migrations.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="font-medium mb-2">Migration Results:</p>
+                              {ensureMigrationsResult.migrations.map((m: any, idx: number) => (
+                                <div key={idx} className="flex items-start gap-2 text-xs p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                  {m.skipped ? (
+                                    <MinusCircle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                                  ) : m.success ? (
+                                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <code className="text-gray-800 dark:text-gray-200 font-medium">{m.file}</code>
+                                      {m.lines && <span className="text-gray-500">({m.lines} lines)</span>}
+                                      {m.skipped && <span className="text-gray-500 italic">- {m.message}</span>}
+                                    </div>
+                                    {m.error && (
+                                      <div className="mt-1">
+                                        <p className="text-red-600 dark:text-red-400 font-medium">{m.error}</p>
+                                        {m.detail && <p className="text-red-500 dark:text-red-300 mt-1">{m.detail}</p>}
+                                        {m.hint && <p className="text-yellow-600 dark:text-yellow-400 mt-1">Hint: {m.hint}</p>}
+                                      </div>
+                                    )}
                                   </div>
-                                  <pre className="p-3 text-xs overflow-x-auto bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 max-h-64">
-                                    {migration.sql}
-                                  </pre>
                                 </div>
                               ))}
-                              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                                <p className="text-sm text-blue-800 dark:text-blue-200">
-                                  <strong>Instructions:</strong>
-                                </p>
-                                <ol className="text-xs text-blue-700 dark:text-blue-300 mt-2 space-y-1 list-decimal list-inside">
-                                  <li>Click &quot;Copy SQL&quot; for each migration</li>
-                                  <li>Go to Supabase Dashboard → SQL Editor</li>
-                                  <li>Paste and run each migration</li>
-                                  <li>Refresh this page to verify table exists</li>
-                                </ol>
-                              </div>
                             </div>
                           )}
                         </div>
                       )}
                       {!ensureMigrationsResult.success && (
-                        <pre className="text-xs text-red-700 dark:text-red-300 mt-2 overflow-x-auto">
-                          {ensureMigrationsResult.error || ensureMigrationsResult.details}
-                        </pre>
+                        <div className="mt-2">
+                          <p className="text-sm text-red-700 dark:text-red-300 mb-2">{ensureMigrationsResult.message}</p>
+                          {ensureMigrationsResult.migrations && ensureMigrationsResult.migrations.length > 0 && (
+                            <div className="space-y-2">
+                              {ensureMigrationsResult.migrations.map((m: any, idx: number) => (
+                                <div key={idx} className="text-xs p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                    <code className="font-medium">{m.file}</code>
+                                  </div>
+                                  {m.error && <p className="text-red-700 dark:text-red-300 ml-6">{m.error}</p>}
+                                  {m.detail && <p className="text-red-600 dark:text-red-400 ml-6 mt-1">{m.detail}</p>}
+                                  {m.hint && <p className="text-yellow-700 dark:text-yellow-300 ml-6 mt-1">Hint: {m.hint}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {ensureMigrationsResult.error && !ensureMigrationsResult.migrations && (
+                            <pre className="text-xs text-red-700 dark:text-red-300 mt-2 overflow-x-auto p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                              {ensureMigrationsResult.error}
+                            </pre>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

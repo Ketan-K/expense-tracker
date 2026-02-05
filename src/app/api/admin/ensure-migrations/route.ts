@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-utils";
 import { addCorsHeaders } from "@/lib/cors";
 import fs from "fs";
 import path from "path";
+import { Client } from "pg";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +18,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Get database connection string
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      const response = NextResponse.json(
+        { 
+          success: false,
+          error: "Database connection not configured",
+          message: "DATABASE_URL environment variable is not set" 
+        },
+        { status: 500 }
+      );
+      return addCorsHeaders(response, request.headers.get("origin"));
+    }
+
     // Read all migration files from supabase/migrations directory
     const migrationsDir = path.join(process.cwd(), "supabase", "migrations");
     
@@ -48,33 +63,102 @@ export async function POST(request: NextRequest) {
       return addCorsHeaders(response, request.headers.get("origin"));
     }
 
-    // Read migration contents
-    const migrations = migrationFiles.map(file => {
-      const filePath = path.join(migrationsDir, file);
-      const sql = fs.readFileSync(filePath, "utf-8");
-      return {
-        file,
-        sql,
-        lines: sql.split("\n").length,
-      };
+    // Connect to database
+    const client = new Client({
+      connectionString: databaseUrl,
     });
 
+    await client.connect();
+
+    const results = [];
+
+    try {
+      // Create migrations tracking table if it doesn't exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+          id SERIAL PRIMARY KEY,
+          filename TEXT NOT NULL UNIQUE,
+          executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          checksum TEXT
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_schema_migrations_filename 
+        ON schema_migrations(filename);
+      `);
+
+      // Get list of already executed migrations
+      const executedResult = await client.query(
+        'SELECT filename FROM schema_migrations'
+      );
+      const executedMigrations = new Set(
+        executedResult.rows.map((row: any) => row.filename)
+      );
+
+      // Execute each migration
+      for (const file of migrationFiles) {
+        const filePath = path.join(migrationsDir, file);
+        const sql = fs.readFileSync(filePath, "utf-8");
+
+        // Check if migration was already executed
+        if (executedMigrations.has(file)) {
+          results.push({
+            file,
+            success: true,
+            skipped: true,
+            lines: sql.split("\n").length,
+            message: "Already executed, skipped",
+          });
+          continue;
+        }
+
+        try {
+          // Execute the SQL
+          await client.query(sql);
+          
+          // Record successful migration
+          await client.query(
+            'INSERT INTO schema_migrations (filename) VALUES ($1)',
+            [file]
+          );
+          
+          results.push({
+            file,
+            success: true,
+            skipped: false,
+            lines: sql.split("\n").length,
+          });
+        } catch (error: any) {
+          results.push({
+            file,
+            success: false,
+            skipped: false,
+            error: error.message,
+            detail: error.detail || null,
+            hint: error.hint || null,
+          });
+        }
+      }
+    } finally {
+      // Always close the connection
+      await client.end();
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    const skippedCount = results.filter(r => r.skipped).length;
+    const executedCount = results.filter(r => r.success && !r.skipped).length;
+
     const response = NextResponse.json({
-      success: true,
-      migrations: migrations.map(m => ({
-        file: m.file,
-        lines: m.lines,
-        success: false,
-        note: "To execute these migrations, copy the SQL and run in Supabase SQL Editor (Dashboard > SQL Editor)",
-      })),
-      totalFiles: migrations.length,
-      successCount: 0,
-      failureCount: 0,
-      message: "Migration files loaded. These need to be executed manually in Supabase SQL Editor.",
-      sqlContents: migrations.map(m => ({
-        file: m.file,
-        sql: m.sql,
-      })),
+      success: failureCount === 0,
+      migrations: results,
+      totalFiles: migrationFiles.length,
+      successCount,
+      failureCount,
+      skippedCount,
+      executedCount,
+      message: failureCount === 0 
+        ? `${executedCount > 0 ? `Executed ${executedCount} new migration(s)` : 'No new migrations to execute'}${skippedCount > 0 ? `, ${skippedCount} already applied` : ''}` 
+        : `Executed ${executedCount} migration(s), ${failureCount} failed${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`,
     });
 
     return addCorsHeaders(response, request.headers.get("origin"));
@@ -83,7 +167,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false,
         error: error.message,
-        message: "Failed to read migration files" 
+        message: "Failed to execute migrations" 
       },
       { status: 500 }
     );
