@@ -133,7 +133,7 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
       </div>
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
+      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
           <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left duration-500">
             <div className="w-8 h-8 bg-gradient-to-br from-app-gradient-from via-app-gradient-via to-app-gradient-to rounded-lg flex items-center justify-center shadow-lg">
@@ -194,18 +194,18 @@ export default function DashboardLayout({ children, pageTitle }: DashboardLayout
       </header>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-20 lg:pt-0 pb-24 lg:pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">{children}</div>
+      <main className="lg:ml-64 lg:pt-0 lg:pb-8" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 lg:!pt-0">{children}</div>
       </main>
 
       {/* Bottom Navigation (Mobile) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {/* Backdrop with gradient */}
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-gray-900 dark:via-gray-900/95 dark:to-transparent"></div>
 
         {/* Navigation Bar */}
         <div className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
-          <div className="flex items-center justify-around px-2 pb-safe-area">
+          <div className="flex items-center justify-around px-2">
             {navItems.map(item => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
