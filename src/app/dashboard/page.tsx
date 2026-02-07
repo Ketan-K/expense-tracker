@@ -27,6 +27,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { theme } from "@/lib/theme";
 import { t } from "@/lib/terminology";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -42,6 +44,9 @@ export default function DashboardPage() {
     paymentMethods: [],
     sortBy: "date-desc",
   });
+
+  // PWA Install Prompt
+  const { shouldShowPrompt, handleDismiss, handleInstall } = usePWAInstall();
 
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
@@ -657,6 +662,14 @@ export default function DashboardPage() {
         onClose={() => setEditingExpense(null)}
         categories={categories || []}
       />
+
+      {/* PWA Install Prompt */}
+      {shouldShowPrompt && (
+        <PWAInstallPrompt
+          onClose={handleDismiss}
+          onInstall={handleInstall}
+        />
+      )}
     </DashboardLayout>
   );
 }

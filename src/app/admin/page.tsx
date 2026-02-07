@@ -562,6 +562,38 @@ export default function AdminPage() {
             )}
           </div>
 
+          {/* PWA Install Prompt Testing */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+            <div className="mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">PWA Install Prompt</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Test and reset PWA installation prompt
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+              Reset the PWA install prompt to test the first-time user experience. This clears the local storage flags.
+            </p>
+
+            <button
+              onClick={() => {
+                localStorage.removeItem("pwa_install_prompt_dismissed");
+                localStorage.removeItem("pwa_install_installed");
+                alert("PWA install prompt has been reset. Refresh the dashboard to see it again.");
+              }}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 font-medium"
+            >
+              <Shield className="w-4 h-4" />
+              Reset PWA Install Prompt
+            </button>
+          </div>
+
               {/* Instructions */}
               <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
@@ -580,6 +612,10 @@ export default function AdminPage() {
             <div className="flex gap-2">
               <span className="font-semibold min-w-[140px]">Contacts Arrays:</span>
               <span>Run if upgrading to support multiple phone/email fields</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="font-semibold min-w-[140px]">PWA Prompt:</span>
+              <span>Reset the install prompt to test first-time user experience</span>
             </div>
             <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
               <p className="text-xs text-gray-600 dark:text-gray-400">

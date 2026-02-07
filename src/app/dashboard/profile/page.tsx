@@ -16,6 +16,8 @@ import {
   TrendingUp,
   Wallet,
   CreditCard,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
@@ -40,6 +42,8 @@ export default function ProfilePage() {
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [showQueueDetails, setShowQueueDetails] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
   const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
 
   // Get real-time sync queue status
@@ -79,6 +83,23 @@ export default function ProfilePage() {
   useEffect(() => {
     setMounted(true);
 
+    // Check if app is already installed
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone ||
+        document.referrer.includes('android-app://');
+      setIsInstalled(isStandalone);
+    };
+    checkInstalled();
+
+    // Listen for beforeinstallprompt event
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     // Get IndexedDB stats
     const getStats = async () => {
       if (user?.id) {
@@ -107,10 +128,30 @@ export default function ProfilePage() {
     };
 
     getStats();
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, [user]);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/auth/signin" });
+  };
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      toast.info("App is already installed or installation is not available in this browser.");
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      toast.success("App installed successfully!");
+      setIsInstalled(true);
+    }
+    setDeferredPrompt(null);
   };
 
   const clearLocalData = async () => {
@@ -445,6 +486,64 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
+
+        {/* PWA Install */}
+        {!isInstalled && (deferredPrompt || /iPhone|iPad|iPod/.test(navigator.userAgent)) && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+                <Smartphone className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  Install App
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Install this app on your device for quick access and offline support
+                </p>
+              </div>
+            </div>
+            
+            {deferredPrompt ? (
+              <button
+                onClick={handleInstallPWA}
+                className="w-full py-3 sm:py-4 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base active:scale-95 cursor-pointer shadow-lg"
+              >
+                <Download className="w-5 h-5" />
+                Install Now
+              </button>
+            ) : (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">
+                  To install on iOS:
+                </p>
+                <ol className="space-y-1 text-xs text-blue-700 dark:text-blue-400">
+                  <li>1. Tap the Share button in Safari</li>
+                  <li>2. Scroll and tap "Add to Home Screen"</li>
+                  <li>3. Tap Add to confirm</li>
+                </ol>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isInstalled && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 text-green-600 dark:text-green-400">
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold">
+                  App Installed
+                </h3>
+                <p className="text-sm opacity-80">
+                  You can access this app from your home screen
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sign Out */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 shadow-lg border border-gray-200 dark:border-gray-700">

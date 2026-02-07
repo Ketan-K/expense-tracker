@@ -1,3 +1,40 @@
 @import "tailwindcss";
 
 /* Theme CSS is loaded dynamically via theme-styles.ts based on NEXT_PUBLIC_THEME */
+
+/* Mobile Safe Area Insets for Fixed Elements */
+@supports (padding-top: env(safe-area-inset-top)) {
+  /* Toast notifications (Sonner) */
+  :root {
+    --toast-offset: env(safe-area-inset-top, 0px);
+  }
+  
+  [data-sonner-toaster] {
+    padding-top: var(--toast-offset) !important;
+  }
+
+  /* All fixed modals and dialogs - add top/bottom safe area padding */
+  .fixed.inset-0 {
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  /* For modals that already have padding, adjust it */
+  .fixed.inset-0.z-50 {
+    padding-top: calc(1rem + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Desktop: remove the safe area padding on larger screens */
+  @media (min-width: 640px) {
+    .fixed.inset-0 {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+    
+    .fixed.inset-0.z-50 {
+      padding-top: 1rem !important;
+      padding-bottom: 1rem !important;
+    }
+  }
+}
