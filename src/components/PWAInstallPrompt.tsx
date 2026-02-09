@@ -116,65 +116,42 @@ export default function PWAInstallPrompt({ onClose, onInstall }: PWAInstallPromp
 
           {/* Content */}
           <div className="p-6 space-y-4">
-            {isIOS ? (
-              // iOS Installation Instructions
-              <div className="space-y-4">
-                <p className="text-gray-700 dark:text-gray-300">
-                  To install this app on your iPhone or iPad:
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <Chrome className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Install this app for quick access, offline support, and a better experience!
                 </p>
-                <ol className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-semibold text-xs">
-                      1
-                    </span>
-                    <span>Tap the <strong>Share</strong> button in Safari</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-semibold text-xs">
-                      2
-                    </span>
-                    <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-semibold text-xs">
-                      3
-                    </span>
-                    <span>Tap <strong>Add</strong> to confirm</span>
-                  </li>
-                </ol>
               </div>
-            ) : deferredPrompt ? (
-              // Chrome/Edge Installation
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Chrome className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    Install this app for quick access, offline support, and a better experience!
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Fast loading and smooth performance
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Works offline after installation
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Easy access from your home screen
+                </li>
+              </ul>
+              
+              {/* Show iOS instructions if needed */}
+              {isIOS && !deferredPrompt && (
+                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-800 dark:text-amber-300 font-medium mb-2">
+                    To install on iOS:
                   </p>
+                  <ol className="space-y-1 text-xs text-amber-700 dark:text-amber-400">
+                    <li>1. Tap Share button in Safari</li>
+                    <li>2. Tap "Add to Home Screen"</li>
+                    <li>3. Tap Add to confirm</li>
+                  </ol>
                 </div>
-                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    Fast loading and smooth performance
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    Works offline after installation
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    Easy access from your home screen
-                  </li>
-                </ul>
-              </div>
-            ) : (
-              // Fallback message
-              <div className="space-y-4">
-                <p className="text-gray-700 dark:text-gray-300">
-                  For the best experience, use Chrome or Edge browser to install this app.
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Actions */}
@@ -185,19 +162,17 @@ export default function PWAInstallPrompt({ onClose, onInstall }: PWAInstallPromp
             >
               Maybe Later
             </button>
-            {(deferredPrompt || isIOS) && (
-              <button
-                onClick={handleInstallClick}
-                className="flex-1 px-4 py-3 rounded-lg font-medium text-white transition-all hover:shadow-lg flex items-center justify-center gap-2"
-                style={{ 
-                  backgroundColor: theme.colors.primary,
-                  boxShadow: `0 4px 14px 0 ${theme.colors.primary}40`
-                }}
-              >
-                <Download className="w-4 h-4" />
-                {isIOS ? "Got it" : "Install Now"}
-              </button>
-            )}
+            <button
+              onClick={handleInstallClick}
+              className="flex-1 px-4 py-3 rounded-lg font-medium text-white transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              style={{ 
+                backgroundColor: theme.colors.primary,
+                boxShadow: `0 4px 14px 0 ${theme.colors.primary}40`
+              }}
+            >
+              <Download className="w-4 h-4" />
+              {deferredPrompt ? "Install Now" : "Got it"}
+            </button>
           </div>
         </motion.div>
       </div>
