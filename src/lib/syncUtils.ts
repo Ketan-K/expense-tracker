@@ -9,15 +9,11 @@ import { toast } from "sonner";
  * - Same description (normalized)
  * - Same day (ignoring time)
  */
-export function isDuplicateExpense(
-  exp1: LocalExpense | any,
-  exp2: LocalExpense | any
-): boolean {
+export function isDuplicateExpense(exp1: LocalExpense | any, exp2: LocalExpense | any): boolean {
   const sameCategory = exp1.category === exp2.category;
   const sameAmount = Math.abs(exp1.amount - exp2.amount) < 0.01;
   const sameDesc =
-    (exp1.description || "").trim().toLowerCase() ===
-    (exp2.description || "").trim().toLowerCase();
+    (exp1.description || "").trim().toLowerCase() === (exp2.description || "").trim().toLowerCase();
   const sameDay = isSameDay(new Date(exp1.date), new Date(exp2.date));
 
   return sameCategory && sameAmount && sameDesc && sameDay;
@@ -49,12 +45,9 @@ export async function processSyncQueue(userId: string): Promise<{
   const stats = { success: 0, failed: 0, skipped: 0 };
 
   // Get all pending or failed items that are ready for retry
-  const items = await db.syncQueue
-    .where("status")
-    .anyOf("pending", "failed")
-    .toArray();
+  const items = await db.syncQueue.where("status").anyOf("pending", "failed").toArray();
 
-  const itemsToProcess = items.filter((item) => {
+  const itemsToProcess = items.filter(item => {
     // If it's pending, process immediately
     if (item.status === "pending") return true;
 
@@ -113,48 +106,28 @@ export async function processSyncQueue(userId: string): Promise<{
 
       const result = await response.json();
 
-      // Handle successful sync
-      if (item.action === "CREATE" && result._id) {
-        // Update local record with remote ID if needed
+      // Handle successful sync - mark local items as synced
+      if (item.action === "CREATE" || item.action === "UPDATE") {
+        const recordId = item.action === "CREATE" ? item.localId! : item.remoteId || item.localId!;
+
         if (item.collection === "expenses") {
-          await db.expenses
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.expenses.where("_id").equals(recordId).modify({ synced: true });
         } else if (item.collection === "categories") {
-          await db.categories
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.categories.where("_id").equals(recordId).modify({ synced: true });
         } else if (item.collection === "budgets") {
-          await db.budgets
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.budgets.where("_id").equals(recordId).modify({ synced: true });
         } else if (item.collection === "incomes") {
-          await db.incomes
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.incomes.where("_id").equals(recordId).modify({ synced: true });
         } else if (item.collection === "loans") {
-          await db.loans
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.loans.where("_id").equals(recordId).modify({ synced: true });
         } else if (item.collection === "loanPayments") {
-          await db.loanPayments
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.loanPayments.where("_id").equals(recordId).modify({ synced: true });
         } else if (item.collection === "contacts") {
-          await db.contacts
-            .where("_id")
-            .equals(item.localId!)
-            .modify({ synced: true });
+          await db.contacts.where("_id").equals(recordId).modify({ synced: true });
         }
       }
 
-      // Remove from queue
+      // Remove from queue after successful sync
       await db.syncQueue.delete(item.id!);
       stats.success++;
     } catch (error) {
@@ -229,7 +202,15 @@ export async function pullFromServer(userId: string): Promise<void> {
       await db.syncQueue.clear();
 
       // Pull all data from server
-      const [categoriesRes, budgetsRes, expensesRes, incomesRes, loansRes, loanPaymentsRes, contactsRes] = await Promise.all([
+      const [
+        categoriesRes,
+        budgetsRes,
+        expensesRes,
+        incomesRes,
+        loansRes,
+        loanPaymentsRes,
+        contactsRes,
+      ] = await Promise.all([
         fetch("/api/categories"),
         fetch("/api/budgets"),
         fetch("/api/expenses"),
@@ -239,20 +220,35 @@ export async function pullFromServer(userId: string): Promise<void> {
         fetch("/api/contacts"),
       ]);
 
-      if (!categoriesRes.ok || !budgetsRes.ok || !expensesRes.ok || !incomesRes.ok || !loansRes.ok || !loanPaymentsRes.ok || !contactsRes.ok) {
+      if (
+        !categoriesRes.ok ||
+        !budgetsRes.ok ||
+        !expensesRes.ok ||
+        !incomesRes.ok ||
+        !loansRes.ok ||
+        !loanPaymentsRes.ok ||
+        !contactsRes.ok
+      ) {
         throw new Error("Failed to fetch data from server");
       }
 
-      const [serverCategories, serverBudgets, serverExpenses, serverIncomes, serverLoans, serverLoanPayments, serverContacts] =
-        await Promise.all([
-          categoriesRes.json(),
-          budgetsRes.json(),
-          expensesRes.json(),
-          incomesRes.json(),
-          loansRes.json(),
-          loanPaymentsRes.json(),
-          contactsRes.json(),
-        ]);
+      const [
+        serverCategories,
+        serverBudgets,
+        serverExpenses,
+        serverIncomes,
+        serverLoans,
+        serverLoanPayments,
+        serverContacts,
+      ] = await Promise.all([
+        categoriesRes.json(),
+        budgetsRes.json(),
+        expensesRes.json(),
+        incomesRes.json(),
+        loansRes.json(),
+        loanPaymentsRes.json(),
+        contactsRes.json(),
+      ]);
 
       // Add all categories
       for (const cat of serverCategories) {
@@ -383,21 +379,49 @@ export async function pullFromServer(userId: string): Promise<void> {
       );
     } else {
       // Incremental pull: fetch server data and merge
-      const [expensesRes, incomesRes, loansRes, loanPaymentsRes, contactsRes] = await Promise.all([
+      const [
+        categoriesRes,
+        expensesRes,
+        incomesRes,
+        budgetsRes,
+        loansRes,
+        loanPaymentsRes,
+        contactsRes,
+      ] = await Promise.all([
+        fetch("/api/categories"),
         fetch("/api/expenses"),
         fetch("/api/incomes"),
+        fetch("/api/budgets"),
         fetch("/api/loans"),
         fetch("/api/loan-payments"),
         fetch("/api/contacts"),
       ]);
 
-      if (!expensesRes.ok || !incomesRes.ok || !loansRes.ok || !loanPaymentsRes.ok || !contactsRes.ok) {
+      if (
+        !categoriesRes.ok ||
+        !expensesRes.ok ||
+        !incomesRes.ok ||
+        !budgetsRes.ok ||
+        !loansRes.ok ||
+        !loanPaymentsRes.ok ||
+        !contactsRes.ok
+      ) {
         throw new Error("Failed to fetch data from server");
       }
 
-      const [serverExpenses, serverIncomes, serverLoans, serverLoanPayments, serverContacts] = await Promise.all([
+      const [
+        serverCategories,
+        serverExpenses,
+        serverIncomes,
+        serverBudgets,
+        serverLoans,
+        serverLoanPayments,
+        serverContacts,
+      ] = await Promise.all([
+        categoriesRes.json(),
         expensesRes.json(),
         incomesRes.json(),
+        budgetsRes.json(),
         loansRes.json(),
         loanPaymentsRes.json(),
         contactsRes.json(),
@@ -410,12 +434,43 @@ export async function pullFromServer(userId: string): Promise<void> {
       let added = 0;
       let updated = 0;
 
+      // Sync categories
+      for (const serverCat of serverCategories) {
+        const existing = await db.categories.get(serverCat._id);
+        if (!existing) {
+          // Add new category from server
+          await db.categories.add({
+            _id: serverCat._id,
+            userId: serverCat.userId,
+            name: serverCat.name,
+            icon: serverCat.icon,
+            color: serverCat.color,
+            isDefault: serverCat.isDefault || false,
+            synced: true,
+            createdAt: new Date(serverCat.createdAt),
+          });
+          added++;
+        } else if (existing.synced) {
+          // Server wins conflict resolution
+          const serverUpdated = new Date(serverCat.createdAt).getTime();
+          const localUpdated = new Date(existing.createdAt).getTime();
+
+          if (serverUpdated > localUpdated) {
+            await db.categories.update(serverCat._id, {
+              name: serverCat.name,
+              icon: serverCat.icon,
+              color: serverCat.color,
+              isDefault: serverCat.isDefault || false,
+            });
+            updated++;
+          }
+        }
+      }
+
       // Sync expenses
       for (const serverExp of serverExpenses) {
         // Check if this server expense is a duplicate of any local unsynced expense
-        const isDuplicate = localUnsynced.some((localExp) =>
-          isDuplicateExpense(serverExp, localExp)
-        );
+        const isDuplicate = localUnsynced.some(localExp => isDuplicateExpense(serverExp, localExp));
 
         if (isDuplicate) {
           // Skip adding from server, keep local version
@@ -493,6 +548,39 @@ export async function pullFromServer(userId: string): Promise<void> {
               taxable: serverIncome.taxable,
               recurring: serverIncome.recurring,
               updatedAt: new Date(serverIncome.updatedAt),
+            });
+            updated++;
+          }
+        }
+      }
+
+      // Sync budgets
+      for (const serverBudget of serverBudgets) {
+        const existing = await db.budgets.get(serverBudget._id);
+        if (!existing) {
+          // Add new budget from server
+          await db.budgets.add({
+            _id: serverBudget._id,
+            userId: serverBudget.userId,
+            categoryId: serverBudget.categoryId,
+            month: serverBudget.month,
+            amount: serverBudget.amount,
+            synced: true,
+            createdAt: new Date(serverBudget.createdAt),
+            updatedAt: new Date(serverBudget.updatedAt),
+          });
+          added++;
+        } else if (existing.synced) {
+          // Server wins conflict resolution
+          const serverUpdated = new Date(serverBudget.updatedAt).getTime();
+          const localUpdated = new Date(existing.updatedAt).getTime();
+
+          if (serverUpdated > localUpdated) {
+            await db.budgets.update(serverBudget._id, {
+              categoryId: serverBudget.categoryId,
+              month: serverBudget.month,
+              amount: serverBudget.amount,
+              updatedAt: new Date(serverBudget.updatedAt),
             });
             updated++;
           }
@@ -644,7 +732,7 @@ export async function performSync(userId: string): Promise<void> {
   try {
     // First, push any pending local changes
     await processSyncQueue(userId);
-    
+
     // Then, pull latest data from server
     await pullFromServer(userId);
   } catch (error) {
