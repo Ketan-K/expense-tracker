@@ -3,11 +3,11 @@
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { db, LocalExpense } from "@/lib/db";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Receipt, Plus, Wallet, TrendingDown, Calendar, Tag } from "lucide-react";
+import { Receipt, Plus, TrendingDown, Tag } from "lucide-react";
 import { useMemo, useState } from "react";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 import EditExpenseModal from "@/components/EditExpenseModal";
 import AddExpenseModal from "@/components/AddExpenseModal";
 import MonthSelector from "@/components/reports/MonthSelector";
@@ -15,41 +15,39 @@ import TransactionsList from "@/components/reports/TransactionsList";
 import { toast } from "sonner";
 import { processSyncQueue } from "@/lib/syncUtils";
 import { motion } from "framer-motion";
-import { getCategoryColor } from "@/lib/colors";
 
 export default function ExpensesPage() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [editingExpense, setEditingExpense] = useState<LocalExpense | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [showArchived, setShowArchived] = useState(false);
 
   const monthStart = useMemo(() => startOfMonth(selectedMonth), [selectedMonth]);
   const monthEnd = useMemo(() => endOfMonth(selectedMonth), [selectedMonth]);
 
-  const expenses = useLiveQuery(
-    async () => {
-      if (!user?.id) return [];
-      return await db.expenses
-        .where("userId")
-        .equals(user.id)
-        .and((expense) => {
-          const expenseDate = new Date(expense.date);
-          return expenseDate >= monthStart && expenseDate <= monthEnd;
-        })
-        .reverse()
-        .sortBy("date");
-    },
-    [user?.id, monthStart, monthEnd]
-  );
+  const expenses = useLiveQuery(async () => {
+    if (!user?.id) return [];
+    return await db.expenses
+      .where("userId")
+      .equals(user.id)
+      .and(expense => {
+        const expenseDate = new Date(expense.date);
+        const isInMonth = expenseDate >= monthStart && expenseDate <= monthEnd;
+        const matchesArchiveFilter = showArchived
+          ? expense.isArchived === true
+          : !expense.isArchived;
+        return isInMonth && matchesArchiveFilter;
+      })
+      .reverse()
+      .sortBy("date");
+  }, [user?.id, monthStart, monthEnd, showArchived]);
 
-  const categories = useLiveQuery(
-    async () => {
-      if (!user?.id) return [];
-      return await db.categories.where("userId").equals(user.id).toArray();
-    },
-    [user?.id]
-  );
+  const categories = useLiveQuery(async () => {
+    if (!user?.id) return [];
+    return await db.categories.where("userId").equals(user.id).toArray();
+  }, [user?.id]);
 
   if (isLoading) {
     return (
@@ -70,21 +68,25 @@ export default function ExpensesPage() {
   const expenseCount = expenses?.length || 0;
 
   // Group by category
-  const categoryTotals = expenses?.reduce((acc, expense) => {
-    const catName = expense.category || "Uncategorized";
-    acc[catName] = (acc[catName] || 0) + expense.amount;
-    return acc;
-  }, {} as Record<string, number>) || {};
+  const categoryTotals =
+    expenses?.reduce(
+      (acc, expense) => {
+        const catName = expense.category || "Uncategorized";
+        acc[catName] = (acc[catName] || 0) + expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    ) || {};
 
   const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
 
   const getCategoryIcon = (categoryName: string) => {
-    const category = categories?.find((c) => c.name === categoryName);
+    const category = categories?.find(c => c.name === categoryName);
     return category?.icon || "🏷️";
   };
 
   const getCategoryColor = (categoryName: string) => {
-    const category = categories?.find((c) => c.name === categoryName);
+    const category = categories?.find(c => c.name === categoryName);
     return category?.color || "#6B7280";
   };
 
@@ -99,32 +101,43 @@ export default function ExpensesPage() {
   const handleDelete = async (id: string) => {
     try {
       const expense = await db.expenses.get(id);
-      if (!expense) return;
+      if (!expense || !user?.id) return;
 
-      await db.expenses.delete(id);
+      // Archive instead of hard delete
+      await db.expenses.update(id, {
+        isArchived: true,
+        archivedAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       await db.syncQueue.add({
-        action: "DELETE",
+        action: "ARCHIVE",
         collection: "expenses",
         data: { _id: id },
         timestamp: Date.now(),
         retryCount: 0,
         status: "pending",
-        remoteId: id,
+        localId: id,
       });
 
-      toast.success("Expense deleted");
+      toast.success("Expense archived successfully");
 
       if (navigator.onLine && user?.id) {
         processSyncQueue(user.id);
       }
     } catch (error) {
-      console.error("Error deleting expense:", error);
-      toast.error("Failed to delete expense");
+      console.error("Error archiving expense:", error);
+      toast.error("Failed to archive expense");
     }
   };
 
-  const handleEdit = (transaction: { id: string; amount: number; category: string; description: string; date: string }) => {
+  const handleEdit = (transaction: {
+    id: string;
+    amount: number;
+    category: string;
+    description: string;
+    date: string;
+  }) => {
     const expense = expenses?.find(e => e._id === transaction.id);
     if (expense) {
       setEditingExpense(expense);
@@ -132,22 +145,23 @@ export default function ExpensesPage() {
   };
 
   // Transform expenses to transaction format for TransactionsList
-  const transactions = expenses?.map(expense => ({
-    id: expense._id!,
-    amount: expense.amount,
-    category: expense.category,
-    categoryColor: getCategoryColor(expense.category),
-    categoryIcon: getCategoryIcon(expense.category),
-    description: expense.description || "",
-    date: expense.date.toString(),
-  })) || [];
+  const transactions =
+    expenses?.map(expense => ({
+      id: expense._id!,
+      amount: expense.amount,
+      category: expense.category,
+      categoryColor: getCategoryColor(expense.category),
+      categoryIcon: getCategoryIcon(expense.category),
+      description: expense.description || "",
+      date: expense.date.toString(),
+    })) || [];
 
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-red-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-red-900/10">
         <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
           {/* Header */}
-          <motion.div 
+          <motion.div
             className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -158,21 +172,32 @@ export default function ExpensesPage() {
                 <div className="p-2 sm:p-3 bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-xl">
                   <Receipt className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                Expenses
+                Expenses{" "}
+                {showArchived && (
+                  <span className="text-lg font-normal text-gray-500">(Archived)</span>
+                )}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
                 Track your spending and manage budgets
               </p>
             </div>
-            <motion.button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-app-expenses to-app-expenses-end text-white rounded-xl font-semibold shadow-lg shadow-red-500/50 hover:shadow-xl hover:shadow-red-500/60 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Plus className="w-5 h-5" />
-              Add Expense
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowArchived(!showArchived)}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+              >
+                {showArchived ? "View Active" : "View Archived"}
+              </button>
+              <motion.button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-app-expenses to-app-expenses-end text-white rounded-xl font-semibold shadow-lg shadow-red-500/50 hover:shadow-xl hover:shadow-red-500/60 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Plus className="w-5 h-5" />
+                Add Expense
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Month Selector */}
@@ -182,7 +207,7 @@ export default function ExpensesPage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-app-expenses to-app-expenses-end rounded-2xl shadow-lg p-6 text-white"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -193,13 +218,11 @@ export default function ExpensesPage() {
                 <h3 className="text-sm font-medium opacity-90">Total Spent</h3>
                 <TrendingDown className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold mb-1">
-                {formatCurrency(totalExpenses)}
-              </p>
+              <p className="text-3xl font-bold mb-1">{formatCurrency(totalExpenses)}</p>
               <p className="text-xs opacity-75">This month</p>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -210,13 +233,11 @@ export default function ExpensesPage() {
                 <h3 className="text-sm font-medium opacity-90">Transactions</h3>
                 <Receipt className="w-5 h-5 opacity-90" />
               </div>
-              <p className="text-3xl font-bold mb-1">
-                {expenseCount}
-              </p>
+              <p className="text-3xl font-bold mb-1">{expenseCount}</p>
               <p className="text-xs opacity-75">This month</p>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -237,7 +258,7 @@ export default function ExpensesPage() {
           </div>
 
           {/* Expenses List */}
-          <TransactionsList 
+          <TransactionsList
             transactions={transactions}
             onEdit={handleEdit}
             onDelete={handleDelete}

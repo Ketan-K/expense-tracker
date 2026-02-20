@@ -1,9 +1,9 @@
 import { requireAuth, getPlatformContext, handleAuthError } from "@/lib/auth/server";
 import { getConnectedClient } from "@/lib/mongodb";
-import { Expense } from "@/lib/types";
+import { Budget } from "@/lib/types";
 import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
-import { validateExpense, sanitizeObjectId } from "@/lib/validation";
+import { validateBudget, sanitizeObjectId } from "@/lib/validation";
 import { applyRateLimit, getIP } from "@/lib/ratelimit-middleware";
 import { rateLimiters } from "@/lib/ratelimit";
 import { handleOptionsRequest, addCorsHeaders } from "@/lib/cors";
@@ -29,25 +29,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Validate ObjectId
     if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid budget ID" }, { status: 400 });
     }
 
     const client = await getConnectedClient();
     const db = client.db();
 
-    const expense = await db.collection<Expense>("expenses").findOne({
+    const budget = await db.collection<Budget>("budgets").findOne({
       _id: new ObjectId(id),
       userId: session.user.id,
     });
 
-    if (!expense) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+    if (!budget) {
+      return NextResponse.json({ error: "Budget not found" }, { status: 404 });
     }
 
-    const response = NextResponse.json(expense);
+    const response = NextResponse.json(budget);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error fetching expense:", error);
+    console.error("Error fetching budget:", error);
     return handleAuthError(error, request);
   }
 }
@@ -65,13 +65,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Validate ObjectId
     if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid budget ID" }, { status: 400 });
     }
 
     const body = await request.json();
 
     // Validate and sanitize input
-    const validation = validateExpense(body);
+    const validation = validateBudget(body);
     if (!validation.isValid) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.errors },
@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     const result = await db
-      .collection<Expense>("expenses")
+      .collection<Budget>("budgets")
       .findOneAndUpdate(
         { _id: new ObjectId(id), userId: session.user.id },
         { $set: updateData },
@@ -96,13 +96,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       );
 
     if (!result) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+      return NextResponse.json({ error: "Budget not found" }, { status: 404 });
     }
 
     const response = NextResponse.json(result);
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error updating expense:", error);
+    console.error("Error updating budget:", error);
     return handleAuthError(error, request);
   }
 }
@@ -127,14 +127,14 @@ export async function DELETE(
 
     // Validate ObjectId
     if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid budget ID" }, { status: 400 });
     }
 
     const client = await getConnectedClient();
     const db = client.db();
 
     // Archive instead of hard delete
-    const result = await db.collection<Expense>("expenses").findOneAndUpdate(
+    const result = await db.collection<Budget>("budgets").findOneAndUpdate(
       { _id: new ObjectId(id), userId: session.user.id },
       {
         $set: {
@@ -147,13 +147,13 @@ export async function DELETE(
     );
 
     if (!result) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+      return NextResponse.json({ error: "Budget not found" }, { status: 404 });
     }
 
-    const response = NextResponse.json({ success: true, expense: result });
+    const response = NextResponse.json({ success: true, budget: result });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error archiving expense:", error);
+    console.error("Error archiving budget:", error);
     return handleAuthError(error, request);
   }
 }
@@ -175,7 +175,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Validate ObjectId
     if (!sanitizeObjectId(id)) {
-      return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid budget ID" }, { status: 400 });
     }
 
     // Check if this is a restore action
@@ -189,8 +189,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const client = await getConnectedClient();
     const db = client.db();
 
-    // Restore archived expense
-    const result = await db.collection<Expense>("expenses").findOneAndUpdate(
+    // Restore archived budget
+    const result = await db.collection<Budget>("budgets").findOneAndUpdate(
       { _id: new ObjectId(id), userId: session.user.id },
       {
         $set: {
@@ -203,13 +203,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     );
 
     if (!result) {
-      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+      return NextResponse.json({ error: "Budget not found" }, { status: 404 });
     }
 
-    const response = NextResponse.json({ success: true, expense: result });
+    const response = NextResponse.json({ success: true, budget: result });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error restoring expense:", error);
+    console.error("Error restoring budget:", error);
     return handleAuthError(error, request);
   }
 }

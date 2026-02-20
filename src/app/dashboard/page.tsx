@@ -1,15 +1,18 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
-import { db, LocalExpense } from "@/lib/db";
+import { db, LocalExpense, LocalBudget } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import DashboardLayout from "@/components/DashboardLayout";
 import ReportsClient from "@/components/reports/ReportsClient";
 import MonthSelector from "@/components/reports/MonthSelector";
 import BudgetCard from "@/components/budgets/BudgetCard";
 import BudgetFormModal from "@/components/budgets/BudgetFormModal";
+import EditBudgetModal from "@/components/budgets/EditBudgetModal";
 import EditExpenseModal from "@/components/EditExpenseModal";
 import FilterBar, { FilterState } from "@/components/filters/FilterBar";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useConfirm } from "@/hooks/useConfirm";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
@@ -31,12 +34,15 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<LocalExpense | null>(null);
+  const [editingBudget, setEditingBudget] = useState<LocalBudget | null>(null);
+  const [showArchivedBudgets, setShowArchivedBudgets] = useState(false);
   const [financeTip, setFinanceTip] = useState("Track your expenses, master your money");
+  const { confirm, isOpen: isConfirmOpen, options, handleConfirm, handleCancel } = useConfirm();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     categories: [],
@@ -125,9 +131,15 @@ export default function DashboardPage() {
     return await db.budgets
       .where("userId")
       .equals(user.id)
-      .and(budget => budget.month === monthString)
+      .and(budget => {
+        const matchesMonth = budget.month === monthString;
+        const matchesArchiveFilter = showArchivedBudgets
+          ? budget.isArchived === true
+          : budget.isArchived !== true;
+        return matchesMonth && matchesArchiveFilter;
+      })
       .toArray();
-  }, [user?.id, monthString]);
+  }, [user?.id, monthString, showArchivedBudgets]);
 
   // Process data for charts with filters applied
   const { categoryData, dailyData, transactions, totalSpent, dailyAverage } = useMemo(() => {
@@ -302,21 +314,33 @@ export default function DashboardPage() {
     });
   }, [budgets, categories, expenses]);
 
-  // Show budget warnings
-  useMemo(() => {
+  // Show budget warnings (only once per day)
+  useEffect(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+
     budgetData.forEach(budget => {
       const percentage = (budget.spent / budget.amount) * 100;
+      const storageKey = `budget-warning-${monthString}-${budget.categoryName}`;
+      const lastShown = localStorage.getItem(storageKey);
+
+      // Skip if we've already shown this warning today
+      if (lastShown === today) {
+        return;
+      }
+
       if (percentage >= 100 && budget.spent !== 0) {
         toast.error(`Budget exceeded for ${budget.categoryName}!`, {
           id: `budget-${budget.categoryName}`,
         });
+        localStorage.setItem(storageKey, today);
       } else if (percentage >= 90 && percentage < 100) {
         toast.warning(`${budget.categoryName} budget at ${percentage.toFixed(0)}%`, {
           id: `budget-${budget.categoryName}`,
         });
+        localStorage.setItem(storageKey, today);
       }
     });
-  }, [budgetData]);
+  }, [budgetData, monthString]);
 
   const handleEditTransaction = useCallback(
     async (transaction: {
@@ -341,30 +365,107 @@ export default function DashboardPage() {
       if (!user?.id) return;
 
       try {
-        // Delete from IndexedDB
-        await db.expenses.delete(id);
+        // Archive from IndexedDB
+        const expense = await db.expenses.get(id);
+        if (expense) {
+          await db.expenses.put({
+            ...expense,
+            isArchived: true,
+            archivedAt: new Date(),
+            updatedAt: new Date(),
+          });
 
-        // Add to sync queue
-        await db.syncQueue.add({
-          action: "DELETE",
-          collection: "expenses",
-          data: { _id: id },
-          timestamp: Date.now(),
-          retryCount: 0,
-          status: "pending",
-          localId: id,
-        });
+          // Add to sync queue
+          await db.syncQueue.add({
+            action: "ARCHIVE",
+            collection: "expenses",
+            data: { _id: id },
+            timestamp: Date.now(),
+            retryCount: 0,
+            status: "pending",
+            localId: id,
+          });
 
-        toast.success("Transaction deleted");
+          toast.success("Transaction archived");
 
-        // Trigger background sync
-        processSyncQueue(user.id).catch(console.error);
+          // Trigger background sync
+          processSyncQueue(user.id).catch(console.error);
+        }
       } catch (error) {
-        console.error("Error deleting transaction:", error);
-        toast.error("Failed to delete transaction");
+        console.error("Error archiving transaction:", error);
+        toast.error("Failed to archive transaction");
       }
     },
     [user]
+  );
+
+  const handleEditBudget = useCallback(
+    async (budgetId: string) => {
+      const budget = await db.budgets.get(budgetId);
+      if (budget) {
+        // Find the category for this budget
+        const category = categories?.find(
+          c => c._id === budget.categoryId || c.name === budget.categoryId
+        );
+        setEditingBudget({ ...budget, category });
+      }
+    },
+    [categories]
+  );
+
+  const handleArchiveBudget = useCallback(
+    async (budgetId: string) => {
+      if (!user?.id) return;
+
+      const budget = await db.budgets.get(budgetId);
+      if (!budget) return;
+
+      const category = categories?.find(
+        c => c._id === budget.categoryId || c.name === budget.categoryId
+      );
+
+      const confirmed = await confirm({
+        title: "Archive Budget?",
+        message: `Archive the budget for ${category?.name || "this category"}? It will be permanently deleted after 30 days. You can restore it from the archived view.`,
+        confirmText: "Archive",
+        cancelText: "Cancel",
+        variant: "warning",
+      });
+
+      if (!confirmed) return;
+
+      try {
+        // Archive in IndexedDB
+        await db.budgets.put({
+          ...budget,
+          isArchived: true,
+          archivedAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // Add to sync queue
+        await db.syncQueue.add({
+          action: "ARCHIVE",
+          collection: "budgets",
+          data: { _id: budgetId },
+          timestamp: Date.now(),
+          retryCount: 0,
+          status: "pending",
+          localId: budgetId,
+        });
+
+        toast.success("Budget archived successfully");
+
+        // Trigger background sync
+        if (navigator.onLine) {
+          processSyncQueue(user.id).catch(console.error);
+        }
+      } catch (error) {
+        console.error("Error archiving budget:", error);
+        toast.error("Failed to archive budget");
+      }
+    },
+    [user, categories, confirm]
   );
 
   // Get greeting based on time of day
@@ -556,15 +657,26 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Target className="w-5 h-5" />
-                Monthly Budgets
+                Monthly Budgets{" "}
+                {showArchivedBudgets && (
+                  <span className="text-sm font-normal text-gray-500">(Archived)</span>
+                )}
               </h2>
-              <button
-                onClick={() => setShowBudgetModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Add Budget
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowArchivedBudgets(!showArchivedBudgets)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+                >
+                  {showArchivedBudgets ? "View Active" : "View Archived"}
+                </button>
+                <button
+                  onClick={() => setShowBudgetModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Budget
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {budgetData.map(budget => (
@@ -575,6 +687,10 @@ export default function DashboardPage() {
                   categoryColor={budget.color}
                   budgetAmount={budget.amount}
                   spentAmount={budget.spent}
+                  budgetId={budget._id}
+                  onEdit={handleEditBudget}
+                  onArchive={handleArchiveBudget}
+                  isArchived={budget.isArchived}
                 />
               ))}
             </div>
@@ -663,13 +779,28 @@ export default function DashboardPage() {
         categories={categories || []}
       />
 
+      {/* Edit Budget Modal */}
+      <EditBudgetModal
+        budget={editingBudget}
+        category={editingBudget?.category || null}
+        isOpen={!!editingBudget}
+        onClose={() => setEditingBudget(null)}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
+      />
+
       {/* PWA Install Prompt */}
-      {shouldShowPrompt && (
-        <PWAInstallPrompt
-          onClose={handleDismiss}
-          onInstall={handleInstall}
-        />
-      )}
+      {shouldShowPrompt && <PWAInstallPrompt onClose={handleDismiss} onInstall={handleInstall} />}
     </DashboardLayout>
   );
 }

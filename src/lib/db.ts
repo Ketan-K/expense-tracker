@@ -19,6 +19,8 @@ export interface LocalExpense {
   description?: string;
   paymentMethod?: string;
   type?: "expense" | "income"; // For backward compatibility
+  isArchived?: boolean;
+  archivedAt?: Date;
   synced: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +36,8 @@ export interface LocalIncome {
   description?: string;
   taxable?: boolean;
   recurring?: boolean;
+  isArchived?: boolean;
+  archivedAt?: Date;
   synced: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +73,8 @@ export interface LocalLoan {
   dueDate?: Date;
   status: "active" | "paid" | "overdue";
   description?: string;
+  isArchived?: boolean;
+  archivedAt?: Date;
   synced: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -82,6 +88,8 @@ export interface LocalLoanPayment {
   date: Date;
   paymentMethod?: string;
   notes?: string;
+  isArchived?: boolean;
+  archivedAt?: Date;
   synced: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -104,6 +112,8 @@ export interface LocalBudget {
   categoryId: string;
   month: string;
   amount: number;
+  isArchived?: boolean;
+  archivedAt?: Date;
   synced: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -111,7 +121,7 @@ export interface LocalBudget {
 
 export interface SyncQueueItem {
   id?: number;
-  action: "CREATE" | "UPDATE" | "DELETE";
+  action: "CREATE" | "UPDATE" | "DELETE" | "ARCHIVE" | "RESTORE";
   collection:
     | "expenses"
     | "categories"
@@ -120,7 +130,7 @@ export interface SyncQueueItem {
     | "loans"
     | "loanPayments"
     | "contacts";
-  data: any;
+  data: unknown;
   timestamp: number;
   retryCount: number;
   status: "pending" | "syncing" | "failed" | "success";
@@ -132,7 +142,7 @@ export interface SyncQueueItem {
 
 export interface SyncMetadata {
   key: string;
-  value: any;
+  value: unknown;
   updatedAt: Date;
 }
 
@@ -238,6 +248,63 @@ export class ExpenseTrackerDB extends Dexie {
       syncQueue: "++id, status, timestamp, collection, localId, lastAttempt",
       syncMetadata: "key, updatedAt",
     });
+
+    // Version 5: Add archive support with isArchived indexes
+    this.version(5)
+      .stores({
+        expenses:
+          "_id, userId, date, category, type, isArchived, [userId+isArchived], synced, createdAt, updatedAt",
+        categories: "_id, &[userId+name], userId, name, synced, createdAt",
+        budgets:
+          "_id, userId, categoryId, month, isArchived, [userId+isArchived], synced, createdAt, updatedAt",
+        incomes:
+          "_id, userId, date, source, isArchived, [userId+isArchived], synced, createdAt, updatedAt",
+        loans:
+          "_id, userId, contactId, direction, status, dueDate, isArchived, [userId+isArchived], synced, createdAt, updatedAt",
+        loanPayments:
+          "_id, loanId, userId, date, isArchived, [userId+isArchived], synced, createdAt, updatedAt",
+        contacts:
+          "_id, userId, &[userId+name], name, source, externalId, [userId+externalId], synced, createdAt, updatedAt",
+        syncQueue: "++id, status, timestamp, collection, localId, lastAttempt",
+        syncMetadata: "key, updatedAt",
+      })
+      .upgrade(async tx => {
+        // Set isArchived: false for all existing records
+        const expenses = tx.table<LocalExpense>("expenses");
+        await expenses.toCollection().modify(expense => {
+          if (expense.isArchived === undefined) {
+            expense.isArchived = false;
+          }
+        });
+
+        const budgets = tx.table<LocalBudget>("budgets");
+        await budgets.toCollection().modify(budget => {
+          if (budget.isArchived === undefined) {
+            budget.isArchived = false;
+          }
+        });
+
+        const incomes = tx.table<LocalIncome>("incomes");
+        await incomes.toCollection().modify(income => {
+          if (income.isArchived === undefined) {
+            income.isArchived = false;
+          }
+        });
+
+        const loans = tx.table<LocalLoan>("loans");
+        await loans.toCollection().modify(loan => {
+          if (loan.isArchived === undefined) {
+            loan.isArchived = false;
+          }
+        });
+
+        const loanPayments = tx.table<LocalLoanPayment>("loanPayments");
+        await loanPayments.toCollection().modify(payment => {
+          if (payment.isArchived === undefined) {
+            payment.isArchived = false;
+          }
+        });
+      });
   }
 }
 

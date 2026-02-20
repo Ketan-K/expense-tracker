@@ -1,4 +1,4 @@
-import { requireAuth, getPlatformContext, handleAuthError } from "@/lib/auth/server";
+import { requireAuth, getPlatformContext } from "@/lib/auth/server";
 import { getConnectedClient } from "@/lib/mongodb";
 import { Loan } from "@/lib/types";
 import { ObjectId } from "mongodb";
@@ -17,7 +17,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const session = await requireAuth(request);
     const platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
@@ -51,7 +55,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const session = await requireAuth(request);
     const platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
@@ -98,12 +106,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await requireAuth(request);
     const platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
@@ -121,26 +136,111 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       userId: session.user.id,
     });
 
-    if (paymentsCount > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete loan with existing payments. Delete payments first." },
-        { status: 409 }
-      );
-    }
-
-    const result = await db.collection<Loan>("loans").findOneAndDelete({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
+    // Archive the loan (instead of hard delete)
+    const result = await db.collection<Loan>("loans").findOneAndUpdate(
+      { _id: new ObjectId(id), userId: session.user.id },
+      {
+        $set: {
+          isArchived: true,
+          archivedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after" }
+    );
 
     if (!result) {
       return NextResponse.json({ error: "Loan not found" }, { status: 404 });
     }
 
-    const response = NextResponse.json({ message: "Loan deleted successfully" });
+    // Archive all associated loan payments
+    if (paymentsCount > 0) {
+      await db.collection("loanPayments").updateMany(
+        { loanId: id, userId: session.user.id },
+        {
+          $set: {
+            isArchived: true,
+            archivedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        }
+      );
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      loan: result,
+      paymentsArchived: paymentsCount,
+    });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error deleting loan:", error);
+    console.error("Error archiving loan:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requireAuth(request);
+    const platform = getPlatformContext(request);
+
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
+    if (rateLimitResult) return rateLimitResult;
+
+    const { id } = await params;
+
+    if (!sanitizeObjectId(id)) {
+      return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 });
+    }
+
+    // Check if this is a restore action
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
+
+    if (action !== "restore") {
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    const client = await getConnectedClient();
+    const db = client.db();
+
+    // Restore the archived loan
+    const result = await db.collection<Loan>("loans").findOneAndUpdate(
+      { _id: new ObjectId(id), userId: session.user.id },
+      {
+        $set: {
+          isArchived: false,
+          updatedAt: new Date(),
+        },
+        $unset: { archivedAt: "" },
+      },
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
+      return NextResponse.json({ error: "Loan not found" }, { status: 404 });
+    }
+
+    // Restore all associated loan payments
+    await db.collection("loanPayments").updateMany(
+      { loanId: id, userId: session.user.id },
+      {
+        $set: {
+          isArchived: false,
+          updatedAt: new Date(),
+        },
+        $unset: { archivedAt: "" },
+      }
+    );
+
+    const response = NextResponse.json({ success: true, loan: result });
+    return addCorsHeaders(response, request.headers.get("origin"));
+  } catch (error) {
+    console.error("Error restoring loan:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

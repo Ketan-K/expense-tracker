@@ -14,16 +14,21 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const platform = getPlatformContext(request);
+    const _platform = getPlatformContext(request);
 
     // Apply rate limiting
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const category = searchParams.get("category");
+    const includeArchived = searchParams.get("includeArchived") === "true";
 
     // Validate query parameters
     const validation = validateQueryParams({ startDate, endDate, category });
@@ -37,7 +42,12 @@ export async function GET(request: NextRequest) {
     const client = await getConnectedClient();
     const db = client.db();
 
-    const query: any = { userId: session.user.id };
+    const query: Record<string, unknown> = { userId: session.user.id };
+
+    // Filter archived items unless explicitly requested
+    if (!includeArchived) {
+      query.$or = [{ isArchived: { $exists: false } }, { isArchived: false }];
+    }
 
     if (startDate || endDate) {
       query.date = {};
@@ -66,10 +76,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const platform = getPlatformContext(request);
+    const _platform = getPlatformContext(request);
 
     // Apply rate limiting
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();

@@ -14,14 +14,19 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const platform = getPlatformContext(request);
+    const _platform = getPlatformContext(request);
 
     // Apply rate limiting
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
+    const includeArchived = searchParams.get("includeArchived") === "true";
 
     // Validate month format if provided
     if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
@@ -34,7 +39,13 @@ export async function GET(request: NextRequest) {
     const client = await getConnectedClient();
     const db = client.db();
 
-    const query: any = { userId: session.user.id };
+    const query: Record<string, unknown> = { userId: session.user.id };
+
+    // Filter archived items unless explicitly requested
+    if (!includeArchived) {
+      query.$or = [{ isArchived: { $exists: false } }, { isArchived: false }];
+    }
+
     if (month) {
       query.month = sanitizeString(month);
     }
@@ -56,10 +67,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const platform = getPlatformContext(request);
+    const _platform = getPlatformContext(request);
 
     // Apply rate limiting
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();

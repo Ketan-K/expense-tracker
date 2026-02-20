@@ -121,19 +121,79 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const client = await getConnectedClient();
     const db = client.db();
 
-    const result = await db.collection<Income>("incomes").findOneAndDelete({
-      _id: new ObjectId(id),
-      userId: session.user.id,
-    });
+    // Archive instead of hard delete
+    const result = await db.collection<Income>("incomes").findOneAndUpdate(
+      { _id: new ObjectId(id), userId: session.user.id },
+      {
+        $set: {
+          isArchived: true,
+          archivedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after" }
+    );
 
     if (!result) {
       return NextResponse.json({ error: "Income not found" }, { status: 404 });
     }
 
-    const response = NextResponse.json({ message: "Income deleted successfully" });
+    const response = NextResponse.json({ success: true, income: result });
     return addCorsHeaders(response, request.headers.get("origin"));
   } catch (error) {
-    console.error("Error deleting income:", error);
+    console.error("Error archiving income:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateLimitResult = await applyRateLimit(session.user.id, getIP(request), rateLimiters.api);
+    if (rateLimitResult) return rateLimitResult;
+
+    const { id } = await params;
+
+    if (!sanitizeObjectId(id)) {
+      return NextResponse.json({ error: "Invalid income ID" }, { status: 400 });
+    }
+
+    // Check if this is a restore action
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
+
+    if (action !== "restore") {
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    const client = await getConnectedClient();
+    const db = client.db();
+
+    // Restore archived income
+    const result = await db.collection<Income>("incomes").findOneAndUpdate(
+      { _id: new ObjectId(id), userId: session.user.id },
+      {
+        $set: {
+          isArchived: false,
+          updatedAt: new Date(),
+        },
+        $unset: { archivedAt: "" },
+      },
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
+      return NextResponse.json({ error: "Income not found" }, { status: 404 });
+    }
+
+    const response = NextResponse.json({ success: true, income: result });
+    return addCorsHeaders(response, request.headers.get("origin"));
+  } catch (error) {
+    console.error("Error restoring income:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

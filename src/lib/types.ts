@@ -1,11 +1,10 @@
 import { ObjectId } from "mongodb";
-import type { LucideIcon } from "lucide-react";
-import { 
-  Apple, 
-  Fuel, 
-  Route, 
-  PlusCircle, 
-  HelpCircle, 
+import {
+  Apple,
+  Fuel,
+  Route,
+  PlusCircle,
+  HelpCircle,
   ShoppingCart,
   Cookie,
   PiggyBank,
@@ -56,7 +55,8 @@ import {
   Snowflake,
   Sun,
   Moon,
-  Star
+  Star,
+  type LucideIcon,
 } from "lucide-react";
 
 export interface User {
@@ -98,6 +98,8 @@ export interface Expense {
   description?: string;
   paymentMethod?: string;
   type?: "expense" | "income"; // For backward compatibility and future migration
+  isArchived?: boolean;
+  archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,6 +114,8 @@ export interface Income {
   description?: string;
   taxable?: boolean;
   recurring?: boolean; // Monthly salary vs one-time bonus
+  isArchived?: boolean;
+  archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -145,6 +149,8 @@ export interface Loan {
   dueDate?: Date;
   status: "active" | "paid" | "overdue";
   description?: string;
+  isArchived?: boolean;
+  archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,6 +163,8 @@ export interface LoanPayment {
   date: Date;
   paymentMethod?: string;
   notes?: string;
+  isArchived?: boolean;
+  archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -177,12 +185,14 @@ export interface Budget {
   categoryId: string;
   month: string; // Format: YYYY-MM
   amount: number;
+  isArchived?: boolean;
+  archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Import centralized color palette
-import { COLORS } from './colors';
+import { COLORS } from "./colors";
 
 export const DEFAULT_CATEGORIES = [
   { name: "Grocery", icon: "ShoppingCart", color: COLORS.categories[0], isDefault: true },

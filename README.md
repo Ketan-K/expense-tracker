@@ -24,6 +24,8 @@ A modern, offline-first expense tracking Progressive Web App with comprehensive 
 - 🤝 **Loan Management** - Track loans and payment schedules
 - 👥 **Contact Management** - Store contact information
 - 🔄 **Smart Sync** - Queue-based offline sync system
+- ✏️ **Edit & Archive** - Edit any entry, archive instead of delete
+- 🗄️ **Smart Cleanup** - Auto-delete archived items after 30 days
 - 🎯 **Admin Dashboard** - Database migrations and maintenance tools
 
 ## 🚀 Tech Stack
@@ -110,35 +112,41 @@ expense-tracker/
 │ │ ├── api/ # API routes
 │ │ │ ├── admin/ # Admin endpoints (migrations, indexes)
 │ │ │ ├── auth/ # NextAuth endpoints
-│ │ │ ├── budgets/ # Budget CRUD
+│ │ │ ├── budgets/ # Budget CRUD with archive
 │ │ │ ├── categories/ # Category management
 │ │ │ ├── contacts/ # Contact management
-│ │ │ ├── expenses/ # Expense CRUD
+│ │ │ ├── cron/ # Automated cleanup jobs
+│ │ │ ├── expenses/ # Expense CRUD with archive
 │ │ │ ├── export/ # CSV/Excel export
-│ │ │ ├── incomes/ # Income tracking
-│ │ │ ├── loans/ # Loan management
+│ │ │ ├── incomes/ # Income tracking with archive
+│ │ │ ├── loans/ # Loan management with archive
 │ │ │ └── sync/ # Offline sync
 │ │ ├── auth/ # Auth pages
 │ │ ├── admin/ # Admin dashboard
 │ │ └── dashboard/ # Main app pages
 │ ├── components/ # React components
-│ │ ├── budgets/ # Budget components
+│ │ ├── budgets/ # Budget components with edit modal
 │ │ ├── filters/ # Filter components
 │ │ ├── reports/ # Analytics components
-│ │ └── shared/ # Shared UI components
+│ │ ├── shared/ # Shared UI components
+│ │ ├── EditExpenseModal.tsx # Edit expense modal
+│ │ ├── EditIncomeModal.tsx # Edit income modal
+│ │ ├── EditLoanModal.tsx # Edit loan modal
+│ │ └── ConfirmDialog.tsx # Confirmation dialogs
 │ ├── hooks/ # Custom React hooks
+│ │ ├── useConfirm.ts # Confirmation dialog hook
+│ │ └── usePWAInstall.ts # PWA install hook
 │ ├── lib/ # Core utilities
-│ │ ├── db.ts # Dexie IndexedDB setup
+│ │ ├── db.ts # Dexie IndexedDB v5 with archive
 │ │ ├── mongodb.ts # MongoDB connection
-│ │ ├── syncUtils.ts # Offline sync logic
+│ │ ├── syncUtils.ts # Offline sync with archive support
 │ │ ├── auth-utils.ts # Admin authorization
-│ │ └── types.ts # TypeScript types
-│ └── auth.ts # NextAuth configuration
-├── public/ # Static assets & PWA files
+│ │ └── types.ts # TypeScript types with archive fields
 │ └── auth.ts # NextAuth configuration
 ├── public/ # Static assets & PWA files
 └── docs/ # Documentation
 ├── admin.md # Admin setup guide
+├── archive-edit.md # Archive & edit functionality
 ├── vibe-deployment.md # Vibe Finance deployment
 ├── vibe-quickstart.md # Quick start guide
 └── linting.md # Code standards

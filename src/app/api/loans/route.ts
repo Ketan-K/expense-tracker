@@ -14,20 +14,30 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const platform = getPlatformContext(request);
+    const _platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const { searchParams } = new URL(request.url);
     const direction = searchParams.get("direction");
     const status = searchParams.get("status");
     const contactId = searchParams.get("contactId");
+    const includeArchived = searchParams.get("includeArchived") === "true";
 
     const client = await getConnectedClient();
     const db = client.db();
 
-    const query: any = { userId: session.user.id };
+    const query: Record<string, unknown> = { userId: session.user.id };
+
+    // Filter archived items unless explicitly requested
+    if (!includeArchived) {
+      query.$or = [{ isArchived: { $exists: false } }, { isArchived: false }];
+    }
 
     if (direction && (direction === "given" || direction === "taken")) {
       query.direction = direction;
@@ -54,9 +64,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const platform = getPlatformContext(request);
+    const _platform = getPlatformContext(request);
 
-    const rateLimitResult = await applyRateLimit(session.user.id!, getIP(request), rateLimiters.api);
+    const rateLimitResult = await applyRateLimit(
+      session.user.id!,
+      getIP(request),
+      rateLimiters.api
+    );
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();

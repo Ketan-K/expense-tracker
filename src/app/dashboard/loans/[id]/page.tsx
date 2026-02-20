@@ -2,27 +2,38 @@
 
 import { useAuth } from "@/lib/auth";
 import { useRouter, useParams } from "next/navigation";
-import { db, LocalLoan, LocalLoanPayment } from "@/lib/db";
+import { db, LocalLoan } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Handshake, Plus, TrendingUp, TrendingDown, Calendar, DollarSign, Trash2, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  DollarSign,
+  Trash2,
+  AlertCircle,
+  Pencil,
+  Archive,
+} from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { processSyncQueue } from "@/lib/syncUtils";
+import EditLoanModal from "@/components/EditLoanModal";
+import { useConfirm } from "@/hooks/useConfirm";
 
 export default function LoanDetailsPage() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const params = useParams();
   const loanId = params.id as string;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [editingLoan, setEditingLoan] = useState<LocalLoan | null>(null);
+  const { isConfirmOpen, options, handleConfirm, handleCancel, confirm } = useConfirm();
 
-  const loan = useLiveQuery(
-    () => db.loans.get(loanId),
-    [loanId]
-  );
+  const loan = useLiveQuery(() => db.loans.get(loanId), [loanId]);
 
   const payments = useLiveQuery(
     () => db.loanPayments.where("loanId").equals(loanId).reverse().sortBy("paymentDate"),
@@ -50,7 +61,9 @@ export default function LoanDetailsPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Loan not found</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Loan not found
+            </h2>
             <button
               onClick={() => router.push("/dashboard/loans")}
               className="text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -141,6 +154,57 @@ export default function LoanDetailsPage() {
     }
   };
 
+  const handleEditLoan = () => {
+    if (loan) {
+      setEditingLoan(loan);
+    }
+  };
+
+  const handleArchiveLoan = async () => {
+    const confirmed = await confirm({
+      title: "Archive Loan?",
+      message:
+        "This loan will be archived and hidden from your active loans. You can restore it later from the archived view.",
+      confirmText: "Archive",
+      variant: "warning",
+    });
+
+    if (!confirmed || !user?.id || !loan._id) return;
+
+    try {
+      // Archive loan in IndexedDB
+      await db.loans.update(loan._id, {
+        isArchived: true,
+        archivedAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Add to sync queue
+      await db.syncQueue.add({
+        action: "ARCHIVE",
+        collection: "loans",
+        data: { _id: loan._id },
+        timestamp: Date.now(),
+        retryCount: 0,
+        status: "pending",
+        localId: loan._id,
+      });
+
+      toast.success("Loan archived successfully");
+
+      // Process sync queue if online
+      if (navigator.onLine) {
+        processSyncQueue(user.id);
+      }
+
+      // Navigate back to loans list
+      router.push("/dashboard/loans");
+    } catch (error) {
+      console.error("Error archiving loan:", error);
+      toast.error("Failed to archive loan");
+    }
+  };
+
   const totalPaid = loan.principalAmount - (loan.outstandingAmount || 0);
   const paymentProgress = (totalPaid / loan.principalAmount) * 100;
 
@@ -183,11 +247,13 @@ export default function LoanDetailsPage() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className={`p-4 rounded-2xl ${
-                    loan.direction === "given"
-                      ? "bg-gradient-to-br from-orange-500 to-red-600"
-                      : "bg-gradient-to-br from-blue-500 to-indigo-600"
-                  }`}>
+                  <div
+                    className={`p-4 rounded-2xl ${
+                      loan.direction === "given"
+                        ? "bg-gradient-to-br from-orange-500 to-red-600"
+                        : "bg-gradient-to-br from-blue-500 to-indigo-600"
+                    }`}
+                  >
                     {loan.direction === "given" ? (
                       <TrendingUp className="w-8 h-8 text-white" />
                     ) : (
@@ -203,7 +269,27 @@ export default function LoanDetailsPage() {
                     </p>
                   </div>
                 </div>
-                {getStatusBadge()}
+                <div className="flex items-center gap-3">
+                  {getStatusBadge()}
+                  {!loan.isArchived && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleEditLoan}
+                        className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        title="Edit loan"
+                      >
+                        <Pencil className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      </button>
+                      <button
+                        onClick={handleArchiveLoan}
+                        className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        title="Archive loan"
+                      >
+                        <Archive className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {loan.description && (
@@ -242,7 +328,9 @@ export default function LoanDetailsPage() {
               {/* Progress Bar */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Payment Progress</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Payment Progress
+                  </span>
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {paymentProgress.toFixed(1)}%
                   </span>
@@ -288,7 +376,9 @@ export default function LoanDetailsPage() {
             {!payments || payments.length === 0 ? (
               <div className="text-center py-12">
                 <DollarSign className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No payments yet</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  No payments yet
+                </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Record your first payment to track this loan
                 </p>
@@ -303,7 +393,7 @@ export default function LoanDetailsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {payments.map((payment) => (
+                {payments.map(payment => (
                   <div
                     key={payment._id}
                     className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
@@ -321,7 +411,9 @@ export default function LoanDetailsPage() {
                           {payment.paymentMethod && ` • ${payment.paymentMethod}`}
                         </p>
                         {payment.notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{payment.notes}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {payment.notes}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -359,6 +451,23 @@ export default function LoanDetailsPage() {
         title="Delete Payment"
         message="Are you sure you want to delete this payment? This will increase the outstanding amount."
         confirmText="Delete"
+      />
+
+      <EditLoanModal
+        loan={editingLoan}
+        isOpen={!!editingLoan}
+        onClose={() => setEditingLoan(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
       />
     </DashboardLayout>
   );
