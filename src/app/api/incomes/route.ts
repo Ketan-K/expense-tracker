@@ -40,7 +40,12 @@ export async function GET(request: NextRequest) {
     const client = await getConnectedClient();
     const db = client.db();
 
-    const query: Record<string, unknown> = { userId: session.user.id };
+    const query: {
+      userId: string;
+      $or?: Array<{ isArchived: { $exists: boolean } } | { isArchived: boolean }>;
+      date?: { $gte?: Date; $lte?: Date };
+      source?: string;
+    } = { userId: session.user.id! };
 
     // Filter archived items unless explicitly requested
     if (!includeArchived) {

@@ -24,7 +24,7 @@ export default function IncomePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingIncome, setEditingIncome] = useState<LocalIncome | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const { isConfirmOpen, options, handleConfirm, handleCancel, confirm } = useConfirm();
+  const { isOpen, options, handleConfirm, handleCancel, confirm } = useConfirm();
 
   const monthStart = useMemo(() => startOfMonth(selectedMonth), [selectedMonth]);
   const monthEnd = useMemo(() => endOfMonth(selectedMonth), [selectedMonth]);
@@ -311,9 +311,9 @@ export default function IncomePage() {
       />
 
       <ConfirmDialog
-        isOpen={isConfirmOpen}
+        isOpen={isOpen}
         onConfirm={handleConfirm}
-        onCancel={handleCancel}
+        onClose={handleCancel}
         title={options.title}
         message={options.message}
         confirmText={options.confirmText}

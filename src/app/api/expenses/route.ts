@@ -50,9 +50,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+      const dateQuery: { $gte?: Date; $lte?: Date } = {};
+      if (startDate) dateQuery.$gte = new Date(startDate);
+      if (endDate) dateQuery.$lte = new Date(endDate);
+      query.date = dateQuery;
     }
 
     if (category) {

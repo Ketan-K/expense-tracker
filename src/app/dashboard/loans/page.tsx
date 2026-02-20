@@ -456,7 +456,7 @@ export default function LoansPage() {
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onConfirm={handleConfirm}
-        onCancel={handleCancel}
+        onClose={handleCancel}
         title={options.title}
         message={options.message}
         confirmText={options.confirmText}

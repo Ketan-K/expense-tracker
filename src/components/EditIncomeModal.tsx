@@ -116,7 +116,6 @@ export default function EditIncomeModal({ income, isOpen, onClose }: EditIncomeM
             <div className="p-6">
               <IncomeForm
                 initialData={initialData}
-                userId={income.userId}
                 onSubmit={handleSubmit}
                 onCancel={onClose}
                 submitLabel="Update Income"

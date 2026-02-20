@@ -399,19 +399,12 @@ export default function DashboardPage() {
     [user]
   );
 
-  const handleEditBudget = useCallback(
-    async (budgetId: string) => {
-      const budget = await db.budgets.get(budgetId);
-      if (budget) {
-        // Find the category for this budget
-        const category = categories?.find(
-          c => c._id === budget.categoryId || c.name === budget.categoryId
-        );
-        setEditingBudget({ ...budget, category });
-      }
-    },
-    [categories]
-  );
+  const handleEditBudget = useCallback(async (budgetId: string) => {
+    const budget = await db.budgets.get(budgetId);
+    if (budget) {
+      setEditingBudget(budget);
+    }
+  }, []);
 
   const handleArchiveBudget = useCallback(
     async (budgetId: string) => {
@@ -511,6 +504,15 @@ export default function DashboardPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  const editingBudgetCategory = useMemo(() => {
+    if (!editingBudget || !categories) return null;
+    return (
+      categories.find(
+        c => c._id === editingBudget.categoryId || c.name === editingBudget.categoryId
+      ) || null
+    );
+  }, [editingBudget, categories]);
 
   if (!user) {
     return null;
@@ -776,7 +778,7 @@ export default function DashboardPage() {
       {/* Edit Budget Modal */}
       <EditBudgetModal
         budget={editingBudget}
-        category={editingBudget?.category || null}
+        category={editingBudgetCategory}
         isOpen={!!editingBudget}
         onClose={() => setEditingBudget(null)}
       />
@@ -785,7 +787,7 @@ export default function DashboardPage() {
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onConfirm={handleConfirm}
-        onCancel={handleCancel}
+        onClose={handleCancel}
         title={options.title}
         message={options.message}
         confirmText={options.confirmText}

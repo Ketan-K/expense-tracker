@@ -31,7 +31,7 @@ export default function LoanDetailsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
   const [editingLoan, setEditingLoan] = useState<LocalLoan | null>(null);
-  const { isConfirmOpen, options, handleConfirm, handleCancel, confirm } = useConfirm();
+  const { isOpen: isConfirmOpen, options, handleConfirm, handleCancel, confirm } = useConfirm();
 
   const loan = useLiveQuery(() => db.loans.get(loanId), [loanId]);
 
@@ -461,8 +461,8 @@ export default function LoanDetailsPage() {
 
       <ConfirmDialog
         isOpen={isConfirmOpen}
+        onClose={handleCancel}
         onConfirm={handleConfirm}
-        onCancel={handleCancel}
         title={options.title}
         message={options.message}
         confirmText={options.confirmText}

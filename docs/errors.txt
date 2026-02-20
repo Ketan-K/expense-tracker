@@ -1,0 +1,74 @@
+> git -c user.useConfigOnly=true commit --quiet --allow-empty-message --file -
+[33m[STARTED][39m Backing up original state...
+[32m[COMPLETED][39m Backed up original state in git stash (308d25b)
+[33m[STARTED][39m Running tasks for staged files...
+[33m[STARTED][39m package.json[0;90m — 24 files[0m
+[33m[STARTED][39m *.{js,jsx,ts,tsx}[0;90m — 20 files[0m
+[33m[STARTED][39m *.{json,css,md}[0;90m — 3 files[0m
+[33m[STARTED][39m eslint --fix
+[33m[STARTED][39m prettier --write
+[32m[COMPLETED][39m prettier --write
+[32m[COMPLETED][39m *.{json,css,md}[0;90m — 3 files[0m
+[31m[FAILED][39m [0;31meslint --fix[0m [0;90m[FAILED][0m
+[31m[FAILED][39m [0;31meslint --fix[0m [0;90m[FAILED][0m
+[32m[COMPLETED][39m Running tasks for staged files...
+[33m[STARTED][39m Applying modifications from tasks...
+[33m[SKIPPED][39m Skipped because of errors from tasks.
+[33m[STARTED][39m Reverting to original state because of errors...
+[32m[COMPLETED][39m Reverting to original state because of errors...
+[33m[STARTED][39m Cleaning up temporary files...
+[32m[COMPLETED][39m Cleaning up temporary files...
+
+[0;31m[0;31m✖[0m eslint --fix:[0m
+[0m[0m
+[0m[4mD:\Ketan-K\expense-tracker\src\app\api\budgets\[id]\route.ts[24m[0m
+[0m   [2m18:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m54:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m109:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m155:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\Ketan-K\expense-tracker\src\app\api\expenses\[id]\route.ts[24m[0m
+[0m   [2m18:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m54:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m109:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m155:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\Ketan-K\expense-tracker\src\app\api\expenses\route.ts[24m[0m
+[0m  [2m2:8[22m  [33mwarning[39m  'clientPromise' is defined but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\Ketan-K\expense-tracker\src\app\api\loans\[id]\route.ts[24m[0m
+[0m   [2m18:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m52:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m104:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m172:11[22m  [33mwarning[39m  'platform' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\Ketan-K\expense-tracker\src\components\budgets\BudgetCard.tsx[24m[0m
+[0m  [2m47:14[22m  [31merror[39m  Error: Cannot create components during render[0m
+[0m[0m
+[0mComponents created during render will reset their state each time they are created. Declare components outside of render.[0m
+[0m[0m
+[0mD:\Ketan-K\expense-tracker\src\components\budgets\BudgetCard.tsx:47:14[0m
+[0m  45 |             style={{ backgroundColor: categoryColor }}[0m
+[0m  46 |           >[0m
+[0m> 47 |             <Icon className="w-5 h-5 text-white" />[0m
+[0m     |              ^^^^ This component is created during render[0m
+[0m  48 |           </div>[0m
+[0m  49 |           <div>[0m
+[0m  50 |             <h3 className="font-semibold text-gray-900 dark:text-white">[0m
+[0m[0m
+[0mD:\Ketan-K\expense-tracker\src\components\budgets\BudgetCard.tsx:31:30[0m
+[0m  29 |   isArchived = false,[0m
+[0m  30 | }: BudgetCardProps) {[0m
+[0m> 31 |   const Icon = useMemo(() => getIconComponent(categoryIcon), [categoryIcon]);[0m
+[0m     |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The component is created during render here[0m
+[0m  32 |   const { percentage, status, color, bgColor } = calculateBudgetStatus([0m
+[0m  33 |     spentAmount,[0m
+[0m  34 |     budgetAmount  [2mreact-hooks/static-components[22m[0m
+[0m[0m
+[0m[4mD:\Ketan-K\expense-tracker\src\lib\types.ts[24m[0m
+[0m   [2m3:1[22m   [31merror[39m    'lucide-react' import is duplicated                                               [2mno-duplicate-imports[22m[0m
+[0m  [2m60:22[22m  [33mwarning[39m  'LucideIconType' is defined but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[31m[1m✖ 16 problems (2 errors, 14 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+husky - pre-commit script failed (code 1)

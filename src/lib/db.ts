@@ -119,6 +119,15 @@ export interface LocalBudget {
   updatedAt: Date;
 }
 
+export type SyncQueueData =
+  | Partial<LocalExpense>
+  | Partial<LocalIncome>
+  | Partial<LocalCategory>
+  | Partial<LocalBudget>
+  | Partial<LocalLoan>
+  | Partial<LocalLoanPayment>
+  | Partial<LocalContact>;
+
 export interface SyncQueueItem {
   id?: number;
   action: "CREATE" | "UPDATE" | "DELETE" | "ARCHIVE" | "RESTORE";
@@ -130,7 +139,7 @@ export interface SyncQueueItem {
     | "loans"
     | "loanPayments"
     | "contacts";
-  data: unknown;
+  data: SyncQueueData;
   timestamp: number;
   retryCount: number;
   status: "pending" | "syncing" | "failed" | "success";
@@ -138,6 +147,49 @@ export interface SyncQueueItem {
   remoteId?: string;
   lastAttempt?: number;
   error?: string;
+}
+
+// Type guard functions for safe type narrowing
+export function isExpenseData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalExpense> } {
+  return item.collection === "expenses";
+}
+
+export function isIncomeData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalIncome> } {
+  return item.collection === "incomes";
+}
+
+export function isCategoryData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalCategory> } {
+  return item.collection === "categories";
+}
+
+export function isBudgetData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalBudget> } {
+  return item.collection === "budgets";
+}
+
+export function isLoanData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalLoan> } {
+  return item.collection === "loans";
+}
+
+export function isLoanPaymentData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalLoanPayment> } {
+  return item.collection === "loanPayments";
+}
+
+export function isContactData(
+  item: SyncQueueItem
+): item is SyncQueueItem & { data: Partial<LocalContact> } {
+  return item.collection === "contacts";
 }
 
 export interface SyncMetadata {

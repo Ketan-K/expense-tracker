@@ -20,7 +20,16 @@ import {
   Smartphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { db } from "@/lib/db";
+import {
+  db,
+  LocalBudget,
+  isExpenseData,
+  isIncomeData,
+  isCategoryData,
+  isBudgetData,
+  isLoanData,
+  isContactData,
+} from "@/lib/db";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -85,9 +94,10 @@ export default function ProfilePage() {
 
     // Check if app is already installed
     const checkInstalled = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
         (window.navigator as any).standalone ||
-        document.referrer.includes('android-app://');
+        document.referrer.includes("android-app://");
       setIsInstalled(isStandalone);
     };
     checkInstalled();
@@ -98,7 +108,7 @@ export default function ProfilePage() {
       setDeferredPrompt(e);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     // Get IndexedDB stats
     const getStats = async () => {
@@ -112,7 +122,12 @@ export default function ProfilePage() {
 
         // Get last sync time from metadata
         const metadata = await db.syncMetadata.where("key").equals("lastSync").first();
-        if (metadata?.value) {
+        if (
+          metadata?.value &&
+          (typeof metadata.value === "string" ||
+            typeof metadata.value === "number" ||
+            metadata.value instanceof Date)
+        ) {
           setLastSyncTime(new Date(metadata.value));
         }
 
@@ -130,7 +145,7 @@ export default function ProfilePage() {
     getStats();
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, [user]);
 
@@ -147,7 +162,7 @@ export default function ProfilePage() {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
 
-    if (outcome === 'accepted') {
+    if (outcome === "accepted") {
       toast.success("App installed successfully!");
       setIsInstalled(true);
     }
@@ -503,7 +518,7 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
-            
+
             {deferredPrompt ? (
               <button
                 onClick={handleInstallPWA}
@@ -519,7 +534,7 @@ export default function ProfilePage() {
                 </p>
                 <ol className="space-y-1 text-xs text-blue-700 dark:text-blue-400">
                   <li>1. Tap the Share button in Safari</li>
-                  <li>2. Scroll and tap "Add to Home Screen"</li>
+                  <li>2. Scroll and tap &quot;Add to Home Screen&quot;</li>
                   <li>3. Tap Add to confirm</li>
                 </ol>
               </div>
@@ -534,12 +549,8 @@ export default function ProfilePage() {
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-semibold">
-                  App Installed
-                </h3>
-                <p className="text-sm opacity-80">
-                  You can access this app from your home screen
-                </p>
+                <h3 className="text-base sm:text-lg font-semibold">App Installed</h3>
+                <p className="text-sm opacity-80">You can access this app from your home screen</p>
               </div>
             </div>
           </div>
@@ -606,7 +617,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                        {item.collection === "expenses" && item.data && (
+                        {isExpenseData(item) && (
                           <>
                             <div className="font-medium">
                               {item.data.category || "Uncategorized"}
@@ -621,7 +632,7 @@ export default function ProfilePage() {
                             )}
                           </>
                         )}
-                        {item.collection === "incomes" && item.data && (
+                        {isIncomeData(item) && (
                           <>
                             <div className="font-medium">{item.data.source || "Income"}</div>
                             <div className="text-gray-600 dark:text-gray-400">
@@ -629,33 +640,36 @@ export default function ProfilePage() {
                             </div>
                           </>
                         )}
-                        {item.collection === "categories" && item.data && (
+                        {isCategoryData(item) && (
                           <div className="font-medium">{item.data.name}</div>
                         )}
-                        {item.collection === "budgets" && item.data && (
+                        {isBudgetData(item) && (
                           <>
-                            <div className="font-medium">{item.data.category}</div>
+                            <div className="font-medium">
+                              {(item.data as Partial<LocalBudget> & { category?: string })
+                                .category || "Budget"}
+                            </div>
                             <div className="text-gray-600 dark:text-gray-400">
-                              Limit: ₹{item.data.limit?.toLocaleString("en-IN")}
+                              Limit: ₹{item.data.amount?.toLocaleString("en-IN")}
                             </div>
                           </>
                         )}
-                        {item.collection === "contacts" && item.data && (
+                        {isContactData(item) && (
                           <>
                             <div className="font-medium">{item.data.name}</div>
                             {item.data.primaryPhone !== undefined &&
-                              item.data.phones?.[item.data.primaryPhone] && (
+                              item.data.phone?.[item.data.primaryPhone] && (
                                 <div className="text-xs text-gray-500 dark:text-gray-500">
-                                  {item.data.phones[item.data.primaryPhone]}
+                                  {item.data.phone[item.data.primaryPhone]}
                                 </div>
                               )}
                           </>
                         )}
-                        {item.collection === "loans" && item.data && (
+                        {isLoanData(item) && (
                           <>
                             <div className="font-medium">{item.data.description || "Loan"}</div>
                             <div className="text-gray-600 dark:text-gray-400">
-                              ₹{item.data.amount?.toLocaleString("en-IN")}
+                              ₹{item.data.principalAmount?.toLocaleString("en-IN")}
                             </div>
                           </>
                         )}

@@ -180,7 +180,7 @@ interface ConfirmDialogProps {
   cancelText?: string;
   variant?: "default" | "danger" | "warning";
   onConfirm: () => void;
-  onCancel: () => void;
+  onClose: () => void;
 }
 ```
 
@@ -191,7 +191,7 @@ interface ConfirmDialogProps {
 Simplifies confirmation dialog management:
 
 ```typescript
-const { confirm, isConfirmOpen, options, handleConfirm, handleCancel } = useConfirm();
+const { confirm, isOpen, options, handleConfirm, handleCancel } = useConfirm();
 
 const handleDelete = async () => {
   const confirmed = await confirm({
