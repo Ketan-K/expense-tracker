@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { processSyncQueue } from "@/lib/syncUtils";
-import EditLoanModal from "@/components/EditLoanModal";
+import LoanModal from "@/components/LoanModal";
 import { useConfirm } from "@/hooks/useConfirm";
 
 export default function LoanDetailsPage() {
@@ -453,10 +453,12 @@ export default function LoanDetailsPage() {
         confirmText="Delete"
       />
 
-      <EditLoanModal
+      <LoanModal
         loan={editingLoan}
         isOpen={!!editingLoan}
         onClose={() => setEditingLoan(null)}
+        userId={user?.id || ""}
+        mode="edit"
       />
 
       <ConfirmDialog

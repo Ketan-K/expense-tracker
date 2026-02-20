@@ -6,14 +6,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Font families */
-  --font-family-sans: var(--font-geist-sans);
-  --font-family-mono: var(--font-geist-mono);
-  
+  /* Font families - Clean system sans-serif */
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  --font-family-mono:
+    ui-monospace, "Cascadia Code", "Consolas", "SF Mono", Menlo, Monaco, monospace;
+
   /* ============================================
      APP THEME COLORS - ACME BRAND (Blue/Cyan)
      ============================================ */
-  
+
   /* Main gradient colors */
   --color-app-gradient-from: #0284c7;
   --color-app-gradient-to: #0891b2;
@@ -22,60 +24,60 @@
   --color-app-gradient-light-to: #ecfeff;
   --color-app-gradient-dark-from: rgb(7 89 133 / 0.2);
   --color-app-gradient-dark-to: rgb(8 145 178 / 0.2);
-  
+
   /* Expenses */
   --color-app-expenses: #dc2626;
   --color-app-expenses-end: #be123c;
   --color-app-expenses-light: #fee2e2;
   --color-app-expenses-light-end: #fecdd3;
-  
+
   /* Income */
   --color-app-income: #16a34a;
   --color-app-income-end: #059669;
   --color-app-income-light: #dcfce7;
   --color-app-income-light-end: #d1fae5;
-  
+
   /* Loans */
   --color-app-loans: #ea580c;
   --color-app-loans-end: #dc2626;
   --color-app-loans-light: #ffedd5;
   --color-app-loans-light-end: #fed7aa;
-  
+
   /* Contacts */
   --color-app-contacts: #3b82f6;
   --color-app-contacts-end: #4f46e5;
   --color-app-contacts-light: #dbeafe;
   --color-app-contacts-light-end: #bfdbfe;
-  
+
   /* Budgets */
   --color-app-budgets: #8b5cf6;
   --color-app-budgets-light: #ede9fe;
   --color-app-budgets-light-end: #ddd6fe;
-  
+
   /* ============================================
      STATUS COLORS
      ============================================ */
-  
+
   --color-success: #22c55e;
   --color-success-light: #dcfce7;
   --color-success-dark: #16a34a;
-  
+
   --color-error: #ef4444;
   --color-error-light: #fee2e2;
   --color-error-dark: #dc2626;
-  
+
   --color-warning: #f59e0b;
   --color-warning-light: #fef3c7;
   --color-warning-dark: #d97706;
-  
+
   --color-info: #3b82f6;
   --color-info-light: #dbeafe;
   --color-info-dark: #2563eb;
-  
+
   /* ============================================
      NEUTRAL/GRAYSCALE
      ============================================ */
-  
+
   --color-neutral-50: #f9fafb;
   --color-neutral-100: #f3f4f6;
   --color-neutral-200: #e5e7eb;
@@ -115,7 +117,9 @@
 html,
 body {
   @apply bg-gray-900 text-gray-50;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
 }
 
 * {

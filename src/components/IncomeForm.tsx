@@ -81,7 +81,11 @@ export default function IncomeForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
+    <form
+      id="income-form"
+      onSubmit={handleSubmit}
+      className="space-y-4 animate-in fade-in duration-300"
+    >
       {/* Date */}
       <DatePicker value={formData.date} onChange={date => setFormData({ ...formData, date })} />
 
@@ -106,7 +110,7 @@ export default function IncomeForm({
                 key={source}
                 type="button"
                 onClick={() => handleSelectSource(source)}
-                className={`px-4 py-3 rounded-xl font-medium transition-all text-sm active:scale-95 ${
+                className={`px-4 py-3 rounded-xl font-semibold transition-all text-sm active:scale-95 ${
                   isSelected
                     ? "bg-gradient-to-r from-app-income to-app-income-end text-white shadow-lg shadow-green-500/50"
                     : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
@@ -119,7 +123,7 @@ export default function IncomeForm({
           <button
             type="button"
             onClick={() => handleSelectSource("custom")}
-            className={`px-4 py-3 rounded-xl font-medium transition-all text-sm active:scale-95 ${
+            className={`px-4 py-3 rounded-xl font-semibold transition-all text-sm active:scale-95 ${
               showCustomSource
                 ? "bg-gradient-to-r from-app-income to-app-income-end text-white shadow-lg shadow-green-500/50"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
@@ -226,7 +230,7 @@ export default function IncomeForm({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
+            className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
             disabled={isSubmitting}
           >
             {t.cancel}

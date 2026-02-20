@@ -9,7 +9,7 @@ import MonthSelector from "@/components/reports/MonthSelector";
 import BudgetCard from "@/components/budgets/BudgetCard";
 import BudgetFormModal from "@/components/budgets/BudgetFormModal";
 import EditBudgetModal from "@/components/budgets/EditBudgetModal";
-import EditExpenseModal from "@/components/EditExpenseModal";
+import ExpenseModal from "@/components/ExpenseModal";
 import FilterBar, { FilterState } from "@/components/filters/FilterBar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -768,11 +768,13 @@ export default function DashboardPage() {
       />
 
       {/* Edit Expense Modal */}
-      <EditExpenseModal
+      <ExpenseModal
         expense={editingExpense}
         isOpen={!!editingExpense}
         onClose={() => setEditingExpense(null)}
         categories={categories || []}
+        userId={user?.id || ""}
+        mode="edit"
       />
 
       {/* Edit Budget Modal */}

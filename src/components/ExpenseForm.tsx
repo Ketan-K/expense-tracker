@@ -163,7 +163,11 @@ export default function ExpenseForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
+      <form
+        id="expense-form"
+        onSubmit={handleSubmit}
+        className="space-y-4 animate-in fade-in duration-300"
+      >
         {/* Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -241,7 +245,7 @@ export default function ExpenseForm({
                     }
                   }
                 }}
-                className="px-4 py-2 bg-gradient-to-r from-app-budgets-light to-app-budgets-light-end hover:brightness-95 dark:hover:brightness-110 text-[var(--color-app-budgets)] dark:text-pink-300 rounded-lg text-sm font-medium transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
+                className="px-4 py-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-semibold transition-all hover:shadow-md active:scale-95 whitespace-nowrap flex-shrink-0"
               >
                 +₹{amount}
               </button>
@@ -252,7 +256,7 @@ export default function ExpenseForm({
         {/* Category */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <FileText className="w-4 h-4 inline mr-2 text-indigo-600" />
+            <FileText className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
             Category
           </label>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -280,7 +284,7 @@ export default function ExpenseForm({
                         setFormData({ ...formData, category: category.name });
                       }
                     }}
-                    className={`px-2 py-2.5 rounded-lg font-medium transition-all text-xs flex flex-col items-center gap-1.5 ${
+                    className={`px-2 py-2.5 rounded-lg font-semibold transition-all text-xs flex flex-col items-center gap-1.5 ${
                       isSelected
                         ? "bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white shadow-lg shadow-indigo-500/50"
                         : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
@@ -313,7 +317,7 @@ export default function ExpenseForm({
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <FileText className="w-4 h-4 inline mr-2 text-indigo-600" />
+            <FileText className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
             Description (Optional)
           </label>
           <textarea
@@ -328,7 +332,7 @@ export default function ExpenseForm({
         {/* Payment Method */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <CreditCard className="w-4 h-4 inline mr-2 text-indigo-600" />
+            <CreditCard className="w-4 h-4 inline mr-2 text-[var(--color-app-gradient-from)]" />
             Payment Method
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -337,7 +341,7 @@ export default function ExpenseForm({
                 key={method}
                 type="button"
                 onClick={() => setFormData({ ...formData, paymentMethod: method })}
-                className={`px-4 py-3 rounded-xl font-medium capitalize transition-all text-sm active:scale-95 ${
+                className={`px-4 py-3 rounded-xl font-semibold capitalize transition-all text-sm active:scale-95 ${
                   formData.paymentMethod === method
                     ? "bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white shadow-lg shadow-indigo-500/50"
                     : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md"
@@ -440,7 +444,7 @@ export default function ExpenseForm({
                         title={icon.name}
                         className={`p-2.5 rounded-lg transition-all ${
                           isSelected
-                            ? "bg-indigo-600 text-white shadow-lg"
+                            ? "bg-indigo-600 text-white shadow-lg scale-110"
                             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         }`}
                       >
@@ -491,7 +495,7 @@ export default function ExpenseForm({
                   setShowCustomCategory(false);
                   setIconSearch("");
                 }}
-                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -500,7 +504,7 @@ export default function ExpenseForm({
               <motion.button
                 type="button"
                 onClick={handleCreateCustomCategory}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-app-gradient-from to-app-gradient-to text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/30"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

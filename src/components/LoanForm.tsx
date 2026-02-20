@@ -74,7 +74,11 @@ export default function LoanForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
+    <form
+      id="loan-form"
+      onSubmit={handleSubmit}
+      className="space-y-4 animate-in fade-in duration-300"
+    >
       {/* Direction */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -84,7 +88,7 @@ export default function LoanForm({
           <button
             type="button"
             onClick={() => setFormData({ ...formData, direction: "given" })}
-            className={`px-4 py-4 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2 ${
+            className={`px-4 py-4 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 ${
               formData.direction === "given"
                 ? "bg-gradient-to-r from-app-loans to-app-loans-end text-white shadow-lg shadow-orange-500/50"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -99,7 +103,7 @@ export default function LoanForm({
           <button
             type="button"
             onClick={() => setFormData({ ...formData, direction: "taken" })}
-            className={`px-4 py-4 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2 ${
+            className={`px-4 py-4 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 ${
               formData.direction === "taken"
                 ? "bg-gradient-to-r from-app-contacts to-app-contacts-end text-white shadow-lg shadow-blue-500/50"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -188,7 +192,7 @@ export default function LoanForm({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
+            className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
             disabled={isSubmitting}
           >
             Cancel

@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, LocalIncome } from "@/lib/db";
 import DashboardLayout from "@/components/DashboardLayout";
-import { TrendingUp, Plus, Calendar, Wallet, Pencil, Archive } from "lucide-react";
-import { useMemo, useState } from "react";
+import { TrendingUp, Plus, Calendar, Wallet, Pencil, Archive, MoreVertical } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import MonthSelector from "@/components/reports/MonthSelector";
-import AddIncomeModal from "@/components/AddIncomeModal";
-import EditIncomeModal from "@/components/EditIncomeModal";
+import IncomeModal from "@/components/IncomeModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { motion } from "framer-motion";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -24,10 +23,20 @@ export default function IncomePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingIncome, setEditingIncome] = useState<LocalIncome | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { isOpen, options, handleConfirm, handleCancel, confirm } = useConfirm();
 
   const monthStart = useMemo(() => startOfMonth(selectedMonth), [selectedMonth]);
   const monthEnd = useMemo(() => endOfMonth(selectedMonth), [selectedMonth]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuId]);
 
   const incomes = useLiveQuery(async () => {
     if (!user?.id) return [];
@@ -222,31 +231,51 @@ export default function IncomePage() {
                 incomes.map(income => (
                   <div
                     key={income._id}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors relative group"
+                    className="p-6 pr-16 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors relative"
                   >
-                    {/* Action buttons */}
+                    {/* Action menu */}
                     {!showArchived && (
-                      <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <div className="absolute top-1/2 -translate-y-1/2 right-4 z-20">
                         <button
-                          onClick={e => handleEditIncome(e, income)}
-                          className="p-2 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 shadow-md transition-colors"
-                          title="Edit income"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === income._id ? null : income._id || null);
+                          }}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="More actions"
                         >
-                          <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         </button>
-                        <button
-                          onClick={e => handleArchiveIncome(e, income)}
-                          className="p-2 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 shadow-md transition-colors"
-                          title="Archive income"
-                        >
-                          <Archive className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                        </button>
+                        {openMenuId === income._id && (
+                          <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+                            <button
+                              onClick={e => {
+                                handleEditIncome(e, income);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300"
+                            >
+                              <Pencil className="w-4 h-4" />
+                              Edit Income
+                            </button>
+                            <button
+                              onClick={e => {
+                                handleArchiveIncome(e, income);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm text-orange-600 dark:text-orange-400"
+                            >
+                              <Archive className="w-4 h-4" />
+                              Archive
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1 flex-wrap">
                           <h3 className="font-semibold text-gray-900 dark:text-white">
                             {income.source}
                           </h3>
@@ -270,7 +299,7 @@ export default function IncomePage() {
                           {format(new Date(income.date), "MMM dd, yyyy")}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0 ml-4 min-w-[140px]">
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                           +₹{income.amount.toLocaleString("en-IN")}
                         </p>
@@ -298,16 +327,19 @@ export default function IncomePage() {
         </div>
       </div>
 
-      <AddIncomeModal
+      <IncomeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         userId={user?.id || ""}
+        mode="add"
       />
 
-      <EditIncomeModal
+      <IncomeModal
         income={editingIncome}
         isOpen={!!editingIncome}
         onClose={() => setEditingIncome(null)}
+        userId={user?.id || ""}
+        mode="edit"
       />
 
       <ConfirmDialog

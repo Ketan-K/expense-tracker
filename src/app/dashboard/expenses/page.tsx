@@ -8,8 +8,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Receipt, Plus, TrendingDown, Tag } from "lucide-react";
 import { useMemo, useState } from "react";
 import { startOfMonth, endOfMonth } from "date-fns";
-import EditExpenseModal from "@/components/EditExpenseModal";
-import AddExpenseModal from "@/components/AddExpenseModal";
+import ExpenseModal from "@/components/ExpenseModal";
 import MonthSelector from "@/components/reports/MonthSelector";
 import TransactionsList from "@/components/reports/TransactionsList";
 import { toast } from "sonner";
@@ -266,21 +265,22 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      <AddExpenseModal
+      <ExpenseModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         categories={categories || []}
         userId={user?.id || ""}
+        mode="add"
       />
 
-      {editingExpense && (
-        <EditExpenseModal
-          expense={editingExpense}
-          isOpen={!!editingExpense}
-          onClose={() => setEditingExpense(null)}
-          categories={categories || []}
-        />
-      )}
+      <ExpenseModal
+        expense={editingExpense}
+        isOpen={!!editingExpense}
+        onClose={() => setEditingExpense(null)}
+        categories={categories || []}
+        userId={user?.id || ""}
+        mode="edit"
+      />
     </DashboardLayout>
   );
 }

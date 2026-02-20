@@ -4,7 +4,9 @@ import { useAuth } from "@/lib/auth";
 import { useRouter, useParams } from "next/navigation";
 import { db } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import LoanModal from "@/components/LoanModal";
 import {
   Users,
   Phone,
@@ -22,6 +24,7 @@ export default function ContactDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const contactId = params.id as string;
+  const [showAddLoanModal, setShowAddLoanModal] = useState(false);
 
   const contact = useLiveQuery(() => db.contacts.get(contactId), [contactId]);
 
@@ -230,7 +233,7 @@ export default function ContactDetailsPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Loan History</h2>
               <button
-                onClick={() => router.push("/dashboard/loans/add")}
+                onClick={() => setShowAddLoanModal(true)}
                 className="px-4 py-2 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
@@ -248,7 +251,7 @@ export default function ContactDetailsPage() {
                   Create your first loan with {contact.name}
                 </p>
                 <button
-                  onClick={() => router.push("/dashboard/loans/add")}
+                  onClick={() => setShowAddLoanModal(true)}
                   className="px-6 py-3 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Create First Loan
@@ -326,6 +329,15 @@ export default function ContactDetailsPage() {
           </div>
         </div>
       </div>
+
+      {user?.id && (
+        <LoanModal
+          isOpen={showAddLoanModal}
+          onClose={() => setShowAddLoanModal(false)}
+          userId={user.id}
+          mode="add"
+        />
+      )}
     </DashboardLayout>
   );
 }

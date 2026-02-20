@@ -2,13 +2,21 @@
 
 /* Theme CSS is loaded dynamically via theme-styles.ts based on NEXT_PUBLIC_THEME */
 
+/* Crisp Font Rendering for Windows */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
 /* Mobile Safe Area Insets for Fixed Elements */
 @supports (padding-top: env(safe-area-inset-top)) {
   /* Toast notifications (Sonner) */
   :root {
     --toast-offset: env(safe-area-inset-top, 0px);
   }
-  
+
   [data-sonner-toaster] {
     padding-top: var(--toast-offset) !important;
   }
@@ -31,7 +39,7 @@
       padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
-    
+
     .fixed.inset-0.z-50 {
       padding-top: 1rem !important;
       padding-bottom: 1rem !important;

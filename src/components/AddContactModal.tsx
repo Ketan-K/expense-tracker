@@ -17,6 +17,7 @@ import {
 } from "@/lib/contactsApi";
 import { ContactDuplicateDialog, DuplicateContact } from "./ContactDuplicateDialog";
 import { t } from "@/lib/terminology";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface AddContactModalProps {
   isOpen: boolean;
@@ -354,225 +355,243 @@ export default function AddContactModal({ isOpen, onClose, userId }: AddContactM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pb-20 sm:pb-4 animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-gradient-to-br from-white via-gray-50 to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/20 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom zoom-in duration-300 my-auto">
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {t.add} {t.contacts}
-          </h2>
-          <div className="flex items-center gap-2">
-            {isNativeApp && (
-              <button
-                type="button"
-                onClick={() => handleSyncAllContacts(false)}
-                disabled={isSyncing}
-                className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
-                title="Sync all contacts from device"
-              >
-                {isSyncing ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    {syncProgress.total > 0
-                      ? `${syncProgress.current}/${syncProgress.total}`
-                      : "Syncing..."}
-                  </>
-                ) : (
-                  <>
-                    <Users className="w-4 h-4" />
-                    Sync All
-                  </>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pb-20 sm:pb-4 overflow-y-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="bg-gradient-to-br from-app-contacts-light to-app-contacts-light-end dark:from-gray-800 dark:via-gray-800 dark:to-app-contacts-dark rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto my-auto shadow-2xl"
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ duration: 0.3, type: "spring", damping: 25 }}
+          >
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {t.add} {t.contacts}
+              </h2>
+              <div className="flex items-center gap-2">
+                {isNativeApp && (
+                  <button
+                    type="button"
+                    onClick={() => handleSyncAllContacts(false)}
+                    disabled={isSyncing}
+                    className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                    title="Sync all contacts from device"
+                  >
+                    {isSyncing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        {syncProgress.total > 0
+                          ? `${syncProgress.current}/${syncProgress.total}`
+                          : "Syncing..."}
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4" />
+                        Sync All
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
-            )}
-            {!isNativeApp && contactsSupported && (
-              <button
-                type="button"
-                onClick={handleImportContact}
-                disabled={isImporting || !navigator.onLine}
-                className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
-                title={
-                  !navigator.onLine
-                    ? "Import requires internet connection"
-                    : "Import from phone contacts"
-                }
-              >
-                <Smartphone className="w-4 h-4" />
-                {isImporting ? "Importing..." : "Import"}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            </button>
-          </div>
-        </div>
-
-        {isSyncing && syncProgress.total > 0 && (
-          <div className="px-6 pb-4">
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-blue-700 dark:text-blue-300 font-medium">
-                  Syncing contacts...
-                </span>
-                <span className="text-blue-600 dark:text-blue-400">
-                  {syncProgress.current} / {syncProgress.total}
-                </span>
+                {!isNativeApp && contactsSupported && (
+                  <button
+                    type="button"
+                    onClick={handleImportContact}
+                    disabled={isImporting || !navigator.onLine}
+                    className="px-3 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                    title={
+                      !navigator.onLine
+                        ? "Import requires internet connection"
+                        : "Import from phone contacts"
+                    }
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    {isImporting ? "Importing..." : "Import"}
+                  </button>
+                )}
+                <motion.button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </motion.button>
               </div>
-              <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-app-contacts to-app-contacts-end h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(syncProgress.current / syncProgress.total) * 100}%` }}
+            </div>
+
+            {isSyncing && syncProgress.total > 0 && (
+              <div className="px-6 pb-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-blue-700 dark:text-blue-300 font-medium">
+                      Syncing contacts...
+                    </span>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {syncProgress.current} / {syncProgress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-app-contacts to-app-contacts-end h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(syncProgress.current / syncProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  required
                 />
               </div>
-            </div>
-          </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-              required
-            />
-          </div>
-
-          {/* Phone Numbers */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Phone Numbers
-            </label>
-            <div className="space-y-2">
-              {formData.phones.map((phone, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={e => updatePhone(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Phone number"
-                  />
-                  {formData.phones.filter(p => p.trim()).length > 1 && (
-                    <label className="flex items-center gap-1 text-sm">
+              {/* Phone Numbers */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Phone Numbers
+                </label>
+                <div className="space-y-2">
+                  {formData.phones.map((phone, index) => (
+                    <div key={index} className="flex gap-2 items-center">
                       <input
-                        type="radio"
-                        name="primaryPhone"
-                        checked={formData.primaryPhone === index}
-                        onChange={() => setFormData({ ...formData, primaryPhone: index })}
-                        className="text-[var(--color-app-gradient-from)]"
+                        type="tel"
+                        value={phone}
+                        onChange={e => updatePhone(index, e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Phone number"
                       />
-                      <span className="text-gray-600 dark:text-gray-400">Primary</span>
-                    </label>
-                  )}
-                  {formData.phones.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removePhoneField(index)}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                      {formData.phones.filter(p => p.trim()).length > 1 && (
+                        <label className="flex items-center gap-1 text-sm">
+                          <input
+                            type="radio"
+                            name="primaryPhone"
+                            checked={formData.primaryPhone === index}
+                            onChange={() => setFormData({ ...formData, primaryPhone: index })}
+                            className="text-[var(--color-app-gradient-from)]"
+                          />
+                          <span className="text-gray-600 dark:text-gray-400">Primary</span>
+                        </label>
+                      )}
+                      {formData.phones.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePhoneField(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addPhoneField}
+                    className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-[var(--color-app-gradient-from)] hover:text-[var(--color-app-gradient-from)] dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Phone
+                  </button>
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addPhoneField}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-[var(--color-app-gradient-from)] hover:text-[var(--color-app-gradient-from)] dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Phone
-              </button>
-            </div>
-          </div>
+              </div>
 
-          {/* Email Addresses */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email Addresses
-            </label>
-            <div className="space-y-2">
-              {formData.emails.map((email, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => updateEmail(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Email address"
-                  />
-                  {formData.emails.filter(e => e.trim()).length > 1 && (
-                    <label className="flex items-center gap-1 text-sm">
+              {/* Email Addresses */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Addresses
+                </label>
+                <div className="space-y-2">
+                  {formData.emails.map((email, index) => (
+                    <div key={index} className="flex gap-2 items-center">
                       <input
-                        type="radio"
-                        name="primaryEmail"
-                        checked={formData.primaryEmail === index}
-                        onChange={() => setFormData({ ...formData, primaryEmail: index })}
-                        className="text-[var(--color-app-gradient-from)]"
+                        type="email"
+                        value={email}
+                        onChange={e => updateEmail(index, e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Email address"
                       />
-                      <span className="text-gray-600 dark:text-gray-400">Primary</span>
-                    </label>
-                  )}
-                  {formData.emails.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeEmailField(index)}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                      {formData.emails.filter(e => e.trim()).length > 1 && (
+                        <label className="flex items-center gap-1 text-sm">
+                          <input
+                            type="radio"
+                            name="primaryEmail"
+                            checked={formData.primaryEmail === index}
+                            onChange={() => setFormData({ ...formData, primaryEmail: index })}
+                            className="text-[var(--color-app-gradient-from)]"
+                          />
+                          <span className="text-gray-600 dark:text-gray-400">Primary</span>
+                        </label>
+                      )}
+                      {formData.emails.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeEmailField(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addEmailField}
+                    className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-[var(--color-app-gradient-from)] hover:text-[var(--color-app-gradient-from)] dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Email
+                  </button>
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addEmailField}
-                className="w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:border-[var(--color-app-gradient-from)] hover:text-[var(--color-app-gradient-from)] dark:hover:text-purple-400 transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Email
-              </button>
-            </div>
-          </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Relationship
-            </label>
-            <input
-              type="text"
-              value={formData.relationship}
-              onChange={e => setFormData({ ...formData, relationship: e.target.value })}
-              placeholder="e.g., Friend, Family, Colleague"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Relationship
+                </label>
+                <input
+                  type="text"
+                  value={formData.relationship}
+                  onChange={e => setFormData({ ...formData, relationship: e.target.value })}
+                  placeholder="e.g., Friend, Family, Colleague"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? "Adding..." : "Add Contact"}
-            </button>
-          </div>
-        </form>
-      </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-app-contacts to-app-contacts-end text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {isSubmitting ? "Adding..." : "Add Contact"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
 
       <ContactDuplicateDialog
         open={duplicateDialog.open}
@@ -582,6 +601,6 @@ export default function AddContactModal({ isOpen, onClose, userId }: AddContactM
         onSkip={() => setDuplicateDialog({ open: false, duplicate: null })}
         onCreateNew={handleCreateNewFromDuplicate}
       />
-    </div>
+    </AnimatePresence>
   );
 }

@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { db, LocalLoan } from "@/lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Handshake,
@@ -16,10 +16,10 @@ import {
   DollarSign,
   Pencil,
   Archive,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
-import AddLoanModal from "@/components/AddLoanModal";
-import EditLoanModal from "@/components/EditLoanModal";
+import LoanModal from "@/components/LoanModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useConfirm } from "@/hooks/useConfirm";
 import { motion } from "framer-motion";
@@ -36,7 +36,17 @@ export default function LoansPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLoan, setEditingLoan] = useState<LocalLoan | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { confirm, isOpen: isConfirmOpen, options, handleConfirm, handleCancel } = useConfirm();
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuId]);
 
   const loans = useLiveQuery(
     () =>
@@ -216,7 +226,7 @@ export default function LoansPage() {
                 {showArchived ? "View Active" : "View Archived"}
               </button>
               <motion.button
-                onClick={() => router.push("/dashboard/loans/add")}
+                onClick={() => setShowAddModal(true)}
                 className="px-4 py-2 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -338,7 +348,7 @@ export default function LoansPage() {
               </p>
               {statusFilter === "all" && directionFilter === "all" && (
                 <button
-                  onClick={() => router.push("/dashboard/loans/add")}
+                  onClick={() => setShowAddModal(true)}
                   className="px-6 py-3 bg-gradient-to-r from-app-loans to-app-loans-end text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Create Your First Loan
@@ -351,30 +361,50 @@ export default function LoansPage() {
                 <div
                   key={loan._id}
                   onClick={() => router.push(`/dashboard/loans/${loan._id}`)}
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all cursor-pointer relative group"
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 pr-16 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all cursor-pointer relative"
                 >
-                  {/* Action buttons */}
+                  {/* Action menu */}
                   {!showArchived && (
-                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="absolute top-1/2 -translate-y-1/2 right-4 z-20">
                       <button
-                        onClick={e => handleEditLoan(e, loan)}
-                        className="p-2 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 shadow-md transition-colors"
-                        title="Edit loan"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === loan._id ? null : loan._id || null);
+                        }}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        title="More actions"
                       >
-                        <Pencil className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                       </button>
-                      <button
-                        onClick={e => handleArchiveLoan(e, loan)}
-                        className="p-2 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 shadow-md transition-colors"
-                        title="Archive loan"
-                      >
-                        <Archive className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                      </button>
+                      {openMenuId === loan._id && (
+                        <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+                          <button
+                            onClick={e => {
+                              handleEditLoan(e, loan);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit Loan
+                          </button>
+                          <button
+                            onClick={e => {
+                              handleArchiveLoan(e, loan);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-sm text-orange-600 dark:text-orange-400"
+                          >
+                            <Archive className="w-4 h-4" />
+                            Archive
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <div
                           className={`p-2 rounded-lg ${
@@ -419,7 +449,7 @@ export default function LoansPage() {
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0 ml-4 min-w-[140px]">
                       <p className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                         {formatCurrency(loan.outstandingAmount || 0)}
                       </p>
@@ -441,16 +471,19 @@ export default function LoansPage() {
         </div>
       </div>
 
-      <AddLoanModal
+      <LoanModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         userId={user?.id || ""}
+        mode="add"
       />
 
-      <EditLoanModal
+      <LoanModal
         loan={editingLoan}
         isOpen={!!editingLoan}
         onClose={() => setEditingLoan(null)}
+        userId={user?.id || ""}
+        mode="edit"
       />
 
       <ConfirmDialog
