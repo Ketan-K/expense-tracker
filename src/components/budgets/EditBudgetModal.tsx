@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { db, LocalBudget, LocalCategory } from "@/lib/db";
 import { toast } from "sonner";
@@ -22,6 +22,13 @@ export default function EditBudgetModal({
 }: EditBudgetModalProps) {
   const [amount, setAmount] = useState(budget?.amount.toString() || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update amount when budget changes
+  useEffect(() => {
+    if (budget) {
+      setAmount(budget.amount.toString());
+    }
+  }, [budget]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -10,6 +10,27 @@ if (typeof window !== "undefined") {
 }
 
 /**
+ * Validate MongoDB ObjectId format
+ */
+export function sanitizeObjectId(id: string): boolean {
+  if (!id || typeof id !== "string") return false;
+  return ObjectId.isValid(id);
+}
+
+/**
+ * Normalize ID to ObjectId format for MongoDB
+ * Converts string IDs to ObjectId, returns undefined if no ID provided
+ */
+function normalizeId(id: any): ObjectId | undefined {
+  if (!id) return undefined;
+  if (typeof id === "string") {
+    if (!sanitizeObjectId(id)) return undefined;
+    return new ObjectId(id);
+  }
+  return id;
+}
+
+/**
  * Sanitize string input by removing HTML/scripts
  */
 export function sanitizeString(input: string): string {
@@ -111,9 +132,7 @@ export function validateExpense(data: {
   };
 
   // Preserve _id if provided (for client-generated IDs)
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,
@@ -171,9 +190,7 @@ export function validateCategory(data: { _id?: any; name?: any; icon?: any; colo
     color: String(data.color).toLowerCase(),
   };
 
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,
@@ -229,9 +246,7 @@ export function validateBudget(data: { _id?: any; categoryId?: any; amount?: any
     month: String(data.month),
   };
 
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,
@@ -272,14 +287,6 @@ export function validateQueryParams(params: {
     isValid: errors.length === 0,
     errors,
   };
-}
-
-/**
- * Validate MongoDB ObjectId format
- */
-export function sanitizeObjectId(id: string): boolean {
-  if (!id || typeof id !== "string") return false;
-  return ObjectId.isValid(id);
 }
 
 /**
@@ -353,9 +360,7 @@ export function validateIncome(data: {
     recurring: data.recurring === true || data.recurring === "true",
   };
 
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,
@@ -519,9 +524,7 @@ export function validateContact(data: {
     externalId: data.externalId ? sanitizeString(String(data.externalId)) : undefined,
   };
 
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,
@@ -631,9 +634,7 @@ export function validateLoan(data: {
     description: data.description ? sanitizeString(String(data.description)) : "",
   };
 
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,
@@ -712,9 +713,7 @@ export function validateLoanPayment(data: {
     notes: data.notes ? sanitizeString(String(data.notes)) : "",
   };
 
-  if (data._id) {
-    sanitized._id = data._id;
-  }
+  sanitized._id = normalizeId(data._id);
 
   return {
     isValid: true,

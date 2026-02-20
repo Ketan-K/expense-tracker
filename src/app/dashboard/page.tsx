@@ -40,7 +40,6 @@ export default function DashboardPage() {
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<LocalExpense | null>(null);
   const [editingBudget, setEditingBudget] = useState<LocalBudget | null>(null);
-  const [showArchivedBudgets, setShowArchivedBudgets] = useState(false);
   const [financeTip, setFinanceTip] = useState("Track your expenses, master your money");
   const { confirm, isOpen: isConfirmOpen, options, handleConfirm, handleCancel } = useConfirm();
   const [filters, setFilters] = useState<FilterState>({
@@ -49,6 +48,7 @@ export default function DashboardPage() {
     amountRange: null,
     paymentMethods: [],
     sortBy: "date-desc",
+    showArchived: false,
   });
 
   // PWA Install Prompt
@@ -133,13 +133,13 @@ export default function DashboardPage() {
       .equals(user.id)
       .and(budget => {
         const matchesMonth = budget.month === monthString;
-        const matchesArchiveFilter = showArchivedBudgets
+        const matchesArchiveFilter = filters.showArchived
           ? budget.isArchived === true
           : budget.isArchived !== true;
         return matchesMonth && matchesArchiveFilter;
       })
       .toArray();
-  }, [user?.id, monthString, showArchivedBudgets]);
+  }, [user?.id, monthString, filters.showArchived]);
 
   // Process data for charts with filters applied
   const { categoryData, dailyData, transactions, totalSpent, dailyAverage } = useMemo(() => {
@@ -658,17 +658,11 @@ export default function DashboardPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Target className="w-5 h-5" />
                 Monthly Budgets{" "}
-                {showArchivedBudgets && (
+                {filters.showArchived && (
                   <span className="text-sm font-normal text-gray-500">(Archived)</span>
                 )}
               </h2>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowArchivedBudgets(!showArchivedBudgets)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
-                >
-                  {showArchivedBudgets ? "View Active" : "View Archived"}
-                </button>
                 <button
                   onClick={() => setShowBudgetModal(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors text-sm font-medium"

@@ -88,9 +88,12 @@ export async function processSyncQueue(userId: string): Promise<{
       } else if (item.action === "UPDATE") {
         endpoint = `/api/${item.collection}/${item.remoteId || item.localId}`;
         method = "PUT";
-      } else if (item.action === "DELETE") {
+      } else if (item.action === "DELETE" || item.action === "ARCHIVE") {
         endpoint = `/api/${item.collection}/${item.remoteId || item.localId}`;
         method = "DELETE";
+      } else if (item.action === "RESTORE") {
+        endpoint = `/api/${item.collection}/${item.remoteId || item.localId}?action=restore`;
+        method = "PATCH";
       }
 
       // Send request to server
@@ -107,8 +110,9 @@ export async function processSyncQueue(userId: string): Promise<{
       const result = await response.json();
 
       // Handle successful sync - mark local items as synced
+      // Since we use generateObjectId() locally, the _id is already consistent
       if (item.action === "CREATE" || item.action === "UPDATE") {
-        const recordId = item.action === "CREATE" ? item.localId! : item.remoteId || item.localId!;
+        const recordId = item.localId!;
 
         if (item.collection === "expenses") {
           await db.expenses.where("_id").equals(recordId).modify({ synced: true });
@@ -126,6 +130,8 @@ export async function processSyncQueue(userId: string): Promise<{
           await db.contacts.where("_id").equals(recordId).modify({ synced: true });
         }
       }
+      // For DELETE, ARCHIVE, and RESTORE actions, the local DB was already updated
+      // when the sync queue item was created, so we just remove from queue
 
       // Remove from queue after successful sync
       await db.syncQueue.delete(item.id!);

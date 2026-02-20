@@ -8,7 +8,8 @@ export interface FilterState {
   categories: string[];
   amountRange: { min: number; max: number } | null;
   paymentMethods: string[];
-  sortBy: 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'category';
+  sortBy: "date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "category";
+  showArchived: boolean;
 }
 
 interface FilterBarProps {
@@ -48,14 +49,14 @@ export default function FilterBar({
 
   const toggleCategory = (category: string) => {
     const newCategories = filters.categories.includes(category)
-      ? filters.categories.filter((c) => c !== category)
+      ? filters.categories.filter(c => c !== category)
       : [...filters.categories, category];
     updateFilter("categories", newCategories);
   };
 
   const togglePaymentMethod = (method: string) => {
     const newMethods = filters.paymentMethods.includes(method)
-      ? filters.paymentMethods.filter((m) => m !== method)
+      ? filters.paymentMethods.filter(m => m !== method)
       : [...filters.paymentMethods, method];
     updateFilter("paymentMethods", newMethods);
   };
@@ -67,6 +68,7 @@ export default function FilterBar({
       amountRange: null,
       paymentMethods: [],
       sortBy: "date-desc",
+      showArchived: false,
     });
   };
 
@@ -75,7 +77,8 @@ export default function FilterBar({
     filters.categories.length +
     (filters.amountRange ? 1 : 0) +
     filters.paymentMethods.length +
-    (filters.sortBy !== "date-desc" ? 1 : 0);
+    (filters.sortBy !== "date-desc" ? 1 : 0) +
+    (filters.showArchived ? 1 : 0);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
@@ -88,7 +91,7 @@ export default function FilterBar({
               type="text"
               placeholder="Search transactions..."
               value={filters.search}
-              onChange={(e) => updateFilter("search", e.target.value)}
+              onChange={e => updateFilter("search", e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
             />
           </div>
@@ -114,13 +117,32 @@ export default function FilterBar({
       {/* Expanded Filters */}
       {isExpanded && (
         <div className="px-4 pb-4 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+          {/* Show Archived Toggle */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Show Archived Items
+            </label>
+            <button
+              onClick={() => updateFilter("showArchived", !filters.showArchived)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                filters.showArchived ? "bg-indigo-600" : "bg-gray-300 dark:bg-gray-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  filters.showArchived ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Categories */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Categories
             </label>
             <div className="flex flex-wrap gap-2">
-              {availableCategories.map((category) => (
+              {availableCategories.map(category => (
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
@@ -142,7 +164,7 @@ export default function FilterBar({
               Amount Range
             </label>
             <div className="flex flex-wrap gap-2">
-              {AMOUNT_RANGES.map((range) => (
+              {AMOUNT_RANGES.map(range => (
                 <button
                   key={range.label}
                   onClick={() => updateFilter("amountRange", range.value)}
@@ -164,7 +186,7 @@ export default function FilterBar({
               Payment Method
             </label>
             <div className="flex gap-2">
-              {PAYMENT_METHODS.map((method) => (
+              {PAYMENT_METHODS.map(method => (
                 <button
                   key={method}
                   onClick={() => togglePaymentMethod(method)}
@@ -187,12 +209,10 @@ export default function FilterBar({
             </label>
             <select
               value={filters.sortBy}
-              onChange={(e) =>
-                updateFilter("sortBy", e.target.value as FilterState["sortBy"])
-              }
+              onChange={e => updateFilter("sortBy", e.target.value as FilterState["sortBy"])}
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:text-white"
             >
-              {SORT_OPTIONS.map((option) => (
+              {SORT_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
